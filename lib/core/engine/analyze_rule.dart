@@ -6,15 +6,7 @@ import 'parsers/analyze_by_xpath.dart';
 import 'parsers/analyze_by_regex.dart';
 import 'rule_analyzer.dart';
 import 'js/js_engine.dart';
-
-/// RuleDataInterface - 規則上下文數據介面
-/// 對應 Android: model/analyzeRule/RuleDataInterface.kt
-abstract class RuleDataInterface {
-  Map<String, String> get variableMap;
-  
-  void putVariable(String key, String? value);
-  String getVariable(String key);
-}
+import '../models/rule_data_interface.dart';
 
 /// AnalyzeRule - 規則總控
 /// 對應 Android: model/analyzeRule/AnalyzeRule.kt (32KB)
