@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter_js/flutter_js.dart';
 import 'package:uuid/uuid.dart';
 import 'package:convert/convert.dart';
@@ -7,6 +8,7 @@ import '../analyze_url.dart';
 import '../../models/base_source.dart';
 import '../../services/http_client.dart';
 import '../../services/cookie_store.dart';
+import '../../services/cache_manager.dart';
 
 /// JsExtensions - JS 橋接擴展
 /// 對應 Android: help/JsExtensions.kt
@@ -14,6 +16,7 @@ class JsExtensions {
   final JavascriptRuntime runtime;
   final BaseSource? source;
   final CookieStore _cookieStore = CookieStore();
+  final CacheManager _cacheManager = CacheManager();
 
   JsExtensions(this.runtime, {this.source});
 
@@ -153,17 +156,44 @@ class JsExtensions {
 
     // 額外訊息處理
     runtime.onMessage('importScript', (dynamic args) async {
-      // TODO: 實作下載並評估 JS
+      final path = args.toString();
+      if (path.startsWith('http')) {
+        return await _cacheFile(path, 0);
+      } else {
+        // 本地路徑處理
+        final file = File(path);
+        if (await file.exists()) {
+          return await file.readAsString();
+        }
+      }
       return "";
     });
 
     runtime.onMessage('cacheFile', (dynamic args) async {
-      // TODO: 實作檔案快取
-      return "";
+      final url = args[0].toString();
+      final saveTime = args.length > 1 ? args[1] as int : 0;
+      return await _cacheFile(url, saveTime);
     });
 
     // 注入同步輔助函式
     _injectSyncFunctions();
+  }
+
+  Future<String> _cacheFile(String url, int saveTime) async {
+    final key = JsEncodeUtils.md5Encode16(url);
+    final cached = await _cacheManager.get(key);
+    if (cached != null) return cached;
+
+    try {
+      final analyzeUrl = AnalyzeUrl(url);
+      final content = await analyzeUrl.getResponseBody();
+      if (content.isNotEmpty) {
+        await _cacheManager.put(key, content);
+      }
+      return content;
+    } catch (e) {
+      return "";
+    }
   }
 
   String _parseUrlArg(dynamic args) {
