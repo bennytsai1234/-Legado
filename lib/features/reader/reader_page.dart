@@ -1,35 +1,277 @@
-/// Reader Page - 閱讀器頁面
-/// 對應 Android: ui/book/read/*
-library;
-
 import 'package:flutter/material.dart';
-
-// TODO: 實作
-// - [ ] 翻頁動畫 (水平/仿真/覆蓋/滑動)
-// - [ ] 文字排版引擎 (段落分頁)
-// - [ ] 閱讀進度條
-// - [ ] 閱讀設定面板 (字體、字號、行距、背景)
-// - [ ] 書籤系統
-// - [ ] TTS 朗讀
-// - [ ] 長按選字
-// - [ ] 自動翻頁
-// - [ ] 繁簡轉換
-// - [ ] 內文搜尋
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'reader_provider.dart';
+import '../../core/models/book.dart';
+import '../../shared/theme/app_theme.dart';
 
 class ReaderPage extends StatefulWidget {
-  const ReaderPage({super.key});
+  final Book book;
+  final int chapterIndex;
+
+  const ReaderPage({
+    super.key,
+    required this.book,
+    this.chapterIndex = 0,
+  });
 
   @override
   State<ReaderPage> createState() => _ReaderPageState();
 }
 
 class _ReaderPageState extends State<ReaderPage> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    // 進入閱讀器時隱藏系統狀態列
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
+
+  @override
+  void dispose() {
+    // 退出時恢復系統狀態列
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: const Center(
-        child: Text('閱讀器 - 待實作', style: TextStyle(color: Colors.grey)),
+    return ChangeNotifierProvider(
+      create: (_) => ReaderProvider(book: widget.book, chapterIndex: widget.chapterIndex),
+      child: Consumer<ReaderProvider>(
+        builder: (context, provider, child) {
+          final theme = provider.currentTheme;
+          
+          return Scaffold(
+            backgroundColor: theme.backgroundColor,
+            body: Stack(
+              children: [
+                // 點擊區域：中央喚出控制項，兩側翻頁 (目前僅實作中央點擊)
+                GestureDetector(
+                  onTapUp: (details) {
+                    final width = MediaQuery.of(context).size.width;
+                    final x = details.globalPosition.dx;
+                    if (x > width * 0.3 && x < width * 0.7) {
+                      provider.toggleControls();
+                    } else if (x <= width * 0.3) {
+                      provider.prevChapter();
+                    } else {
+                      provider.nextChapter();
+                    }
+                  },
+                  child: _buildContent(provider, theme),
+                ),
+
+                // 頂部工具列
+                if (provider.showControls) _buildTopBar(context, provider),
+
+                // 底部工具列
+                if (provider.showControls) _buildBottomBar(context, provider),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
+
+  Widget _buildContent(ReaderProvider provider, ReadingTheme theme) {
+    if (provider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return SafeArea(
+      child: ListView(
+        controller: _scrollController,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        children: [
+          // 章節標題
+          Text(
+            provider.currentChapter?.title ?? "",
+            style: TextStyle(
+              fontSize: provider.fontSize + 4,
+              fontWeight: FontWeight.bold,
+              color: theme.textColor,
+            ),
+          ),
+          const SizedBox(height: 20),
+          // 正文
+          Text(
+            provider.content,
+            style: TextStyle(
+              fontSize: provider.fontSize,
+              height: provider.lineHeight,
+              color: theme.textColor,
+            ),
+          ),
+          const SizedBox(height: 50),
+          // 章節切換按鈕
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(onPressed: provider.prevChapter, child: const Text("上一章")),
+              TextButton(onPressed: provider.nextChapter, child: const Text("下一章")),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopBar(BuildContext context, ReaderProvider provider) {
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        color: Colors.black.withOpacity(0.8),
+        padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+        child: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(provider.book.name, style: const TextStyle(color: Colors.white, fontSize: 16)),
+              Text(provider.currentChapter?.title ?? "", style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomBar(BuildContext context, ReaderProvider provider) {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        color: Colors.black.withOpacity(0.8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 進度條
+            Row(
+              children: [
+                const Text("上一章", style: TextStyle(color: Colors.white, fontSize: 12)),
+                Expanded(
+                  child: Slider(
+                    value: provider.currentChapterIndex.toDouble(),
+                    min: 0,
+                    max: (provider.chapters.length - 1).clamp(0, 9999).toDouble(),
+                    onChanged: (v) => provider.loadChapter(v.toInt()),
+                  ),
+                ),
+                const Text("下一章", style: TextStyle(color: Colors.white, fontSize: 12)),
+              ],
+            ),
+            // 功能按鈕
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildIconButton(Icons.list, "目錄", () {
+                  // TODO: 顯示目錄側滑欄
+                }),
+                _buildIconButton(Icons.settings, "設定", () {
+                  _showSettingsPanel(context, provider);
+                }),
+                _buildIconButton(Icons.headset, "朗讀", () {
+                  // TODO: TTS
+                }),
+                _buildIconButton(Icons.brightness_medium, "主題", () {
+                  provider.setTheme(provider.themeIndex + 1);
+                }),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIconButton(IconData icon, String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Icon(icon, color: Colors.white),
+          const SizedBox(height: 4),
+          Text(label, style: const TextStyle(color: Colors.white, fontSize: 10)),
+        ],
+      ),
+    );
+  }
+
+  void _showSettingsPanel(BuildContext context, ReaderProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.black.withOpacity(0.9),
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setModalState) {
+          return Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("字體大小", style: TextStyle(color: Colors.white)),
+                Row(
+                  children: [
+                    IconButton(onPressed: () => provider.setFontSize(provider.fontSize - 1), icon: const Icon(Icons.remove, color: Colors.white)),
+                    Text(provider.fontSize.toInt().toString(), style: const TextStyle(color: Colors.white)),
+                    IconButton(onPressed: () => provider.setFontSize(provider.fontSize + 1), icon: const Icon(Icons.add, color: Colors.white)),
+                  ],
+                ),
+                const Text("行間距", style: TextStyle(color: Colors.white)),
+                Slider(
+                  value: provider.lineHeight,
+                  min: 1.2,
+                  max: 2.5,
+                  onChanged: (v) => provider.setLineHeight(v),
+                ),
+                const Text("閱讀主題", style: TextStyle(color: Colors.white)),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 40,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: AppTheme.readingThemes.length,
+                    itemBuilder: (context, index) {
+                      final t = AppTheme.readingThemes[index];
+                      return GestureDetector(
+                        onTap: () => provider.setTheme(index),
+                        child: Container(
+                          width: 60,
+                          margin: const EdgeInsets.only(right: 10),
+                          decoration: BoxDecoration(
+                            color: t.backgroundColor,
+                            border: Border.all(color: provider.themeIndex == index ? Colors.blue : Colors.grey),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          center: Center(child: Text("文", style: TextStyle(color: t.textColor))),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        });
+      },
+    );
+  }
+}
+
+extension on Container {
+  Widget get center => Center(child: this);
 }
