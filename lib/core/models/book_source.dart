@@ -1,31 +1,52 @@
+library;
+
+import 'base_source.dart';
+import 'dart:convert';
+
 /// BookSource - 書源模型
 /// 完整相容 Legado 3.0 JSON 書源格式
 ///
 /// 對應 Android: data/entities/BookSource.kt
-library;
-
-class BookSource {
+class BookSource implements BaseSource {
+  @override
   String bookSourceUrl; // 書源 URL (唯一識別)
   String bookSourceName; // 書源名稱
   int bookSourceType; // 0: 文字, 1: 音頻, 2: 圖片/漫畫, 3: 檔案
   String? bookSourceGroup; // 書源分組
   String? bookSourceComment; // 書源說明
+  
+  @override
   String? loginUrl; // 登入 URL
+  
+  @override
   String? loginUi; // 登入 UI JSON
+  
   String? loginCheckJs; // 登入檢測 JS
   String? bookUrlPattern; // 書籍 URL 正則
+  
+  @override
   String? header; // 自訂 Header JSON
+  
   String? variableComment; // 變數說明
   String? variable; // 暫存變數
   int customOrder; // 自訂排序
   int weight; // 權重
   bool enabled; // 是否啟用
   bool enabledExplore; // 是否啟用發現
-  bool enabledCookieJar; // 是否啟用 CookieJar
+  
+  @override
+  bool? enabledCookieJar; // 是否啟用 CookieJar
+  
   int lastUpdateTime; // 最後更新時間
   int respondTime; // 回應時間
+  
+  @override
   String? jsLib; // JS 共享庫
-  int concurrentRate; // 併發速率
+  
+  int concurrentRateInt; // 併發速率
+
+  @override
+  String? get concurrentRate => concurrentRateInt.toString();
 
   // === 搜尋規則 ===
   SearchRule? ruleSearch;
@@ -63,7 +84,7 @@ class BookSource {
     this.lastUpdateTime = 0,
     this.respondTime = 180000,
     this.jsLib,
-    this.concurrentRate = 0,
+    this.concurrentRateInt = 0,
     this.ruleSearch,
     this.ruleExplore,
     this.ruleBookInfo,
@@ -95,7 +116,7 @@ class BookSource {
       lastUpdateTime: json['lastUpdateTime'] ?? 0,
       respondTime: json['respondTime'] ?? 180000,
       jsLib: json['jsLib'],
-      concurrentRate: json['concurrentRate'] ?? 0,
+      concurrentRateInt: json['concurrentRate'] ?? 0,
       ruleSearch: json['ruleSearch'] != null
           ? SearchRule.fromJson(json['ruleSearch'])
           : null,
@@ -138,7 +159,7 @@ class BookSource {
       'lastUpdateTime': lastUpdateTime,
       'respondTime': respondTime,
       'jsLib': jsLib,
-      'concurrentRate': concurrentRate,
+      'concurrentRate': concurrentRateInt,
       'ruleSearch': ruleSearch?.toJson(),
       'ruleExplore': ruleExplore?.toJson(),
       'ruleBookInfo': ruleBookInfo?.toJson(),
@@ -148,6 +169,12 @@ class BookSource {
       'searchUrl': searchUrl,
     };
   }
+
+  @override
+  String getTag() => bookSourceName;
+
+  @override
+  String getKey() => bookSourceUrl;
 }
 
 /// 搜尋規則
