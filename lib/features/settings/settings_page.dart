@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/services/webdav_service.dart';
 import 'settings_provider.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -55,6 +57,46 @@ class SettingsPage extends StatelessWidget {
                     ScaffoldMessenger.of(
                       context,
                     ).showSnackBar(const SnackBar(content: Text('快取已清除')));
+                  }
+                },
+              ),
+
+              _buildSectionTitle('WebDAV 同步'),
+              ListTile(
+                title: const Text('WebDAV 伺服器設定'),
+                subtitle: const Text('設定 URL、帳號與密碼'),
+                leading: const Icon(Icons.cloud_outlined),
+                onTap: () => _showWebDavDialog(context),
+              ),
+              ListTile(
+                title: const Text('備份到 WebDAV'),
+                subtitle: const Text('上傳應用程式資料 (legado_backup.zip)'),
+                leading: const Icon(Icons.cloud_upload_outlined),
+                onTap: () async {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('開始備份到 WebDAV...')),
+                  );
+                  final success = await WebDAVService().backup();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(success ? '備份成功' : '備份失敗')),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                title: const Text('從 WebDAV 還原'),
+                subtitle: const Text('下載並復原應用程式資料'),
+                leading: const Icon(Icons.cloud_download_outlined),
+                onTap: () async {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('開始從 WebDAV 還原...')),
+                  );
+                  final success = await WebDAVService().restore();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(success ? '還原成功' : '還原失敗')),
+                    );
                   }
                 },
               ),
@@ -143,6 +185,62 @@ class SettingsPage extends StatelessWidget {
             ),
           ),
     );
+  }
+
+  Future<void> _showWebDavDialog(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    final urlCtrl = TextEditingController(text: prefs.getString('webdav_url') ?? '');
+    final userCtrl = TextEditingController(text: prefs.getString('webdav_user') ?? '');
+    final pwdCtrl = TextEditingController(text: prefs.getString('webdav_password') ?? '');
+
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('WebDAV 設定'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: urlCtrl,
+                  decoration: const InputDecoration(labelText: '伺服器網址 (包含協議與路徑)'),
+                ),
+                TextField(
+                  controller: userCtrl,
+                  decoration: const InputDecoration(labelText: '帳號'),
+                ),
+                TextField(
+                  controller: pwdCtrl,
+                  decoration: const InputDecoration(labelText: '密碼'),
+                  obscureText: true,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('取消'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  await prefs.setString('webdav_url', urlCtrl.text);
+                  await prefs.setString('webdav_user', userCtrl.text);
+                  await prefs.setString('webdav_password', pwdCtrl.text);
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('WebDAV 設定已保存')),
+                    );
+                  }
+                },
+                child: const Text('保存'),
+              ),
+            ],
+          );
+        },
+      );
+    }
   }
 
   Future<void> _restoreDatabase(

@@ -38,6 +38,17 @@ class BookDao {
     });
   }
 
+  /// 獲取所有書籍 (備份用)
+  Future<List<Book>> getAll() async {
+    final db = await _db;
+    final List<Map<String, dynamic>> maps = await db.query(tableName);
+    return List.generate(maps.length, (i) {
+      final map = Map<String, dynamic>.from(maps[i]);
+      _deserialize(map);
+      return Book.fromJson(map);
+    });
+  }
+
   /// 根據 URL 獲取書籍
   Future<Book?> getByUrl(String bookUrl) async {
     final db = await _db;
