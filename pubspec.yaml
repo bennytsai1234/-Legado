@@ -24,6 +24,7 @@ dependencies:
 
   # === HTML Parsing (replaces Android Jsoup) ===
   html: ^0.15.5
+  html_unescape: ^2.0.0
   csslib: ^1.0.0
 
   # === JSON Path ===
@@ -64,6 +65,8 @@ dependencies:
 
   # === Intl (date formatting, etc.) ===
   intl: ^0.19.0
+  fast_gbk: ^1.0.0
+  opencc: ^1.1.0
 
 dev_dependencies:
   flutter_test:
