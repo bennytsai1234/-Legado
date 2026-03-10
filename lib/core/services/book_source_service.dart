@@ -68,14 +68,15 @@ class BookSourceService {
     final rule = AnalyzeRule(source: source).setContent(resBody, baseUrl: analyzeUrl.url);
     
     // 解析詳情欄位
-    final infoRule = source.ruleBookInfo as BookInfoRule?;
+    final infoRule = source.ruleBookInfo;
     if (infoRule != null) {
-      book.name = rule.getString(infoRule.name ?? "") ?? book.name;
-      book.author = rule.getString(infoRule.author ?? "") ?? book.author;
-      book.kind = rule.getString(infoRule.kind ?? "") ?? book.kind;
-      book.coverUrl = rule.getString(infoRule.coverUrl ?? "") ?? book.coverUrl;
-      book.intro = rule.getString(infoRule.intro ?? "") ?? book.intro;
-      book.latestChapterTitle = rule.getString(infoRule.lastChapter ?? "") ?? book.latestChapterTitle;
+      book.name = rule.getString(infoRule.name ?? "");
+      if (book.name.isEmpty) book.name = "Unknown";
+      book.author = rule.getString(infoRule.author ?? "");
+      book.kind = rule.getString(infoRule.kind ?? "");
+      book.coverUrl = rule.getString(infoRule.coverUrl ?? "");
+      book.intro = rule.getString(infoRule.intro ?? "");
+      book.latestChapterTitle = rule.getString(infoRule.lastChapter ?? "");
     }
     
     return book;
@@ -95,7 +96,7 @@ class BookSourceService {
     if (resBody.isEmpty) return [];
 
     final rule = AnalyzeRule(source: source).setContent(resBody, baseUrl: analyzeUrl.url);
-    final tocRule = source.ruleToc as TocRule?;
+    final tocRule = source.ruleToc;
     if (tocRule == null) return [];
 
     final elements = rule.getElements(tocRule.chapterList ?? "");
@@ -104,8 +105,8 @@ class BookSourceService {
     for (int i = 0; i < elements.length; i++) {
       final itemRule = AnalyzeRule(source: source).setContent(elements[i], baseUrl: analyzeUrl.url);
       chapters.add(BookChapter(
-        url: itemRule.getString(tocRule.chapterUrl ?? "") ?? "",
-        title: itemRule.getString(tocRule.chapterName ?? "") ?? "",
+        url: itemRule.getString(tocRule.chapterUrl ?? ""),
+        title: itemRule.getString(tocRule.chapterName ?? ""),
         index: i,
         bookUrl: book.bookUrl,
       ));
@@ -127,12 +128,10 @@ class BookSourceService {
     if (resBody.isEmpty) return "";
 
     final rule = AnalyzeRule(source: source).setContent(resBody, baseUrl: analyzeUrl.url);
-    final contentRule = source.ruleContent as ContentRule?;
+    final contentRule = source.ruleContent;
     if (contentRule == null) return "";
 
-    var content = rule.getString(contentRule.content ?? "") ?? "";
-    
-    return content;
+    return rule.getString(contentRule.content ?? "");
   }
 
   /// 解析書籍列表 (搜尋或發現)
@@ -143,11 +142,8 @@ class BookSourceService {
     required bool isSearch,
   }) {
     final rule = AnalyzeRule(source: source).setContent(body, baseUrl: baseUrl);
-    final dynamic listRuleObj = isSearch ? source.ruleSearch : source.ruleExplore;
-    if (listRuleObj == null) return [];
-
-    // Cast listRule correctly based on type
-    final dynamic listRule = isSearch ? (listRuleObj as SearchRule) : (listRuleObj as ExploreRule);
+    final dynamic listRule = isSearch ? source.ruleSearch : source.ruleExplore;
+    if (listRule == null) return [];
 
     final elements = rule.getElements(listRule.bookList ?? "");
     final books = <SearchBook>[];
@@ -155,8 +151,8 @@ class BookSourceService {
     for (final element in elements) {
       final itemRule = AnalyzeRule(source: source).setContent(element, baseUrl: baseUrl);
       books.add(SearchBook(
-        bookUrl: itemRule.getString(listRule.bookUrl ?? "") ?? "",
-        name: itemRule.getString(listRule.name ?? "") ?? "Unknown",
+        bookUrl: itemRule.getString(listRule.bookUrl ?? ""),
+        name: itemRule.getString(listRule.name ?? ""),
         author: itemRule.getString(listRule.author ?? ""),
         kind: itemRule.getString(listRule.kind ?? ""),
         coverUrl: itemRule.getString(listRule.coverUrl ?? ""),

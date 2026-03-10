@@ -159,7 +159,6 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
           ),
           ElevatedButton(
             onPressed: () async {
-              final navigator = Navigator.of(context);
               final provider = context.read<SourceManagerProvider>();
               final input = _importController.text.trim();
               
@@ -171,13 +170,15 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
                   count = await provider.importFromText(input);
                 }
                 
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(count > 0 ? '成功匯入 $count 個書源' : '匯入失敗')),
                   );
+                  Navigator.pop(context);
                 }
+              } else {
+                Navigator.pop(context);
               }
-              navigator.pop();
             },
             child: const Text('匯入'),
           ),
@@ -188,10 +189,10 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
 
   Future<void> _importFromClipboard(BuildContext context) async {
     final data = await Clipboard.getData(Clipboard.kTextPlain);
-    if (data?.text != null) {
+    if (data?.text != null && context.mounted) {
       final provider = context.read<SourceManagerProvider>();
       final count = await provider.importFromText(data!.text!);
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(count > 0 ? '從剪貼簿匯入 $count 個書源' : '剪貼簿無有效書源')),
         );

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:html/dom.dart';
 import 'parsers/analyze_by_css.dart';
 import 'parsers/analyze_by_json_path.dart';
 import 'parsers/analyze_by_xpath.dart';
@@ -16,7 +15,6 @@ class AnalyzeRule {
   
   dynamic _content;
   String? _baseUrl;
-  bool _isJson = false;
 
   AnalyzeByXPath? _analyzeByXPath;
   AnalyzeByCss? _analyzeByJSoup;
@@ -28,23 +26,11 @@ class AnalyzeRule {
   AnalyzeRule setContent(dynamic content, {String? baseUrl}) {
     if (content == null) throw ArgumentError("Content cannot be null");
     _content = content;
-    if (content is String) {
-      _isJson = _checkIsJson(content);
-    } else if (content is Node) {
-      _isJson = false;
-    } else {
-      _isJson = true; // Assume Map/List is JSON
-    }
     _baseUrl = baseUrl;
     _analyzeByXPath = null;
     _analyzeByJSoup = null;
     _analyzeByJSonPath = null;
     return this;
-  }
-
-  bool _checkIsJson(String str) {
-    final s = str.trim();
-    return (s.startsWith('{') && s.endsWith('}')) || (s.startsWith('[') && s.endsWith(']'));
   }
 
   AnalyzeByXPath _getAnalyzeByXPath(dynamic o) {

@@ -1,17 +1,15 @@
-/// Legado Reader - App Entry Point
-/// iOS 閱讀器，靈感來自 Android Legado
-library;
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'shared/theme/app_theme.dart';
 import 'features/bookshelf/bookshelf_page.dart';
 import 'features/explore/explore_page.dart';
 import 'features/bookshelf/bookshelf_provider.dart';
+import 'features/explore/explore_provider.dart';
 import 'features/source_manager/source_manager_page.dart';
 import 'features/source_manager/source_manager_provider.dart';
 import 'features/search/search_provider.dart';
 import 'features/settings/settings_page.dart';
+import 'features/settings/settings_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +19,8 @@ void main() {
         ChangeNotifierProvider(create: (_) => SourceManagerProvider()),
         ChangeNotifierProvider(create: (_) => SearchProvider()),
         ChangeNotifierProvider(create: (_) => BookshelfProvider()),
+        ChangeNotifierProvider(create: (_) => ExploreProvider()),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
       ],
       child: const LegadoReaderApp(),
     ),
@@ -32,19 +32,21 @@ class LegadoReaderApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Legado Reader',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
-      home: const MainPage(),
+    return Consumer<SettingsProvider>(
+      builder: (context, settings, child) {
+        return MaterialApp(
+          title: 'Legado Reader',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: settings.themeMode,
+          home: const MainPage(),
+        );
+      },
     );
   }
 }
 
-/// Main Page with Bottom Navigation
-/// 對應 Android: ui/main/MainActivity.kt
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
 

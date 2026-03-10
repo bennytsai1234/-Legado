@@ -49,7 +49,7 @@ class _ReaderPageState extends State<ReaderPage> {
             backgroundColor: theme.backgroundColor,
             body: Stack(
               children: [
-                // 點擊區域：中央喚出控制項，兩側翻頁 (目前僅實作中央點擊)
+                // 點擊區域：中央喚出控制項，兩側翻頁
                 GestureDetector(
                   onTapUp: (details) {
                     final width = MediaQuery.of(context).size.width;
@@ -127,7 +127,7 @@ class _ReaderPageState extends State<ReaderPage> {
       left: 0,
       right: 0,
       child: Container(
-        color: Colors.black.withOpacity(0.8),
+        color: Colors.black.withValues(alpha: 0.8),
         padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
         child: AppBar(
           backgroundColor: Colors.transparent,
@@ -154,7 +154,7 @@ class _ReaderPageState extends State<ReaderPage> {
       left: 0,
       right: 0,
       child: Container(
-        color: Colors.black.withOpacity(0.8),
+        color: Colors.black.withValues(alpha: 0.8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -214,7 +214,7 @@ class _ReaderPageState extends State<ReaderPage> {
   void _showSettingsPanel(BuildContext context, ReaderProvider provider) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.black.withOpacity(0.9),
+      backgroundColor: Colors.black.withValues(alpha: 0.9),
       builder: (context) {
         return StatefulBuilder(builder: (context, setModalState) {
           return Container(
@@ -257,7 +257,7 @@ class _ReaderPageState extends State<ReaderPage> {
                             border: Border.all(color: provider.themeIndex == index ? Colors.blue : Colors.grey),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          center: Center(child: Text("文", style: TextStyle(color: t.textColor))),
+                          child: Center(child: Text("文", style: TextStyle(color: t.textColor))),
                         ),
                       );
                     },
@@ -270,8 +270,4 @@ class _ReaderPageState extends State<ReaderPage> {
       },
     );
   }
-}
-
-extension on Container {
-  Widget get center => Center(child: this);
 }

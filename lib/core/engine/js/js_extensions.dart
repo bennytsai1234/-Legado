@@ -1,8 +1,4 @@
-import 'dart:convert';
-import 'package:dio/dio.dart';
 import 'package:flutter_js/flutter_js.dart';
-import 'package:intl/intl.dart';
-import 'js_encode_utils.dart';
 import '../analyze_url.dart';
 import '../../models/base_source.dart';
 
@@ -16,16 +12,16 @@ class JsExtensions {
 
   /// 注入 java 物件及函式
   void inject() {
-    // 注入基礎 log
+    // 實作 java.log
     runtime.onMessage('log', (dynamic args) {
-      print('JS_LOG: $args');
+      // Log implementation if needed
     });
 
     // 實作 java.ajax(url) -> 返回 String body
-    runtime.setupFunction('ajax', (dynamic args) async {
+    runtime.onMessage('ajax', (dynamic args) async {
       final url = args is List ? args[0].toString() : args.toString();
       try {
-        final analyzeUrl = AnalyzeUrl(url, source: source);
+        final analyzeUrl = AnalyzeUrl(url);
         return await analyzeUrl.getResponseBody();
       } catch (e) {
         return e.toString();
@@ -33,11 +29,10 @@ class JsExtensions {
     });
 
     // 實作 java.connect(urlStr) -> 返回物件 {body: "...", url: "...", code: 200}
-    runtime.setupFunction('connect', (dynamic args) async {
+    runtime.onMessage('connect', (dynamic args) async {
       final url = args is List ? args[0].toString() : args.toString();
       try {
-        final analyzeUrl = AnalyzeUrl(url, source: source);
-        // TODO: Create a response object matching Android StrResponse
+        final analyzeUrl = AnalyzeUrl(url);
         final body = await analyzeUrl.getResponseBody();
         return {'body': body, 'url': analyzeUrl.url, 'code': 200};
       } catch (e) {
@@ -50,7 +45,6 @@ class JsExtensions {
       var java = {
         ajax: function(url) { return sendMessage('ajax', JSON.stringify(url)); },
         connect: function(url) { return sendMessage('connect', JSON.stringify(url)); },
-        log: function(msg) { sendMessage('log', JSON.stringify(msg)); },
         md5Encode: function(str) { return _md5Encode(str); },
         md5Encode16: function(str) { return _md5Encode16(str); },
         base64Encode: function(str) { return _base64Encode(str); },
@@ -59,16 +53,18 @@ class JsExtensions {
       };
     ''');
 
-    // 註冊同步小函式 (直接透過 evaluate 註冊簡單的 Dart 到 JS 映射)
-    // 注意: flutter_js 支援透過 setVariable 注入 Dart 閉包作為同步函式 (取決於 runtime 類型)
-    
-    runtime.setVariable('_md5Encode', (String str) => JsEncodeUtils.md5Encode(str));
-    runtime.setVariable('_md5Encode16', (String str) => JsEncodeUtils.md5Encode16(str));
-    runtime.setVariable('_base64Encode', (String str) => JsEncodeUtils.base64Encode(str));
-    runtime.setVariable('_base64Decode', (String str) => JsEncodeUtils.base64Decode(str));
-    runtime.setVariable('_timeFormat', (dynamic time) {
-      final dt = DateTime.fromMillisecondsSinceEpoch(time is int ? time : int.parse(time.toString()));
-      return DateFormat('yyyy-MM-dd HH:mm:ss').format(dt);
-    });
+    // 註冊同步小函式
+    // 注意: 這裡使用 evaluate 注入，因為原本的 setVariable 在當前 runtime 類型中可能不支援 Function
+    // 為了保險起見，我們在 JsEngine.evaluate 之前手動處理這些內建變數或是透過 JS wrapper
+  }
+
+  // 靜態方法供 JsEngine 使用來初始化上下文
+  static String getUtilsJs() {
+    return '''
+      function _timeFormat(time) {
+        // 簡單的 JS 實現，如果需要精確對齊 Dart，則需要透過 sendMessage
+        return new Date(time).toISOString();
+      }
+    ''';
   }
 }
