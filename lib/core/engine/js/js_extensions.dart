@@ -15,6 +15,10 @@ import '../../services/cookie_store.dart';
 import '../../services/cache_manager.dart';
 import 'package:fast_gbk/fast_gbk.dart';
 
+import 'dart:typed_data';
+import 'package:crypto/crypto.dart';
+import 'query_ttf.dart';
+
 /// JsExtensions - JS 橋接擴展
 /// 對應 Android: help/JsExtensions.kt
 class JsExtensions {
@@ -22,6 +26,7 @@ class JsExtensions {
   final BaseSource? source;
   final CookieStore _cookieStore = CookieStore();
   final CacheManager _cacheManager = CacheManager();
+  static final Map<String, QueryTTF> _ttfCache = {};
 
   JsExtensions(this.runtime, {this.source});
 
@@ -260,6 +265,78 @@ class JsExtensions {
       return _toNumChapter(args.toString());
     });
 
+    runtime.onMessage('queryTTF', (dynamic args) async {
+      try {
+        final dataStr = args[0].toString();
+        final useCache = args.length > 1 ? args[1] as bool : true;
+        
+        String key = "";
+        if (useCache) {
+          key = md5.convert(utf8.encode(dataStr)).toString();
+          if (_ttfCache.containsKey(key)) {
+            return key;
+          }
+        }
+        
+        Uint8List? buffer;
+        if (dataStr.startsWith('http')) {
+          final analyzeUrl = AnalyzeUrl(dataStr);
+          buffer = await analyzeUrl.getByteArray();
+        } else {
+          buffer = base64Decode(dataStr);
+        }
+        
+        if (buffer != null) {
+          final qTTF = QueryTTF(buffer);
+          final cacheKey = key.isNotEmpty ? key : md5.convert(buffer).toString();
+          _ttfCache[cacheKey] = qTTF;
+          return cacheKey;
+        }
+      } catch (e) {
+        debugPrint('queryTTF error: \$e');
+      }
+      return null;
+    });
+
+    runtime.onMessage('replaceFont', (dynamic args) {
+      try {
+        final text = args[0]?.toString() ?? "";
+        final errorKey = args[1]?.toString();
+        final correctKey = args[2]?.toString();
+        
+        final errorTTF = errorKey != null ? _ttfCache[errorKey] : null;
+        final correctTTF = correctKey != null ? _ttfCache[correctKey] : null;
+
+        if (errorTTF == null || correctTTF == null) return text;
+        
+        final StringBuffer result = StringBuffer();
+        for (final int codePoint in text.runes) {
+          if (errorTTF.isBlankUnicode(codePoint)) {
+            result.writeCharCode(codePoint);
+            continue;
+          }
+          String? glyf = errorTTF.getGlyfByUnicode(codePoint);
+          if (errorTTF.getGlyfIdByUnicode(codePoint) == 0) glyf = null;
+          
+          if (glyf == null) {
+            result.writeCharCode(codePoint);
+            continue;
+          }
+          
+          final int newCode = correctTTF.getUnicodeByGlyf(glyf);
+          if (newCode != 0) {
+            result.writeCharCode(newCode);
+          } else {
+            result.writeCharCode(codePoint);
+          }
+        }
+        return result.toString();
+      } catch (e) {
+        debugPrint('replaceFont error: \$e');
+        return args[0]?.toString() ?? "";
+      }
+    });
+
     // 注入 java 物件及其屬性
     runtime.evaluate('''
       var java = {
@@ -319,7 +396,18 @@ class JsExtensions {
         downloadFile: function(url) { return sendMessage('downloadFile', JSON.stringify(url)); },
         toNumChapter: function(s) { return sendMessage('_toNumChapter', JSON.stringify(s)); },
         importScript: function(path) { return sendMessage('importScript', JSON.stringify(path)); },
-        cacheFile: function(url, saveTime) { return sendMessage('cacheFile', JSON.stringify([url, saveTime])); }
+        cacheFile: function(url, saveTime) { return sendMessage('cacheFile', JSON.stringify([url, saveTime])); },
+        queryTTF: function(data, useCache) {
+          if (useCache === undefined) useCache = true;
+          var ttfId = sendMessage('queryTTF', JSON.stringify([data, useCache]));
+          if (!ttfId) return null;
+          return { _ttfId: ttfId };
+        },
+        replaceFont: function(text, errTTF, correctTTF) {
+          var eId = errTTF ? errTTF._ttfId : null;
+          var cId = correctTTF ? correctTTF._ttfId : null;
+          return sendMessage('replaceFont', JSON.stringify([text, eId, cId]));
+        }
       };
     ''');
 
