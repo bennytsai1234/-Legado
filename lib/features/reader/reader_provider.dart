@@ -8,6 +8,7 @@ import '../../core/models/book.dart';
 import '../../core/models/chapter.dart';
 import '../../core/models/book_source.dart';
 import '../../core/services/book_source_service.dart';
+import '../../core/services/tts_service.dart';
 import '../../shared/theme/app_theme.dart';
 import 'engine/text_page.dart';
 import 'engine/chapter_provider.dart';
@@ -37,6 +38,8 @@ class ReaderProvider extends ChangeNotifier {
   double _lineHeight = 1.5;
   int _themeIndex = 0;
   double _brightness = 1.0;
+  
+  final TTSService tts = TTSService();
 
   ReaderProvider({required this.book, int chapterIndex = 0}) {
     _currentChapterIndex = chapterIndex;
@@ -268,6 +271,30 @@ class ReaderProvider extends ChangeNotifier {
     saveSetting('brightness', _brightness);
   }
 
+
   Future<void> nextChapter() => loadChapter(_currentChapterIndex + 1);
   Future<void> prevChapter() => loadChapter(_currentChapterIndex - 1);
+
+  // === TTS Methods ===
+  void toggleTts() {
+    if (tts.isPlaying) {
+      tts.stop();
+    } else {
+      // Read from current page text
+      if (_pages.isNotEmpty && _currentPageIndex < _pages.length) {
+        final currentText = _pages.skip(_currentPageIndex)
+          .map((p) => p.lines.map((l) => l.text).join())
+          .join('\n');
+        tts.speak(currentText.isNotEmpty ? currentText : _content);
+      } else {
+        tts.speak(_content);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    tts.stop();
+    super.dispose();
+  }
 }
