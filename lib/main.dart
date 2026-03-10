@@ -3,15 +3,24 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'shared/theme/app_theme.dart';
 import 'features/bookshelf/bookshelf_page.dart';
 import 'features/explore/explore_page.dart';
 import 'features/source_manager/source_manager_page.dart';
+import 'features/source_manager/source_manager_provider.dart';
 import 'features/settings/settings_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const LegadoReaderApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => SourceManagerProvider()),
+      ],
+      child: const LegadoReaderApp(),
+    ),
+  );
 }
 
 class LegadoReaderApp extends StatelessWidget {
