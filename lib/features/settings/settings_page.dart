@@ -189,9 +189,15 @@ class SettingsPage extends StatelessWidget {
 
   Future<void> _showWebDavDialog(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
-    final urlCtrl = TextEditingController(text: prefs.getString('webdav_url') ?? '');
-    final userCtrl = TextEditingController(text: prefs.getString('webdav_user') ?? '');
-    final pwdCtrl = TextEditingController(text: prefs.getString('webdav_password') ?? '');
+    final urlCtrl = TextEditingController(
+      text: prefs.getString('webdav_url') ?? '',
+    );
+    final userCtrl = TextEditingController(
+      text: prefs.getString('webdav_user') ?? '',
+    );
+    final pwdCtrl = TextEditingController(
+      text: prefs.getString('webdav_password') ?? '',
+    );
 
     if (context.mounted) {
       showDialog(
@@ -204,7 +210,9 @@ class SettingsPage extends StatelessWidget {
               children: [
                 TextField(
                   controller: urlCtrl,
-                  decoration: const InputDecoration(labelText: '伺服器網址 (包含協議與路徑)'),
+                  decoration: const InputDecoration(
+                    labelText: '伺服器網址 (包含協議與路徑)',
+                  ),
                 ),
                 TextField(
                   controller: userCtrl,

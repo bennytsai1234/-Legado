@@ -230,13 +230,13 @@ class _ReaderPageState extends State<ReaderPage> {
                   listenable: provider.tts,
                   builder: (context, _) {
                     return _buildIconButton(
-                      provider.tts.isPlaying ? Icons.stop : Icons.headset, 
-                      provider.tts.isPlaying ? "停止朗讀" : "朗讀", 
+                      provider.tts.isPlaying ? Icons.stop : Icons.headset,
+                      provider.tts.isPlaying ? "停止朗讀" : "朗讀",
                       () {
                         provider.toggleTts();
-                      }
+                      },
                     );
-                  }
+                  },
                 ),
                 _buildIconButton(Icons.brightness_medium, "主題", () {
                   provider.setTheme(provider.themeIndex + 1);

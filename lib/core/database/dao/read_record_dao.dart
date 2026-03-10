@@ -1,34 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import '../app_database.dart';
-
-/// ReadRecord 模型
-class ReadRecord {
-  final String bookName;
-  final int readTime;
-  final int lastRead;
-  final String deviceId;
-
-  ReadRecord({
-    required this.bookName,
-    required this.readTime,
-    required this.lastRead,
-    this.deviceId = 'local',
-  });
-
-  Map<String, dynamic> toJson() => {
-    'bookName': bookName,
-    'readTime': readTime,
-    'lastRead': lastRead,
-    'deviceId': deviceId,
-  };
-
-  factory ReadRecord.fromJson(Map<String, dynamic> json) => ReadRecord(
-    bookName: json['bookName'],
-    readTime: json['readTime'],
-    lastRead: json['lastRead'],
-    deviceId: json['deviceId'],
-  );
-}
+import '../../models/read_record.dart';
 
 /// ReadRecordShow 模型 (SQL result)
 class ReadRecordShow {

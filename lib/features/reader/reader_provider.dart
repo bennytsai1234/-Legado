@@ -38,7 +38,7 @@ class ReaderProvider extends ChangeNotifier {
   double _lineHeight = 1.5;
   int _themeIndex = 0;
   double _brightness = 1.0;
-  
+
   final TTSService tts = TTSService();
 
   ReaderProvider({required this.book, int chapterIndex = 0}) {
@@ -156,7 +156,7 @@ class ReaderProvider extends ChangeNotifier {
         _isLoading = false;
         notifyListeners();
       }
-      
+
       // 非同步預載下一章
       _preloadNextChapter(index + 1);
     }
@@ -164,9 +164,12 @@ class ReaderProvider extends ChangeNotifier {
 
   Future<void> _preloadNextChapter(int nextIndex) async {
     if (nextIndex >= _chapters.length || _source == null) return;
-    
+
     try {
-      String? cachedContent = await _chapterDao.getContent(book.bookUrl, nextIndex);
+      String? cachedContent = await _chapterDao.getContent(
+        book.bookUrl,
+        nextIndex,
+      );
       if (cachedContent == null || cachedContent.isEmpty) {
         final rawContent = await _service.getContent(
           _source!,
@@ -271,7 +274,6 @@ class ReaderProvider extends ChangeNotifier {
     saveSetting('brightness', _brightness);
   }
 
-
   Future<void> nextChapter() => loadChapter(_currentChapterIndex + 1);
   Future<void> prevChapter() => loadChapter(_currentChapterIndex - 1);
 
@@ -282,9 +284,10 @@ class ReaderProvider extends ChangeNotifier {
     } else {
       // Read from current page text
       if (_pages.isNotEmpty && _currentPageIndex < _pages.length) {
-        final currentText = _pages.skip(_currentPageIndex)
-          .map((p) => p.lines.map((l) => l.text).join())
-          .join('\n');
+        final currentText = _pages
+            .skip(_currentPageIndex)
+            .map((p) => p.lines.map((l) => l.text).join())
+            .join('\n');
         tts.speak(currentText.isNotEmpty ? currentText : _content);
       } else {
         tts.speak(_content);

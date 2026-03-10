@@ -55,6 +55,21 @@ class BookSourceDao {
     });
   }
 
+  /// 根據 URL 獲取書源
+  Future<BookSource?> getByUrl(String url) async {
+    final db = await _db;
+    final List<Map<String, dynamic>> maps = await db.query(
+      tableName,
+      where: 'bookSourceUrl = ?',
+      whereArgs: [url],
+    );
+
+    if (maps.isEmpty) return null;
+    final map = Map<String, dynamic>.from(maps.first);
+    _deserializeRules(map);
+    return BookSource.fromJson(map);
+  }
+
   /// 獲取所有啟用的書源
   Future<List<BookSource>> getEnabled() async {
     final db = await _db;

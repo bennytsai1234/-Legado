@@ -18,6 +18,7 @@ import '../models/book_source.dart';
 import '../models/replace_rule.dart';
 import '../models/bookmark.dart';
 import '../models/read_record.dart';
+import '../models/book_group.dart';
 
 /// WebDAVService - WebDAV 備份與還原服務
 /// 對應 Android: help/AppWebDav.kt
@@ -56,7 +57,7 @@ class WebDAVService extends ChangeNotifier {
 
     try {
       final client = await _getClient();
-      
+
       // 1. 取得資料庫內容
       final books = await _bookDao.getAll();
       final sources = await _sourceDao.getAll();
@@ -69,17 +70,47 @@ class WebDAVService extends ChangeNotifier {
       final encoder = ZipFileEncoder();
       final dir = await getTemporaryDirectory();
       final zipPath = '${dir.path}/legado_backup.zip';
-      
+
       // We encode JSON directly into memory or files
       encoder.create(zipPath);
-      
-      _addJsonToZip(encoder, 'books.json', books.map((e) => e.toJson()).toList(), dir);
-      _addJsonToZip(encoder, 'bookSources.json', sources.map((e) => e?.toJson()).where((e) => e != null).toList(), dir);
-      _addJsonToZip(encoder, 'replaceRules.json', rules.map((e) => e.toJson()).toList(), dir);
-      _addJsonToZip(encoder, 'bookGroups.json', groups.map((e) => e.toJson()).toList(), dir);
-      _addJsonToZip(encoder, 'bookmarks.json', bookmarks.map((e) => e.toJson()).toList(), dir);
-      _addJsonToZip(encoder, 'readRecords.json', records.map((e) => e.toJson()).toList(), dir);
-      
+
+      _addJsonToZip(
+        encoder,
+        'books.json',
+        books.map((e) => e.toJson()).toList(),
+        dir,
+      );
+      _addJsonToZip(
+        encoder,
+        'bookSources.json',
+        sources.map((e) => e.toJson()).toList(),
+        dir,
+      );
+      _addJsonToZip(
+        encoder,
+        'replaceRules.json',
+        rules.map((e) => e.toJson()).toList(),
+        dir,
+      );
+      _addJsonToZip(
+        encoder,
+        'bookGroups.json',
+        groups.map((e) => e.toJson()).toList(),
+        dir,
+      );
+      _addJsonToZip(
+        encoder,
+        'bookmarks.json',
+        bookmarks.map((e) => e.toJson()).toList(),
+        dir,
+      );
+      _addJsonToZip(
+        encoder,
+        'readRecords.json',
+        records.map((e) => e.toJson()).toList(),
+        dir,
+      );
+
       encoder.close();
 
       // 3. 確保 WebDAV 目錄存在
@@ -92,10 +123,10 @@ class WebDAVService extends ChangeNotifier {
       // 4. 上傳
       final localFile = File(zipPath);
       await client.writeFromFile(localFile.path, '/legado/legado_backup.zip');
-      
+
       // 清理暫存檔
       if (await localFile.exists()) await localFile.delete();
-      
+
       _isSyncing = false;
       notifyListeners();
       return true;
@@ -107,7 +138,12 @@ class WebDAVService extends ChangeNotifier {
     }
   }
 
-  void _addJsonToZip(ZipFileEncoder encoder, String fileName, List<dynamic> data, Directory dir) {
+  void _addJsonToZip(
+    ZipFileEncoder encoder,
+    String fileName,
+    List<dynamic> data,
+    Directory dir,
+  ) {
     if (data.isEmpty) return;
     final file = File('${dir.path}/$fileName');
     file.writeAsStringSync(jsonEncode(data));
@@ -123,11 +159,11 @@ class WebDAVService extends ChangeNotifier {
 
     try {
       final client = await _getClient();
-      
+
       final dir = await getTemporaryDirectory();
       final zipPath = '${dir.path}/legado_backup_restored.zip';
       final localFile = File(zipPath);
-      
+
       // 1. 下載
       try {
         await client.read2File('/legado/legado_backup.zip', localFile.path);
@@ -144,15 +180,15 @@ class WebDAVService extends ChangeNotifier {
         if (!file.isFile) continue;
         final data = utf8.decode(file.content as List<int>);
         try {
-           final List<dynamic> jsonList = jsonDecode(data);
-           await _importData(file.name, jsonList);
-        } catch(e) {
-           debugPrint('Parse Error for \${file.name}: \$e');
+          final List<dynamic> jsonList = jsonDecode(data);
+          await _importData(file.name, jsonList);
+        } catch (e) {
+          debugPrint('Parse Error for \${file.name}: \$e');
         }
       }
 
       if (await localFile.exists()) await localFile.delete();
-      
+
       _isSyncing = false;
       notifyListeners();
       return true;
@@ -163,32 +199,32 @@ class WebDAVService extends ChangeNotifier {
       return false;
     }
   }
-  
+
   Future<void> _importData(String fileName, List<dynamic> list) async {
     for (var item in list) {
-       if (item is Map<String, dynamic>) {
-          switch (fileName) {
-            case 'books.json':
-              await _bookDao.insertOrUpdate(Book.fromJson(item));
-              break;
-            case 'bookSources.json':
-              await _sourceDao.insertOrUpdate(BookSource.fromJson(item));
-              break;
-            case 'replaceRules.json':
-              await _ruleDao.insertOrUpdate(ReplaceRule.fromJson(item));
-              break;
-            case 'bookGroups.json':
-              await _groupDao.insert(BookGroup.fromJson(item));
-              break;
-            case 'bookmarks.json':
-              await _bookmarkDao.insert(Bookmark.fromJson(item));
-              break;
-            case 'readRecords.json':
-              await _recordDao.insert(ReadRecord.fromJson(item));
-              break;
-             // note: BookGroupDao missing insert, skip for now or add later
-          }
-       }
+      if (item is Map<String, dynamic>) {
+        switch (fileName) {
+          case 'books.json':
+            await _bookDao.insertOrUpdate(Book.fromJson(item));
+            break;
+          case 'bookSources.json':
+            await _sourceDao.insertOrUpdate(BookSource.fromJson(item));
+            break;
+          case 'replaceRules.json':
+            await _ruleDao.insertOrUpdate(ReplaceRule.fromJson(item));
+            break;
+          case 'bookGroups.json':
+            await _groupDao.insert(BookGroup.fromJson(item));
+            break;
+          case 'bookmarks.json':
+            await _bookmarkDao.insert(Bookmark.fromJson(item));
+            break;
+          case 'readRecords.json':
+            await _recordDao.insert(ReadRecord.fromJson(item));
+            break;
+          // note: BookGroupDao missing insert, skip for now or add later
+        }
+      }
     }
   }
 }
