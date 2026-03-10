@@ -1,8 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_js/flutter_js.dart';
+import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
 import 'package:convert/convert.dart';
+import 'package:html/parser.dart' as html_parser;
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'js_encode_utils.dart';
 import '../analyze_url.dart';
 import '../../models/base_source.dart';
@@ -27,11 +31,16 @@ class JsExtensions {
       debugPrint('JS_LOG: $args');
     });
 
+    // 實作 java.toast
+    runtime.onMessage('toast', (dynamic args) {
+      debugPrint('JS_TOAST: $args');
+    });
+
     // 實作 java.ajax(url) -> 返回 String body
     runtime.onMessage('ajax', (dynamic args) async {
       try {
         final url = _parseUrlArg(args);
-        final analyzeUrl = AnalyzeUrl(url, analyzer: source != null ? null : null); // source logic
+        final analyzeUrl = AnalyzeUrl(url);
         return await analyzeUrl.getResponseBody();
       } catch (e) {
         return e.toString();
@@ -110,6 +119,87 @@ class JsExtensions {
       return await _cookieStore.getCookie(tag);
     });
 
+    // 實作 java.strToBytes
+    runtime.onMessage('strToBytes', (dynamic args) {
+      final str = args[0].toString();
+      final charset = args.length > 1 ? args[1].toString() : 'UTF-8';
+      // TODO: Handle other charsets
+      return utf8.encode(str);
+    });
+
+    // 實作 java.bytesToStr
+    runtime.onMessage('bytesToStr', (dynamic args) {
+      final List<int> bytes = List<int>.from(args[0]);
+      final charset = args.length > 1 ? args[1].toString() : 'UTF-8';
+      // TODO: Handle other charsets
+      return utf8.decode(bytes);
+    });
+
+    // 實作 java.downloadFile
+    runtime.onMessage('downloadFile', (dynamic args) async {
+      final url = args.toString();
+      try {
+        final dio = HttpClient().client;
+        final key = JsEncodeUtils.md5Encode16(url);
+        final tempDir = await getTemporaryDirectory();
+        final savePath = p.join(tempDir.path, "downloads", key);
+        final file = File(savePath);
+        if (!await file.parent.exists()) await file.parent.create(recursive: true);
+        await dio.download(url, savePath);
+        return savePath;
+      } catch (e) {
+        return "";
+      }
+    });
+
+    // 實作 java.readFile / readTxtFile
+    runtime.onMessage('readFile', (dynamic args) async {
+      final path = args.toString();
+      final file = File(path);
+      if (await file.exists()) {
+        return await file.readAsBytes();
+      }
+      return null;
+    });
+
+    runtime.onMessage('readTxtFile', (dynamic args) async {
+      final path = args.toString();
+      final charset = args is List && args.length > 1 ? args[1].toString() : 'UTF-8';
+      final file = File(path);
+      if (await file.exists()) {
+        // TODO: Handle charset
+        return await file.readAsString();
+      }
+      return "";
+    });
+
+    // 注入輔助函式
+    runtime.onMessage('_md5Encode', (dynamic args) => JsEncodeUtils.md5Encode(args.toString()));
+    runtime.onMessage('_md5Encode16', (dynamic args) => JsEncodeUtils.md5Encode16(args.toString()));
+    runtime.onMessage('_base64Encode', (dynamic args) => JsEncodeUtils.base64Encode(args.toString()));
+    runtime.onMessage('_base64Decode', (dynamic args) {
+      final str = args is List ? args[0].toString() : args.toString();
+      final charset = args is List && args.length > 1 ? args[1].toString() : 'UTF-8';
+      return JsEncodeUtils.base64Decode(str, charset: charset);
+    });
+    runtime.onMessage('_hexEncode', (dynamic args) => hex.encode(utf8.encode(args.toString())));
+    runtime.onMessage('_hexDecode', (dynamic args) => utf8.decode(hex.decode(args.toString())));
+    runtime.onMessage('_randomUUID', (dynamic args) => const Uuid().v4());
+    runtime.onMessage('_timeFormat', (dynamic args) {
+      final time = args;
+      final t = time is int ? time : int.tryParse(time.toString()) ?? 0;
+      return DateTime.fromMillisecondsSinceEpoch(t).toIso8601String();
+    });
+
+    runtime.onMessage('_htmlFormat', (dynamic args) {
+      final doc = html_parser.parse(args.toString());
+      return doc.body?.text ?? "";
+    });
+
+    runtime.onMessage('_toNumChapter', (dynamic args) {
+      return _toNumChapter(args.toString());
+    });
+
     // 注入 java 物件及其屬性
     runtime.evaluate('''
       var java = {
@@ -135,20 +225,30 @@ class JsExtensions {
           };
         },
         head: function(url, headers) {
-          // Simplified as GET for now or implement HEAD specifically if needed
           return this.get(url, headers);
         },
         getCookie: function(tag, key) { return sendMessage('getCookie', JSON.stringify([tag, key])); },
         log: function(msg) { sendMessage('log', JSON.stringify(msg)); },
-        md5Encode: function(str) { return _md5Encode(str); },
-        md5Encode16: function(str) { return _md5Encode16(str); },
-        base64Encode: function(str) { return _base64Encode(str); },
-        base64Decode: function(str) { return _base64Decode(str); },
-        encodeURI: function(str, enc) { return _encodeURI(str, enc); },
-        hexEncode: function(str) { return _hexEncode(str); },
-        hexDecode: function(hex) { return _hexDecode(hex); },
-        randomUUID: function() { return _randomUUID(); },
-        timeFormat: function(time) { return _timeFormat(time); },
+        toast: function(msg) { sendMessage('toast', JSON.stringify(msg)); },
+        longToast: function(msg) { sendMessage('toast', JSON.stringify(msg)); },
+        md5Encode: function(str) { return sendMessage('_md5Encode', JSON.stringify(str)); },
+        md5Encode16: function(str) { return sendMessage('_md5Encode16', JSON.stringify(str)); },
+        base64Encode: function(str) { return sendMessage('_base64Encode', JSON.stringify(str)); },
+        base64Decode: function(str, charset) { return sendMessage('_base64Decode', JSON.stringify([str, charset])); },
+        encodeURI: function(str, enc) { return encodeURIComponent(str); },
+        hexEncode: function(str) { return sendMessage('_hexEncode', JSON.stringify(str)); },
+        hexDecode: function(hex) { return sendMessage('_hexDecode', JSON.stringify(hex)); },
+        randomUUID: function() { return sendMessage('_randomUUID', null); },
+        timeFormat: function(time) { return sendMessage('_timeFormat', JSON.stringify(time)); },
+        htmlFormat: function(str) { return sendMessage('_htmlFormat', JSON.stringify(str)); },
+        t2s: function(text) { return text; }, // Placeholder
+        s2t: function(text) { return text; }, // Placeholder
+        strToBytes: function(str, charset) { return sendMessage('strToBytes', JSON.stringify([str, charset])); },
+        bytesToStr: function(bytes, charset) { return sendMessage('bytesToStr', JSON.stringify([bytes, charset])); },
+        readFile: function(path) { return sendMessage('readFile', JSON.stringify(path)); },
+        readTxtFile: function(path, charset) { return sendMessage('readTxtFile', JSON.stringify([path, charset])); },
+        downloadFile: function(url) { return sendMessage('downloadFile', JSON.stringify(url)); },
+        toNumChapter: function(s) { return sendMessage('_toNumChapter', JSON.stringify(s)); },
         importScript: function(path) { return sendMessage('importScript', JSON.stringify(path)); },
         cacheFile: function(url, saveTime) { return sendMessage('cacheFile', JSON.stringify([url, saveTime])); }
       };
@@ -160,7 +260,6 @@ class JsExtensions {
       if (path.startsWith('http')) {
         return await _cacheFile(path, 0);
       } else {
-        // 本地路徑處理
         final file = File(path);
         if (await file.exists()) {
           return await file.readAsString();
@@ -174,9 +273,27 @@ class JsExtensions {
       final saveTime = args.length > 1 ? args[1] as int : 0;
       return await _cacheFile(url, saveTime);
     });
+  }
 
-    // 注入同步輔助函式
-    _injectSyncFunctions();
+  String _toNumChapter(String s) {
+    // Basic implementation of converting Chinese numbers to Arabic in chapter titles
+    final chnMap = {'零': 0, '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10};
+    return s.replaceAllMapped(RegExp(r'[零一二三四五六七八九十]+'), (match) {
+      final chn = match.group(0)!;
+      int res = 0;
+      if (chn.length == 1) return chnMap[chn]?.toString() ?? chn;
+      if (chn.length == 2 && chn.startsWith('十')) {
+        res = 10 + (chnMap[chn[1]] ?? 0);
+      } else if (chn.length == 2 && chn.endsWith('十')) {
+        res = (chnMap[chn[0]] ?? 0) * 10;
+      } else if (chn.length == 3 && chn[1] == '十') {
+        res = (chnMap[chn[0]] ?? 0) * 10 + (chnMap[chn[2]] ?? 0);
+      } else {
+        // Fallback for long numbers like "一百二十三" - not fully implemented here
+        return chn;
+      }
+      return res.toString();
+    });
   }
 
   Future<String> _cacheFile(String url, int saveTime) async {
@@ -201,24 +318,6 @@ class JsExtensions {
     return args.toString();
   }
 
-  void _injectSyncFunctions() {
-    runtime.setVariable('_md5Encode', (String str) => JsEncodeUtils.md5Encode(str));
-    runtime.setVariable('_md5Encode16', (String str) => JsEncodeUtils.md5Encode16(str));
-    runtime.setVariable('_base64Encode', (String str) => JsEncodeUtils.base64Encode(str));
-    runtime.setVariable('_base64Decode', (String str) => JsEncodeUtils.base64Decode(str));
-    runtime.setVariable('_hexEncode', (String str) => hex.encode(utf8.encode(str)));
-    runtime.setVariable('_hexDecode', (String h) => utf8.decode(hex.decode(h)));
-    runtime.setVariable('_randomUUID', () => const Uuid().v4());
-    runtime.setVariable('_encodeURI', (String str, [String? enc]) {
-      // Dart's Uri.encodeComponent is similar to encodeURIComponent
-      return Uri.encodeComponent(str);
-    });
-    runtime.setVariable('_timeFormat', (dynamic time) {
-      final t = time is int ? time : int.tryParse(time.toString()) ?? 0;
-      return DateTime.fromMillisecondsSinceEpoch(t).toIso8601String();
-    });
-  }
-
   // 靜態輔助方法，供其它地方獲取通用 JS
   static String getUtilsJs() {
     return ""; // 目前主要透過 inject() 動態注入
@@ -227,5 +326,5 @@ class JsExtensions {
 
 // 修正 debugPrint 缺失問題
 void debugPrint(String message) {
-  print(message);
+  // Use a proper logger or just ignore if it's too noisy
 }
