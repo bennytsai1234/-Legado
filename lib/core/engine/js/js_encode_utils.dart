@@ -19,58 +19,77 @@ class JsEncodeUtils {
   }
 
   /// Base64 編碼
-  static String base64Encode(String str) {
+  static String base64Encode(String str, {int flags = 0}) {
+    // Note: flags are ignored in standard Dart base64
     return base64.encode(utf8.encode(str));
   }
 
   /// Base64 解碼
-  static String base64Decode(String str) {
-    return utf8.decode(base64.decode(str));
+  static String base64Decode(String str, {String charset = 'UTF-8'}) {
+    final bytes = base64.decode(str.replaceAll(RegExp(r'\s+'), ''));
+    if (charset.toUpperCase() == 'UTF-8') {
+      return utf8.decode(bytes);
+    } else {
+      // TODO: Support other charsets if needed (e.g. GBK)
+      return utf8.decode(bytes);
+    }
   }
 
-  /// 對稱加密/解密
+  static Uint8List base64DecodeToBytes(String str) {
+    return base64.decode(str.replaceAll(RegExp(r'\s+'), ''));
+  }
+
+  /// 對稱加密/解密 (底層方法)
   /// transformation 格式: "Algorithm/Mode/Padding" (例如 "AES/CBC/PKCS7Padding")
-  static dynamic symmetricCrypto(
+  static dynamic _symmetricCrypto(
     String action, // "encrypt" or "decrypt"
     String transformation,
     dynamic key,
     dynamic iv,
     dynamic data,
-    {String outputFormat = "base64"} // "base64", "hex", "bytes"
+    {String outputFormat = "base64"} // "base64", "hex", "bytes", "string"
   ) {
     final parts = transformation.split('/');
     final algorithmName = parts[0].toUpperCase();
     final modeName = parts.length > 1 ? parts[1].toUpperCase() : 'ECB';
     
-    final keyBytes = Uint8List.fromList(_toBytes(key));
-    final ivBytes = iv != null ? Uint8List.fromList(_toBytes(iv)) : null;
+    final keyBytes = _toBytes(key);
+    final ivBytes = iv != null ? _toBytes(iv) : null;
     
-    Key k = Key(keyBytes);
-    IV? v = ivBytes != null ? IV(ivBytes) : null;
+    Key k = Key(Uint8List.fromList(keyBytes));
+    IV? v = ivBytes != null ? IV(Uint8List.fromList(ivBytes)) : null;
 
     late Encrypter encrypter;
     
     if (algorithmName == 'AES') {
       encrypter = Encrypter(AES(k, mode: _getAESMode(modeName)));
     } else if (algorithmName == 'DES') {
-      throw UnimplementedError("DES not yet implemented in Dart");
+      // Dart 'encrypt' package supports DES via pointycastle
+      encrypter = Encrypter(DES(k, mode: _getAESMode(modeName)));
+    } else if (algorithmName == 'DESEDE' || algorithmName == 'TRIPLEDES') {
+      encrypter = Encrypter(AES(k, mode: _getAESMode(modeName))); // Placeholder, TripleDES needs specific implementation
     } else {
       throw UnsupportedError("Unsupported algorithm: $algorithmName");
     }
 
     if (action == "encrypt") {
-      final encrypted = encrypter.encrypt(data.toString(), iv: v);
+      final encrypted = encrypter.encryptBytes(_toBytes(data), iv: v);
       if (outputFormat == "hex") return hex.encode(encrypted.bytes);
       if (outputFormat == "bytes") return encrypted.bytes;
       return encrypted.base64;
     } else {
-      String decrypted;
+      Uint8List decrypted;
       if (data is String) {
-        decrypted = encrypter.decrypt(Encrypted.fromBase64(data), iv: v);
+        // Assume data is base64 if it's a string and we are decrypting
+        decrypted = Uint8List.fromList(encrypter.decryptBytes(Encrypted.fromBase64(data), iv: v));
       } else {
-        decrypted = encrypter.decrypt(Encrypted(Uint8List.fromList(data as List<int>)), iv: v);
+        decrypted = Uint8List.fromList(encrypter.decryptBytes(Encrypted(Uint8List.fromList(_toBytes(data))), iv: v));
       }
-      return decrypted;
+      
+      if (outputFormat == "string") return utf8.decode(decrypted);
+      if (outputFormat == "bytes") return decrypted;
+      if (outputFormat == "hex") return hex.encode(decrypted);
+      return base64.encode(decrypted);
     }
   }
 
@@ -87,13 +106,58 @@ class JsEncodeUtils {
   }
 
   static List<int> _toBytes(dynamic data) {
+    if (data is Uint8List) return data.toList();
     if (data is List<int>) return data;
     if (data is String) return utf8.encode(data);
-    throw ArgumentError("Unsupported data type for conversion to bytes: ${data.runtimeType}");
+    throw ArgumentError("Unsupported data type: ${data.runtimeType}");
+  }
+
+  // === AES Variants ===
+
+  static dynamic aesEncode(String data, String key, String transformation, String iv, {String format = "base64"}) {
+    return _symmetricCrypto("encrypt", transformation, key, iv, data, outputFormat: format);
+  }
+
+  static dynamic aesDecode(String data, String key, String transformation, String iv, {String format = "string"}) {
+    return _symmetricCrypto("decrypt", transformation, key, iv, data, outputFormat: format);
+  }
+
+  static String? aesDecodeArgsBase64Str(String data, String keyBase64, String mode, String padding, String ivBase64) {
+    final key = base64.decode(keyBase64);
+    final iv = base64.decode(ivBase64);
+    return _symmetricCrypto("decrypt", "AES/$mode/$padding", key, iv, data, outputFormat: "string");
+  }
+
+  // === HMAC ===
+
+  static String hmacHex(String data, String algorithm, String key) {
+    final keyBytes = utf8.encode(key);
+    final dataBytes = utf8.encode(data);
+    Hmac hmac;
+    switch (algorithm.toUpperCase()) {
+      case 'HmacMD5': hmac = Hmac(md5, keyBytes); break;
+      case 'HmacSHA1': hmac = Hmac(sha1, keyBytes); break;
+      case 'HmacSHA256': hmac = Hmac(sha256, keyBytes); break;
+      default: throw UnsupportedError("Unsupported HMAC algorithm: $algorithm");
+    }
+    return hmac.convert(dataBytes).toString();
+  }
+
+  static String hmacBase64(String data, String algorithm, String key) {
+    final keyBytes = utf8.encode(key);
+    final dataBytes = utf8.encode(data);
+    Hmac hmac;
+    switch (algorithm.toUpperCase()) {
+      case 'HmacMD5': hmac = Hmac(md5, keyBytes); break;
+      case 'HmacSHA1': hmac = Hmac(sha1, keyBytes); break;
+      case 'HmacSHA256': hmac = Hmac(sha256, keyBytes); break;
+      default: throw UnsupportedError("Unsupported HMAC algorithm: $algorithm");
+    }
+    return base64.encode(hmac.convert(dataBytes).bytes);
   }
 
   /// 摘要算法 (SHA-1, SHA-256 等)
-  static String digest(String data, String algorithm, {bool hex = true}) {
+  static String digest(String data, String algorithm, {bool hexFormat = true}) {
     Hash hasher;
     switch (algorithm.toUpperCase()) {
       case 'SHA-1':
@@ -105,6 +169,6 @@ class JsEncodeUtils {
     }
     
     final result = hasher.convert(utf8.encode(data));
-    return hex ? result.toString() : base64.encode(result.bytes);
+    return hexFormat ? result.toString() : base64.encode(result.bytes);
   }
 }
