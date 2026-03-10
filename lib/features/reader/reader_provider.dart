@@ -153,6 +153,27 @@ class ReaderProvider extends ChangeNotifier {
         _isLoading = false;
         notifyListeners();
       }
+      
+      // 非同步預載下一章
+      _preloadNextChapter(index + 1);
+    }
+  }
+
+  Future<void> _preloadNextChapter(int nextIndex) async {
+    if (nextIndex >= _chapters.length || _source == null) return;
+    
+    try {
+      String? cachedContent = await _chapterDao.getContent(book.bookUrl, nextIndex);
+      if (cachedContent == null || cachedContent.isEmpty) {
+        final rawContent = await _service.getContent(
+          _source!,
+          book,
+          _chapters[nextIndex],
+        );
+        await _chapterDao.saveContent(book.bookUrl, nextIndex, rawContent);
+      }
+    } catch (e) {
+      // 忽略預載錯誤
     }
   }
 
