@@ -13,6 +13,11 @@ library;
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
+import 'dao/bookmark_dao.dart';
+import 'dao/cache_dao.dart';
+import 'dao/read_record_dao.dart';
+import 'dao/book_group_dao.dart';
+
 // TODO: Phase 1~2 實作
 // - [ ] 建立所有表結構
 // - [ ] 書源 CRUD
@@ -127,6 +132,12 @@ class AppDatabase {
         PRIMARY KEY (bookUrl, "index")
       )
     ''');
+
+    // DAOs tables
+    await db.execute(BookmarkDao.createTableQuery());
+    await db.execute(CacheDao.createTableQuery());
+    await db.execute(ReadRecordDao.createTableQuery());
+    await db.execute(BookGroupDao.createTableQuery());
 
     // Chapter content cache
     await db.execute('''
