@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'rule_analyzer.dart';
+import 'analyze_rule.dart';
 
 /// AnalyzeUrl - URL 構建與請求引擎
 /// 對應 Android: model/analyzeRule/AnalyzeUrl.kt (29KB)
@@ -8,6 +10,7 @@ class AnalyzeUrl {
   final String? key;
   final int? page;
   final String? baseUrl;
+  final AnalyzeRule? analyzer;
   
   String ruleUrl = "";
   String url = "";
@@ -23,6 +26,7 @@ class AnalyzeUrl {
     this.key,
     this.page,
     this.baseUrl,
+    this.analyzer,
     Map<String, dynamic>? initialHeaders,
   }) {
     if (initialHeaders != null) {
@@ -33,14 +37,37 @@ class AnalyzeUrl {
 
   void _initUrl() {
     ruleUrl = mUrl;
-    // 1. 替換變數 {{key}}, {{page}}
-    _replaceKeyPage();
-    // 2. 解析 Legado URL 格式: url, {options}
+    // 1. 執行 JS 替換 (if any)
+    _analyzeJs();
+    // 2. 替換變數 {{key}}, {{page}}, {{js}}
+    _replaceKeyPageJs();
+    // 3. 解析 Legado URL 格式: url, {options}
     _analyzeUrl();
   }
 
-  void _replaceKeyPage() {
+  void _analyzeJs() {
+    // Legado 支援 @js: 內嵌在 URL 中
+    if (ruleUrl.contains('@js:')) {
+      final parts = ruleUrl.split('@js:');
+      if (parts.length > 1 && analyzer != null) {
+        final jsCode = parts[1];
+        final result = analyzer!.evalJS(jsCode, parts[0]);
+        ruleUrl = result?.toString() ?? parts[0];
+      }
+    }
+  }
+
+  void _replaceKeyPageJs() {
     var result = ruleUrl;
+    
+    // 替換 {{js}}
+    if (result.contains('{{') && result.contains('}}') && analyzer != null) {
+      final ra = RuleAnalyzer(result);
+      result = ra.innerRuleRange('{{', '}}', fr: (js) {
+        return analyzer!.evalJS(js, null)?.toString() ?? "";
+      });
+    }
+
     if (key != null) {
       result = result.replaceAll('{{key}}', key!);
     }
@@ -80,6 +107,10 @@ class AnalyzeUrl {
         }
         if (options.containsKey('body')) {
           body = options['body'];
+          if (body is String && analyzer != null) {
+             // 替換 body 中的變數
+             body = _replaceInString(body as String);
+          }
         }
         if (options.containsKey('charset')) {
           charset = options['charset'].toString();
@@ -107,17 +138,25 @@ class AnalyzeUrl {
     }
   }
 
+  String _replaceInString(String str) {
+    var result = str;
+    if (key != null) result = result.replaceAll('{{key}}', key!);
+    if (page != null) result = result.replaceAll('{{page}}', page.toString());
+    return result;
+  }
+
   /// Execute the HTTP request and return response body
   Future<String> getResponseBody() async {
     final dio = Dio();
-    // TODO: Set custom headers from headerMap
-    // TODO: Handle charset if not UTF-8
+    
+    // TODO: Handle charset if not UTF-8 (need iconv or similar)
+    // TODO: webView mode (Phase 4+)
 
     try {
       final options = Options(
         method: method,
         headers: headerMap.cast<String, dynamic>(),
-        responseType: ResponseType.plain, // Important for custom charset handling later
+        responseType: ResponseType.plain,
       );
 
       Response response;

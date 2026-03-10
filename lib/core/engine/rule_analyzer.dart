@@ -332,10 +332,15 @@ class RuleAnalyzer {
       final posPre = _pos;
       if (_consumeTo(endStr)) {
         final frv = fr(_queue.substring(posPre, _pos));
-        st.write(_queue.substring(_startX, posPre - startStr.length));
-        st.write(frv ?? "");
-        _pos += endStr.length;
-        _startX = _pos;
+        if (frv != null) {
+          st.write(_queue.substring(_startX, posPre - startStr.length));
+          st.write(frv);
+          _pos += endStr.length;
+          _startX = _pos;
+        } else {
+          // Keep looking after this startStr
+          _pos += 1; 
+        }
       }
     }
 
