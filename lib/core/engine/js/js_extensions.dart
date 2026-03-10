@@ -119,9 +119,24 @@ class JsExtensions {
       return await _cookieStore.getCookie(tag);
     });
 
+    // 實作 java.createSymmetricCrypto
+    runtime.onMessage('symmetricCrypto', (dynamic args) {
+      final action = args[0].toString();
+      final transformation = args[1].toString();
+      final key = args[2];
+      final iv = args[3];
+      final data = args[4];
+      final outputFormat = args[5].toString();
+      
+      return JsEncodeUtils.symmetricCrypto(
+        action, transformation, key, iv, data, outputFormat: outputFormat
+      );
+    });
+
     // 實作 java.strToBytes
     runtime.onMessage('strToBytes', (dynamic args) {
       final str = args[0].toString();
+      // ignore: unused_local_variable
       final charset = args.length > 1 ? args[1].toString() : 'UTF-8';
       // TODO: Handle other charsets
       return utf8.encode(str);
@@ -130,6 +145,7 @@ class JsExtensions {
     // 實作 java.bytesToStr
     runtime.onMessage('bytesToStr', (dynamic args) {
       final List<int> bytes = List<int>.from(args[0]);
+      // ignore: unused_local_variable
       final charset = args.length > 1 ? args[1].toString() : 'UTF-8';
       // TODO: Handle other charsets
       return utf8.decode(bytes);
@@ -164,6 +180,7 @@ class JsExtensions {
 
     runtime.onMessage('readTxtFile', (dynamic args) async {
       final path = args.toString();
+      // ignore: unused_local_variable
       final charset = args is List && args.length > 1 ? args[1].toString() : 'UTF-8';
       final file = File(path);
       if (await file.exists()) {
@@ -228,6 +245,15 @@ class JsExtensions {
           return this.get(url, headers);
         },
         getCookie: function(tag, key) { return sendMessage('getCookie', JSON.stringify([tag, key])); },
+        createSymmetricCrypto: function(transformation, key, iv) {
+          return {
+            decrypt: function(data) { return sendMessage('symmetricCrypto', JSON.stringify(['decrypt', transformation, key, iv, data, 'bytes'])); },
+            decryptStr: function(data) { return sendMessage('symmetricCrypto', JSON.stringify(['decrypt', transformation, key, iv, data, 'string'])); },
+            encrypt: function(data) { return sendMessage('symmetricCrypto', JSON.stringify(['encrypt', transformation, key, iv, data, 'bytes'])); },
+            encryptBase64: function(data) { return sendMessage('symmetricCrypto', JSON.stringify(['encrypt', transformation, key, iv, data, 'base64'])); },
+            encryptHex: function(data) { return sendMessage('symmetricCrypto', JSON.stringify(['encrypt', transformation, key, iv, data, 'hex'])); }
+          };
+        },
         log: function(msg) { sendMessage('log', JSON.stringify(msg)); },
         toast: function(msg) { sendMessage('toast', JSON.stringify(msg)); },
         longToast: function(msg) { sendMessage('toast', JSON.stringify(msg)); },
