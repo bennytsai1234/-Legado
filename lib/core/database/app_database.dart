@@ -162,6 +162,14 @@ class AppDatabase {
         searchTime INTEGER NOT NULL
       )
     ''');
+
+    // Cookies table
+    await db.execute('''
+      CREATE TABLE cookies (
+        url TEXT PRIMARY KEY,
+        cookie TEXT NOT NULL
+      )
+    ''');
   }
 
   static Future<void> _onUpgrade(
