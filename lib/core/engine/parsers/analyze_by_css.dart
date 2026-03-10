@@ -342,15 +342,7 @@ class _ElementsSingle {
       }
     }
 
-    if (split == '!') {
-      final result = <Element>[];
-      for (int i = 0; i < len; i++) {
-        if (!indexSet.contains(i)) {
-          result.add(elements[i]);
-        }
-      }
-      return result;
-    } else if (split == '.') {
+    if (split == '!' || split == '.') {
       final result = <Element>[];
       for (final idx in indexSet) {
         result.add(elements[idx]);

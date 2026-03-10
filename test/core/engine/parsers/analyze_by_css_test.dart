@@ -44,9 +44,13 @@ void main() {
 
     test('Legado CSS syntax with index', () {
       final analyzer = AnalyzeByCss(htmlStr);
-      // First item's link - Use .0 for selection
+      // Use .0 for selection
       final firstTitle = analyzer.getString('li.item.0@tag.a@text');
       expect(firstTitle, 'Chapter 1');
+      
+      // Use !0 for selection (as per user requirement)
+      final firstTitleEx = analyzer.getString('li.item!0@tag.a@text');
+      expect(firstTitleEx, 'Chapter 1');
       
       // Last item's link
       final lastTitle = analyzer.getString('li.item.-1@tag.a@text');
