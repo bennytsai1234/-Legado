@@ -178,4 +178,12 @@ class Book {
       isInBookshelf: isInBookshelf ?? this.isInBookshelf,
     );
   }
+
+  bool? getReSegment() {
+    return true;
+  }
+
+  bool? getUseReplaceRule() {
+    return true;
+  }
 }

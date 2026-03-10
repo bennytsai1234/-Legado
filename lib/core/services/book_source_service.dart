@@ -39,7 +39,7 @@ class BookSourceService {
       
       // 精確搜尋過濾
       if (filter != null) {
-        return list.where((book) => filter(book.name, book.author)).toList();
+        return list.where((book) => filter(book.name, book.author ?? "")).toList();
       }
       return list;
     });
@@ -80,8 +80,6 @@ class BookSourceService {
       );
 
       final resBody = await analyzeUrl.getResponseBody();
-      if (resBody.isEmpty) return [];
-
       return _analyzeBookList(source, resBody, analyzeUrl.url, isSearch: false);
     });
   }
