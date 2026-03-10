@@ -85,8 +85,11 @@ class AnalyzeByXPath {
       if (rules[0].contains('/@')) {
         return queryResult.attrs.whereType<String>().toList();
       } else {
-        // 預設提取 text
-        return queryResult.nodes.map((n) => n.text ?? "").toList();
+        // 選取的結果在 nodes 中，透過 n.text 取得並進行清洗
+        return queryResult.nodes
+            .map((n) => n.text?.trim() ?? "")
+            .where((t) => t.isNotEmpty)
+            .toList();
       }
     } else {
       final results = <List<String>>[];

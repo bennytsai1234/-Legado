@@ -289,7 +289,7 @@ class SourceRule {
       } else if (rule.startsWith('@XPath:')) {
         mode = Mode.xpath;
         rule = rule.substring(7);
-      } else if (rule.startsWith('/') && !rule.startsWith('//')) {
+      } else if (rule.startsWith('/')) {
         mode = Mode.xpath;
       } else if (rule.startsWith(r'$.') || rule.startsWith(r'$[')) {
         mode = Mode.json;
