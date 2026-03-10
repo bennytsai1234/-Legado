@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'rule_analyzer.dart';
 import 'analyze_rule.dart';
+import '../services/http_client.dart';
 
 /// AnalyzeUrl - URL 構建與請求引擎
 /// 對應 Android: model/analyzeRule/AnalyzeUrl.kt (29KB)
@@ -147,7 +148,7 @@ class AnalyzeUrl {
 
   /// Execute the HTTP request and return response body
   Future<String> getResponseBody() async {
-    final dio = Dio();
+    final dio = HttpClient().client;
     
     // TODO: Handle charset if not UTF-8 (need iconv or similar)
     // TODO: webView mode (Phase 4+)
