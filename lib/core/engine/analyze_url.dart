@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'rule_analyzer.dart';
 import 'analyze_rule.dart';
 import '../services/http_client.dart';
+import '../services/cookie_store.dart';
 
 /// AnalyzeUrl - URL 構建與請求引擎
 /// 對應 Android: model/analyzeRule/AnalyzeUrl.kt (29KB)
@@ -16,6 +17,7 @@ class AnalyzeUrl {
   final int? page;
   String? baseUrl;
   final AnalyzeRule? analyzer;
+  final dynamic source; // BaseSource equivalent
   
   String ruleUrl = "";
   String url = "";
@@ -34,6 +36,7 @@ class AnalyzeUrl {
     this.page,
     this.baseUrl,
     this.analyzer,
+    this.source,
     Map<String, dynamic>? initialHeaders,
   }) {
     if (initialHeaders != null) {
@@ -104,7 +107,6 @@ class AnalyzeUrl {
     if (page != null) {
       result = result.replaceAll('{{page}}', page.toString());
       // Handle <page1,page2,page3>
-      final pagePattern = RegExp(r'<(.*?)>');
       result = result.replaceAllMapped(pagePattern, (match) {
         final pages = match.group(1)!.split(',');
         if (page! <= pages.length) {
@@ -203,8 +205,6 @@ class AnalyzeUrl {
   }
 
   String encodeParams(String params, String? charset, bool isQuery) {
-    // Basic implementation of param encoding
-    // Android version handles more edge cases and charsets
     final parts = params.split('&');
     final sb = StringBuffer();
     
@@ -232,29 +232,86 @@ class AnalyzeUrl {
     return result;
   }
 
-  /// Execute the HTTP request and return response body
-  Future<String> getResponseBody() async {
-    final dio = HttpClient().client;
-    
-    // TODO: Handle charset if not UTF-8 (need iconv or similar)
-    // TODO: webView mode (Phase 4+)
+  void setRedirectUrl(String redirectUrl) {
+    url = redirectUrl;
+    final uri = Uri.parse(url);
+    baseUrl = "${uri.scheme}://${uri.host}";
+  }
 
-    try {
-      final options = Options(
-        method: method,
-        headers: headerMap.cast<String, dynamic>(),
-        responseType: ResponseType.plain,
-      );
-
-      Response response;
-      if (method == 'POST') {
-        response = await dio.request(url, data: body, options: options);
+  Future<void> _setCookie() async {
+    final domain = CookieStore().getSubDomain(url);
+    final cookie = await CookieStore().getCookie(domain);
+    if (cookie.isNotEmpty) {
+      final headerCookie = headerMap['Cookie']?.toString() ?? "";
+      if (headerCookie.isNotEmpty) {
+        final merged = CookieStore().mapToCookie({
+          ...CookieStore().cookieToMap(cookie),
+          ...CookieStore().cookieToMap(headerCookie),
+        });
+        headerMap['Cookie'] = merged;
       } else {
-        response = await dio.request(url, options: options);
+        headerMap['Cookie'] = cookie;
       }
-      return response.data.toString();
-    } catch (e) {
-      return '';
     }
   }
+/// Execute the HTTP request and return response body
+Future<String> getResponseBody() async {
+  final dio = HttpClient().client;
+
+  await _setCookie();
+
+  try {
+    final requestUrl = encodedQuery != null ? "$url?$encodedQuery" : url;
+    final requestData = encodedForm ?? body;
+
+    final options = Options(
+      method: method,
+      headers: headerMap.cast<String, dynamic>(),
+      responseType: ResponseType.bytes, // Use bytes to handle charset manually
+      followRedirects: true,
+    );
+
+    Response response;
+    if (method == 'POST') {
+      response = await dio.request(requestUrl, data: requestData, options: options);
+    } else {
+      response = await dio.request(requestUrl, options: options);
+    }
+
+    // Handle redirect URL update
+    if (response.realUri.toString() != requestUrl) {
+      setRedirectUrl(response.realUri.toString());
+    }
+
+    final List<int> responseBytes = response.data as List<int>;
+
+    // 1. Determine charset
+    String effectiveCharset = charset ?? "UTF-8";
+    if (charset == null) {
+      final contentType = response.headers.value('content-type');
+      if (contentType != null) {
+        final match = RegExp(r'charset=([\w-]+)', caseSensitive: false).firstMatch(contentType);
+        if (match != null) {
+          effectiveCharset = match.group(1)!;
+        }
+      }
+    }
+
+    // 2. Decode based on charset
+    String result;
+    if (effectiveCharset.toUpperCase().contains('GBK') || 
+        effectiveCharset.toUpperCase().contains('GB2312') ||
+        effectiveCharset.toUpperCase().contains('GB18030')) {
+      // TODO: Use gbk_codec if available. For now, try fallback or notify
+      // This is a placeholder since we don't have the library yet
+      result = utf8.decode(responseBytes, allowMalformed: true);
+    } else {
+      result = utf8.decode(responseBytes, allowMalformed: true);
+    }
+
+    return result;
+  } catch (e) {
+    return '';
+  }
+}
 }
