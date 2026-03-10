@@ -11,10 +11,12 @@ import 'rate_limiter.dart';
 class BookSourceService {
   
   /// 搜尋書籍
+  /// [filter] 提供精確搜尋 (precise search) 匹配條件
   Future<List<SearchBook>> searchBooks(
     BookSource source,
     String keyword, {
     int page = 1,
+    bool Function(String name, String author)? filter,
   }) async {
     final searchUrl = source.searchUrl;
     if (searchUrl == null || searchUrl.isEmpty) return [];
@@ -33,8 +35,32 @@ class BookSourceService {
       final resBody = await analyzeUrl.getResponseBody();
       if (resBody.isEmpty) return [];
 
-      return _analyzeBookList(source, resBody, analyzeUrl.url, isSearch: true);
+      final list = _analyzeBookList(source, resBody, analyzeUrl.url, isSearch: true);
+      
+      // 精確搜尋過濾
+      if (filter != null) {
+        return list.where((book) => filter(book.name, book.author)).toList();
+      }
+      return list;
     });
+  }
+
+  /// 精確搜尋
+  Future<SearchBook?> preciseSearch(List<BookSource> sources, String name, String author) async {
+    for (final source in sources) {
+       try {
+         final books = await searchBooks(source, name, filter: (fName, fAuthor) {
+            return fName == name && fAuthor == author;
+         });
+         if (books.isNotEmpty) {
+           return books.first;
+         }
+       } catch (e) {
+         // Continue searching next source
+         continue;
+       }
+    }
+    return null;
   }
 
   /// 獲取發現頁書籍
@@ -150,25 +176,51 @@ class BookSourceService {
     });
   }
 
-  /// 獲取正文內容
-  Future<String> getContent(BookSource source, Book book, BookChapter chapter) async {
+  /// 獲取正文內容 (支援正文翻頁)
+  Future<String> getContent(BookSource source, Book book, BookChapter chapter, {String? nextChapterUrl}) async {
     final limiter = ConcurrentRateLimiter(source);
     return await limiter.withLimit(() async {
-      final analyzeRule = AnalyzeRule(source: source);
-      final analyzeUrl = AnalyzeUrl(
-        chapter.url,
-        baseUrl: book.bookUrl,
-        analyzer: analyzeRule,
-      );
+      List<String> contents = [];
+      String? currentUrl = chapter.url;
+      final Set<String> loadedUrls = {currentUrl};
+      
+      while (currentUrl != null && currentUrl.isNotEmpty) {
+        final analyzeRule = AnalyzeRule(source: source)
+          ..setChapter(chapter)
+          ..setNextChapterUrl(nextChapterUrl);
+        
+        final analyzeUrl = AnalyzeUrl(
+          currentUrl,
+          baseUrl: book.bookUrl,
+          analyzer: analyzeRule,
+        );
 
-      final resBody = await analyzeUrl.getResponseBody();
-      if (resBody.isEmpty) return "";
+        final resBody = await analyzeUrl.getResponseBody();
+        if (resBody.isEmpty) break;
 
-      final rule = analyzeRule.setContent(resBody, baseUrl: analyzeUrl.url);
-      final contentRule = source.ruleContent;
-      if (contentRule == null) return "";
+        final rule = analyzeRule.setContent(resBody, baseUrl: analyzeUrl.url);
+        final contentRule = source.ruleContent;
+        if (contentRule == null) break;
 
-      return rule.getString(contentRule.content ?? "");
+        final pageContent = rule.getString(contentRule.content ?? "");
+        if (pageContent.isNotEmpty) contents.add(pageContent);
+
+        // 正文翻頁邏輯
+        String? nextUrl = rule.getString(contentRule.nextContentUrl ?? "", isUrl: true);
+        if (nextUrl.isEmpty || loadedUrls.contains(nextUrl)) {
+          break; // 避免死循環或無下一頁
+        }
+        
+        // 如果下一頁剛好等於下一章，就停止抓取
+        if (nextChapterUrl != null && nextUrl == nextChapterUrl) {
+          break;
+        }
+
+        currentUrl = nextUrl;
+        loadedUrls.add(currentUrl);
+      }
+      
+      return contents.join('\n');
     });
   }
 
