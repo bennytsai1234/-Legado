@@ -21,20 +21,24 @@ void main() {
               <span class="author">Author C</span>
             </li>
           </ul>
-          <div class="footer">Footer Text</div>
+          <div class="footer">Footer Text <!-- hidden comment --> <span>Extra</span></div>
         </div>
       </body>
     </html>
     ''';
 
-    test('Standard CSS selector', () {
-      final analyzer = AnalyzeByCss(htmlStr);
-      final elements = analyzer.getElements('li.item');
-      expect(elements.length, 3);
+    late AnalyzeByCss analyzer;
+
+    setUp(() {
+      analyzer = AnalyzeByCss(htmlStr);
     });
 
-    test('Legado CSS syntax tag.class@attr', () {
-      final analyzer = AnalyzeByCss(htmlStr);
+    test('1. Standard CSS selector via @CSS:', () {
+      final titles = analyzer.getStringList('@CSS:li.item a@text');
+      expect(titles, ['Chapter 1', 'Chapter 2', 'Chapter 3']);
+    });
+
+    test('2. Legado custom syntax tag.class@attr', () {
       final titles = analyzer.getStringList('li.item@tag.a@text');
       expect(titles, ['Chapter 1', 'Chapter 2', 'Chapter 3']);
       
@@ -42,49 +46,39 @@ void main() {
       expect(hrefs, ['book1.html', 'book2.html', 'book3.html']);
     });
 
-    test('Legado CSS syntax with index', () {
-      final analyzer = AnalyzeByCss(htmlStr);
-      // Use .0 for selection
-      final firstTitle = analyzer.getString('li.item.0@tag.a@text');
-      expect(firstTitle, 'Chapter 1');
-      
-      // Use !0 for selection (as per user requirement)
-      final firstTitleEx = analyzer.getString('li.item!0@tag.a@text');
-      expect(firstTitleEx, 'Chapter 1');
-      
-      // Last item's link
-      final lastTitle = analyzer.getString('li.item.-1@tag.a@text');
-      expect(lastTitle, 'Chapter 3');
+    test('3. Index selection using .index', () {
+      // First item
+      expect(analyzer.getString('li.item.0@tag.a@text'), 'Chapter 1');
+      // Last item
+      expect(analyzer.getString('li.item.-1@tag.a@text'), 'Chapter 3');
     });
 
-    test('Legado CSS syntax with range index [start:end]', () {
-      final analyzer = AnalyzeByCss(htmlStr);
+    test('4. Index selection using !index (User requirement: selection)', () {
+      expect(analyzer.getString('li.item!0@tag.a@text'), 'Chapter 1');
+      expect(analyzer.getString('li.item!1@tag.a@text'), 'Chapter 2');
+    });
+
+    test('5. Range selection [start:end]', () {
       final titles = analyzer.getStringList('li.item[0:1]@tag.a@text');
       expect(titles, ['Chapter 1', 'Chapter 2']);
     });
 
-    test('Special attributes: text, html, ownText', () {
-      final analyzer = AnalyzeByCss(htmlStr);
-      expect(analyzer.getString('.footer@text'), 'Footer Text');
-      expect(analyzer.getString('.footer@html'), contains('<div class="footer">Footer Text</div>'));
+    test('6. Special attributes: text, html, ownText', () {
+      // text includes all child text
+      expect(analyzer.getString('.footer@text'), 'Footer Text Extra');
+      // ownText only includes direct text nodes
+      expect(analyzer.getString('.footer@ownText'), 'Footer Text');
+      // html includes outer html
+      expect(analyzer.getString('.footer@html'), contains('<div class="footer">'));
     });
 
-    test('Logical && operator', () {
-      final analyzer = AnalyzeByCss(htmlStr);
+    test('7. Logical && operator', () {
       final result = analyzer.getString('.author.0@text && .author.1@text');
       expect(result, 'Author A\nAuthor B');
     });
 
-    test('Logical || operator', () {
-      final analyzer = AnalyzeByCss(htmlStr);
-      expect(analyzer.getString('.none@text || .footer@text'), 'Footer Text');
-    });
-
-    test('@CSS prefix', () {
-      final analyzer = AnalyzeByCss(htmlStr);
-      // @CSS: is more like standard JSoup select
-      final result = analyzer.getString('@CSS:.footer@text');
-      expect(result, 'Footer Text');
+    test('8. Logical || operator (fallback)', () {
+      expect(analyzer.getString('.none@text || .footer@ownText'), 'Footer Text');
     });
   });
 }

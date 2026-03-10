@@ -69,11 +69,12 @@ class AnalyzeByXPath {
 
     if (rules.length == 1) {
       final queryResult = _xpath.query(rules[0]);
-      // Use attrs for attribute extraction, or node.text for others
-      if (rules[0].contains('/@')) {
-         return queryResult.attrs.whereType<String>().toList();
+      // If the rule ends with /@attr or /text(), queryResult.attrs usually contains it
+      if (rules[0].contains('/@') || rules[0].endsWith('/text()')) {
+        return queryResult.attrs.whereType<String>().toList();
       } else {
-         return queryResult.nodes.map((n) => n.text ?? "").toList();
+        // Fallback to node text if no attribute requested
+        return queryResult.nodes.map((n) => n.text?.trim() ?? "").where((t) => t.isNotEmpty).toList();
       }
     } else {
       final results = <List<String>>[];
@@ -106,27 +107,12 @@ class AnalyzeByXPath {
     }
   }
 
-  /// 獲取單個或合併字串
+  /// 獲取合併字串
   String? getString(String rule) {
     if (rule.isEmpty) return null;
-    
-    final ruleAnalyzes = RuleAnalyzer(rule);
-    final rules = ruleAnalyzes.splitRule(['&&', '||']);
-
-    if (rules.length == 1) {
-      final list = getStringList(rules[0]);
-      if (list.isEmpty) return null;
-      return list.join('\n');
-    } else {
-      final textList = <String>[];
-      for (final rl in rules) {
-        final temp = getString(rl);
-        if (temp != null && temp.isNotEmpty) {
-          textList.add(temp);
-          if (ruleAnalyzes.elementsType == '||') break;
-        }
-      }
-      return textList.isEmpty ? null : textList.join('\n');
-    }
+    final list = getStringList(rule);
+    if (list.isEmpty) return null;
+    if (list.length == 1) return list.first;
+    return list.join('\n');
   }
 }

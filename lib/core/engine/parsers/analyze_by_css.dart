@@ -9,7 +9,13 @@ import '../rule_analyzer.dart';
 class AnalyzeByCss {
   late Element element;
 
-  AnalyzeByCss(dynamic doc) {
+  AnalyzeByCss([dynamic doc]) {
+    if (doc != null) {
+      setContent(doc);
+    }
+  }
+
+  void setContent(dynamic doc) {
     if (doc is Element) {
       element = doc;
     } else if (doc is String) {
@@ -30,7 +36,7 @@ class AnalyzeByCss {
 
     final elementsList = <List<Element>>[];
     if (sourceRule.isCss) {
-      for (String ruleStr in ruleStrS) {
+      for (var ruleStr in ruleStrS) {
         ruleStr = ruleStr.trim();
         if (ruleStr.isEmpty) continue;
         final tempS = element.querySelectorAll(ruleStr);
@@ -40,7 +46,7 @@ class AnalyzeByCss {
         }
       }
     } else {
-      for (String ruleStr in ruleStrS) {
+      for (var ruleStr in ruleStrS) {
         ruleStr = ruleStr.trim();
         if (ruleStr.isEmpty) continue;
         final rsRule = RuleAnalyzer(ruleStr);
@@ -50,7 +56,7 @@ class AnalyzeByCss {
         List<Element> el;
         if (rs.length > 1) {
           el = [element];
-          for (String rl in rs) {
+          for (var rl in rs) {
             rl = rl.trim();
             if (rl.isEmpty) continue;
             final es = <Element>[];
@@ -70,9 +76,7 @@ class AnalyzeByCss {
       }
     }
 
-    if (elementsList.isEmpty) {
-      return [];
-    }
+    if (elementsList.isEmpty) return [];
 
     final result = <Element>[];
     if (ruleAnalyzes.elementsType == '%%') {
@@ -98,8 +102,6 @@ class AnalyzeByCss {
 
     final sourceRule = _SourceRule(ruleStr);
     if (sourceRule.elementsRule.isEmpty) {
-      // In Kotlin: element.data() ?: ""
-      // But usually we want text
       return [element.text];
     }
 
@@ -107,7 +109,7 @@ class AnalyzeByCss {
     final ruleStrS = ruleAnalyzes.splitRule(['&&', '||', '%%']);
 
     final results = <List<String>>[];
-    for (String ruleStrX in ruleStrS) {
+    for (var ruleStrX in ruleStrS) {
       ruleStrX = ruleStrX.trim();
       if (ruleStrX.isEmpty) continue;
 
@@ -119,7 +121,6 @@ class AnalyzeByCss {
           final attr = ruleStrX.substring(lastIndex + 1);
           temp = _getResultLast(element.querySelectorAll(cssSelector), attr);
         } else {
-          // If no @, default to text?
           temp = _getResultLast(element.querySelectorAll(ruleStrX), 'text');
         }
       } else {
@@ -186,7 +187,7 @@ class AnalyzeByCss {
     switch (lastRule) {
       case 'text':
         for (final el in elements) {
-          final t = el.text.trim();
+          final t = el.text.replaceAll(RegExp(r'\s+'), ' ').trim();
           if (t.isNotEmpty) textS.add(t);
         }
         break;
@@ -211,8 +212,8 @@ class AnalyzeByCss {
         }
         break;
       case 'html':
+      case 'outerHtml':
         for (final el in elements) {
-          // Remove script and style as in Kotlin
           el.querySelectorAll('script').forEach((s) => s.remove());
           el.querySelectorAll('style').forEach((s) => s.remove());
           final h = el.outerHtml;
@@ -224,11 +225,23 @@ class AnalyzeByCss {
           textS.add(el.outerHtml);
         }
         break;
+      case 'src':
+        for (final el in elements) {
+          final s = el.attributes['src']?.trim();
+          if (s != null && s.isNotEmpty) textS.add(s);
+        }
+        break;
+      case 'href':
+        for (final el in elements) {
+          final h = el.attributes['href']?.trim();
+          if (h != null && h.isNotEmpty) textS.add(h);
+        }
+        break;
       default:
         for (final el in elements) {
-          final attr = el.attributes[lastRule];
-          if (attr != null && attr.trim().isNotEmpty) {
-            textS.add(attr.trim());
+          final attr = el.attributes[lastRule]?.trim();
+          if (attr != null && attr.isNotEmpty) {
+            textS.add(attr);
           }
         }
     }
@@ -279,12 +292,15 @@ class _ElementsSingle {
         final el = temp.querySelector('#${rules[1]}');
         elements = el != null ? [el] : [];
       } else if (rules[0] == 'text' && rules.length > 1) {
-        // Find elements containing own text
         elements = temp.querySelectorAll('*').where((el) {
            return el.nodes.any((n) => n.nodeType == Node.TEXT_NODE && n.text!.contains(rules[1]));
         }).toList();
       } else {
-        elements = temp.querySelectorAll(beforeRule);
+        try {
+          elements = temp.querySelectorAll(beforeRule);
+        } catch (e) {
+          elements = [];
+        }
       }
     }
 
@@ -342,6 +358,7 @@ class _ElementsSingle {
       }
     }
 
+    // 用戶要求 !index 與 .index 均為選擇索引
     if (split == '!' || split == '.') {
       final result = <Element>[];
       for (final idx in indexSet) {
@@ -425,7 +442,7 @@ class _ElementsSingle {
           if (rl == '!' || rl == '.' || rl == ':') {
             final val = int.tryParse(curMinus ? '-$l' : l);
             if (val == null) {
-              len++; // Go back one character to include it in beforeRule
+              len++; 
               break;
             }
             indexDefault.add(val);

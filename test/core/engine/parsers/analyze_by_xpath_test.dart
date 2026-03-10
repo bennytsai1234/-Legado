@@ -27,33 +27,41 @@ void main() {
     </html>
     ''';
 
-    test('Standard XPath query', () {
-      final analyzer = AnalyzeByXPath(htmlStr);
+    late AnalyzeByXPath analyzer;
+
+    setUp(() {
+      analyzer = AnalyzeByXPath(htmlStr);
+    });
+
+    test('1. Basic XPath query (nodes)', () {
       final elements = analyzer.getElements('//li[@class="item"]');
       expect(elements.length, 3);
     });
 
-    test('XPath attribute extraction', () {
-      final analyzer = AnalyzeByXPath(htmlStr);
+    test('2. Attribute extraction (/@href)', () {
       final hrefs = analyzer.getStringList('//li/a/@href');
       expect(hrefs, ['book1.html', 'book2.html', 'book3.html']);
     });
 
-    test('XPath text extraction', () {
-      final analyzer = AnalyzeByXPath(htmlStr);
+    test('3. Text extraction (/text())', () {
       final titles = analyzer.getStringList('//li/a/text()');
       expect(titles, ['Chapter 1', 'Chapter 2', 'Chapter 3']);
     });
 
-    test('Logical && operator', () {
-      final analyzer = AnalyzeByXPath(htmlStr);
+    test('4. Complex path with conditions', () {
+      final secondTitle = analyzer.getString('//li[2]/a/text()');
+      expect(secondTitle, 'Chapter 2');
+    });
+
+    test('5. Logical && operator', () {
       final result = analyzer.getString('//li[1]/a/text() && //li[2]/a/text()');
       expect(result, 'Chapter 1\nChapter 2');
     });
 
-    test('Logical || operator', () {
-      final analyzer = AnalyzeByXPath(htmlStr);
-      expect(analyzer.getString('//li[@class="none"]/text() || //div[@class="footer"]/text()'), 'Footer Text');
+    test('6. Logical || operator (fallback)', () {
+      // first path doesn't exist
+      final result = analyzer.getString('//li[@class="none"]/text() || //div[@class="footer"]/text()');
+      expect(result, 'Footer Text');
     });
   });
 }

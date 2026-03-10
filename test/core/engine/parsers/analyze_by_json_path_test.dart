@@ -13,47 +13,58 @@ void main() {
           { "category": "fiction", "author": "J. R. R. Tolkien", "title": "The Lord of the Rings", "isbn": "0-395-19395-8", "price": 22.99 }
         ],
         "bicycle": { "color": "red", "price": 19.95 }
-      }
+      },
+      "expensive": 10
     }
     ''';
 
-    test('Basic getString', () {
-      final analyzer = AnalyzeByJsonPath(jsonStr);
+    late AnalyzeByJsonPath analyzer;
+
+    setUp(() {
+      analyzer = AnalyzeByJsonPath(jsonStr);
+    });
+
+    test('1. Basic getString (String value)', () {
       expect(analyzer.getString(r'$.store.bicycle.color'), 'red');
     });
 
-    test('getList books', () {
-      final analyzer = AnalyzeByJsonPath(jsonStr);
-      final books = analyzer.getList(r'$.store.book[*]');
+    test('2. Basic getString (Number value auto-converted to String)', () {
+      expect(analyzer.getString(r'$.store.bicycle.price'), '19.95');
+      expect(analyzer.getString(r'$.expensive'), '10');
+    });
+
+    test('3. getElements (List of maps)', () {
+      final books = analyzer.getElements(r'$.store.book[*]');
+      expect(books, isList);
       expect(books.length, 4);
       expect(books[0]['author'], 'Nigel Rees');
     });
 
-    test('getStringList authors', () {
-      final analyzer = AnalyzeByJsonPath(jsonStr);
+    test('4. getStringList (List of strings)', () {
       final authors = analyzer.getStringList(r'$.store.book[*].author');
+      expect(authors, isList);
       expect(authors.length, 4);
       expect(authors, contains('Nigel Rees'));
       expect(authors, contains('J. R. R. Tolkien'));
     });
 
-    test('Logical && operator', () {
-      final analyzer = AnalyzeByJsonPath(jsonStr);
+    test('5. Support @json: prefix', () {
+      expect(analyzer.getString(r'@json:$.store.bicycle.color'), 'red');
+    });
+
+    test('6. Logical && operator', () {
+      // RuleAnalyzer splits this into two queries and joins with \n
       final result = analyzer.getString(r'$.store.bicycle.color && $.store.bicycle.price');
       expect(result, 'red\n19.95');
     });
 
-    test('Logical || operator', () {
-      final analyzer = AnalyzeByJsonPath(jsonStr);
-      // first one exists
-      expect(analyzer.getString(r'$.store.bicycle.color || $.store.bicycle.price'), 'red');
+    test('7. Logical || operator (fallback)', () {
       // first one doesn't exist
-      expect(analyzer.getString(r'$.store.bicycle.none || $.store.bicycle.price'), '19.95');
+      final result = analyzer.getString(r'$.none || $.store.bicycle.color');
+      expect(result, 'red');
     });
 
-    test(r'Nested rules {$.}', () {
-      final analyzer = AnalyzeByJsonPath(jsonStr);
-      // This is a bit contrived but tests the innerRule logic
+    test(r'8. Nested rules {$.}', () {
       // In Legado, {$.rule} is often used to compose strings
       final result = analyzer.getString(r'Color: {$.store.bicycle.color}');
       expect(result, 'Color: red');
