@@ -7,8 +7,10 @@ import 'package:provider/provider.dart';
 import 'shared/theme/app_theme.dart';
 import 'features/bookshelf/bookshelf_page.dart';
 import 'features/explore/explore_page.dart';
+import 'features/bookshelf/bookshelf_provider.dart';
 import 'features/source_manager/source_manager_page.dart';
 import 'features/source_manager/source_manager_provider.dart';
+import 'features/search/search_provider.dart';
 import 'features/settings/settings_page.dart';
 
 void main() {
@@ -17,6 +19,8 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => SourceManagerProvider()),
+        ChangeNotifierProvider(create: (_) => SearchProvider()),
+        ChangeNotifierProvider(create: (_) => BookshelfProvider()),
       ],
       child: const LegadoReaderApp(),
     ),
