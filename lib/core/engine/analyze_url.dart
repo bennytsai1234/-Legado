@@ -7,10 +7,14 @@ import '../services/http_client.dart';
 /// AnalyzeUrl - URL 構建與請求引擎
 /// 對應 Android: model/analyzeRule/AnalyzeUrl.kt (29KB)
 class AnalyzeUrl {
+  static final RegExp jsPattern = RegExp(r'@js:|(<js>([\w\W]*?)</js>)', caseSensitive: false);
+  static final RegExp pagePattern = RegExp(r'<(.*?)>');
+  static final RegExp paramPattern = RegExp(r'\s*,\s*(?=\{)');
+
   final String mUrl;
   final String? key;
   final int? page;
-  final String? baseUrl;
+  String? baseUrl;
   final AnalyzeRule? analyzer;
   
   String ruleUrl = "";
@@ -21,6 +25,8 @@ class AnalyzeUrl {
   String? charset;
   bool useWebView = false;
   String? webJs;
+  String? encodedQuery;
+  String? encodedForm;
 
   AnalyzeUrl(
     this.mUrl, {
@@ -47,15 +53,38 @@ class AnalyzeUrl {
   }
 
   void _analyzeJs() {
-    // Legado 支援 @js: 內嵌在 URL 中
-    if (ruleUrl.contains('@js:')) {
-      final parts = ruleUrl.split('@js:');
-      if (parts.length > 1 && analyzer != null) {
-        final jsCode = parts[1];
-        final result = analyzer!.evalJS(jsCode, parts[0]);
-        ruleUrl = result?.toString() ?? parts[0];
+    var start = 0;
+    final matches = jsPattern.allMatches(ruleUrl);
+    var result = ruleUrl;
+    
+    for (final match in matches) {
+      if (match.start > start) {
+        final prefix = ruleUrl.substring(start, match.start).trim();
+        if (prefix.isNotEmpty) {
+          result = prefix.replaceAll('@result', result);
+        }
+      }
+      
+      String jsCode;
+      if (match.group(0)!.toLowerCase() == '@js:') {
+        jsCode = ruleUrl.substring(match.end).trim();
+        result = analyzer?.evalJS(jsCode, result)?.toString() ?? result;
+        ruleUrl = result;
+        return; // @js: matches to the end
+      } else {
+        jsCode = match.group(2)!.trim();
+        result = analyzer?.evalJS(jsCode, result)?.toString() ?? result;
+      }
+      start = match.end;
+    }
+
+    if (ruleUrl.length > start) {
+      final suffix = ruleUrl.substring(start).trim();
+      if (suffix.isNotEmpty) {
+        result = suffix.replaceAll('@result', result);
       }
     }
+    ruleUrl = result;
   }
 
   void _replaceKeyPageJs() {
