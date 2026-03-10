@@ -36,7 +36,9 @@ class ExploreProvider extends ChangeNotifier {
     _exploreMap = {};
 
     for (final source in _sources) {
-      if (source.enabledExplore && source.exploreUrl != null && source.exploreUrl!.isNotEmpty) {
+      if (source.enabledExplore &&
+          source.exploreUrl != null &&
+          source.exploreUrl!.isNotEmpty) {
         final items = _parseExploreUrl(source);
         if (items.isNotEmpty) {
           _exploreMap[source.bookSourceName] = items;
@@ -54,21 +56,19 @@ class ExploreProvider extends ChangeNotifier {
     for (var line in lines) {
       line = line.trim();
       if (line.isEmpty) continue;
-      
+
       final parts = line.split('::');
       if (parts.length >= 2) {
-        results.add(ExploreItem(
-          title: parts[0].trim(),
-          url: parts[1].trim(),
-          source: source,
-        ));
+        results.add(
+          ExploreItem(
+            title: parts[0].trim(),
+            url: parts[1].trim(),
+            source: source,
+          ),
+        );
       } else {
         // Fallback for single URL
-        results.add(ExploreItem(
-          title: '預設分類',
-          url: line,
-          source: source,
-        ));
+        results.add(ExploreItem(title: '預設分類', url: line, source: source));
       }
     }
     return results;

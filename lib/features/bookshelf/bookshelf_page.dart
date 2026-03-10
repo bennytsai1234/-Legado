@@ -80,13 +80,19 @@ class BookshelfPage extends StatelessWidget {
     );
   }
 
-  Widget _buildBookItem(BuildContext context, BookshelfProvider provider, dynamic book) {
+  Widget _buildBookItem(
+    BuildContext context,
+    BookshelfProvider provider,
+    dynamic book,
+  ) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ReaderPage(book: book, chapterIndex: book.durChapterIndex),
+            builder:
+                (context) =>
+                    ReaderPage(book: book, chapterIndex: book.durChapterIndex),
           ),
         );
       },
@@ -99,14 +105,17 @@ class BookshelfPage extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
-                  child: book.coverUrl != null && book.coverUrl!.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: book.coverUrl!,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          errorWidget: (context, url, error) => _buildCoverPlaceholder(),
-                        )
-                      : _buildCoverPlaceholder(),
+                  child:
+                      book.coverUrl != null && book.coverUrl!.isNotEmpty
+                          ? CachedNetworkImage(
+                            imageUrl: book.coverUrl!,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            errorWidget:
+                                (context, url, error) =>
+                                    _buildCoverPlaceholder(),
+                          )
+                          : _buildCoverPlaceholder(),
                 ),
                 if (book.lastCheckCount > 0)
                   Positioned(
@@ -144,7 +153,11 @@ class BookshelfPage extends StatelessWidget {
     );
   }
 
-  void _showBookMenu(BuildContext context, BookshelfProvider provider, dynamic book) {
+  void _showBookMenu(
+    BuildContext context,
+    BookshelfProvider provider,
+    dynamic book,
+  ) {
     showModalBottomSheet(
       context: context,
       builder: (context) {
@@ -160,17 +173,18 @@ class BookshelfPage extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => BookDetailPage(
-                        searchBook: SearchBook(
-                          bookUrl: book.bookUrl,
-                          name: book.name,
-                          author: book.author,
-                          coverUrl: book.coverUrl,
-                          intro: book.intro,
-                          origin: book.origin,
-                          originName: book.originName,
-                        ),
-                      ),
+                      builder:
+                          (context) => BookDetailPage(
+                            searchBook: SearchBook(
+                              bookUrl: book.bookUrl,
+                              name: book.name,
+                              author: book.author,
+                              coverUrl: book.coverUrl,
+                              intro: book.intro,
+                              origin: book.origin,
+                              originName: book.originName,
+                            ),
+                          ),
                     ),
                   );
                 },

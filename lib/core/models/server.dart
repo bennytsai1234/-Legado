@@ -54,9 +54,17 @@ class WebDavConfig {
   String username;
   String password;
 
-  WebDavConfig({required this.url, required this.username, required this.password});
+  WebDavConfig({
+    required this.url,
+    required this.username,
+    required this.password,
+  });
 
-  Map<String, dynamic> toJson() => {'url': url, 'username': username, 'password': password};
+  Map<String, dynamic> toJson() => {
+    'url': url,
+    'username': username,
+    'password': password,
+  };
   factory WebDavConfig.fromJson(Map<String, dynamic> json) => WebDavConfig(
     url: json['url'] ?? "",
     username: json['username'] ?? "",

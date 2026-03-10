@@ -49,17 +49,17 @@ class BookChapter {
   }
 
   Map<String, dynamic> toJson() => {
-        'url': url,
-        'title': title,
-        'bookUrl': bookUrl,
-        'index': index,
-        'isVolume': isVolume,
-        'isVip': isVip,
-        'isPay': isPay,
-        'resourceUrl': resourceUrl,
-        'tag': tag,
-        'variable': variable,
-        'startFragmentId': startFragmentId,
-        'endFragmentId': endFragmentId,
-      };
+    'url': url,
+    'title': title,
+    'bookUrl': bookUrl,
+    'index': index,
+    'isVolume': isVolume,
+    'isVip': isVip,
+    'isPay': isPay,
+    'resourceUrl': resourceUrl,
+    'tag': tag,
+    'variable': variable,
+    'startFragmentId': startFragmentId,
+    'endFragmentId': endFragmentId,
+  };
 }

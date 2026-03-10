@@ -54,7 +54,12 @@ class BookDao {
   }
 
   /// 更新閱讀進度
-  Future<void> updateProgress(String bookUrl, int index, int pos, String title) async {
+  Future<void> updateProgress(
+    String bookUrl,
+    int index,
+    int pos,
+    String title,
+  ) async {
     final db = await _db;
     await db.update(
       tableName,
@@ -83,11 +88,7 @@ class BookDao {
   /// 刪除書籍
   Future<void> delete(String bookUrl) async {
     final db = await _db;
-    await db.delete(
-      tableName,
-      where: 'bookUrl = ?',
-      whereArgs: [bookUrl],
-    );
+    await db.delete(tableName, where: 'bookUrl = ?', whereArgs: [bookUrl]);
   }
 
   void _serialize(Map<String, dynamic> map) {

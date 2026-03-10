@@ -22,7 +22,7 @@ class SettingsPage extends StatelessWidget {
                 leading: const Icon(Icons.palette_outlined),
                 onTap: () => _showThemeDialog(context, settings),
               ),
-              
+
               _buildSectionTitle('資料維護'),
               ListTile(
                 title: const Text('資料庫備份'),
@@ -32,7 +32,9 @@ class SettingsPage extends StatelessWidget {
                   final path = await settings.backupDatabase();
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(path != null ? '備份成功: $path' : '備份失敗')),
+                      SnackBar(
+                        content: Text(path != null ? '備份成功: $path' : '備份失敗'),
+                      ),
                     );
                   }
                 },
@@ -50,9 +52,9 @@ class SettingsPage extends StatelessWidget {
                 onTap: () async {
                   await settings.clearCache();
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('快取已清除')),
-                    );
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(const SnackBar(content: Text('快取已清除')));
                   }
                 },
               ),
@@ -81,52 +83,72 @@ class SettingsPage extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Text(
         title,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.blue),
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: Colors.blue,
+        ),
       ),
     );
   }
 
   String _getThemeModeName(ThemeMode mode) {
     switch (mode) {
-      case ThemeMode.light: return '開啟';
-      case ThemeMode.dark: return '關閉';
-      case ThemeMode.system: return '跟隨系統';
+      case ThemeMode.light:
+        return '開啟';
+      case ThemeMode.dark:
+        return '關閉';
+      case ThemeMode.system:
+        return '跟隨系統';
     }
   }
 
   void _showThemeDialog(BuildContext context, SettingsProvider settings) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('深色模式'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RadioListTile<ThemeMode>(
-              title: const Text('跟隨系統'),
-              value: ThemeMode.system,
-              groupValue: settings.themeMode,
-              onChanged: (v) { settings.setThemeMode(v!); Navigator.pop(context); },
+      builder:
+          (context) => AlertDialog(
+            title: const Text('深色模式'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RadioListTile<ThemeMode>(
+                  title: const Text('跟隨系統'),
+                  value: ThemeMode.system,
+                  groupValue: settings.themeMode,
+                  onChanged: (v) {
+                    settings.setThemeMode(v!);
+                    Navigator.pop(context);
+                  },
+                ),
+                RadioListTile<ThemeMode>(
+                  title: const Text('開啟'),
+                  value: ThemeMode.dark,
+                  groupValue: settings.themeMode,
+                  onChanged: (v) {
+                    settings.setThemeMode(v!);
+                    Navigator.pop(context);
+                  },
+                ),
+                RadioListTile<ThemeMode>(
+                  title: const Text('關閉'),
+                  value: ThemeMode.light,
+                  groupValue: settings.themeMode,
+                  onChanged: (v) {
+                    settings.setThemeMode(v!);
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
             ),
-            RadioListTile<ThemeMode>(
-              title: const Text('開啟'),
-              value: ThemeMode.dark,
-              groupValue: settings.themeMode,
-              onChanged: (v) { settings.setThemeMode(v!); Navigator.pop(context); },
-            ),
-            RadioListTile<ThemeMode>(
-              title: const Text('關閉'),
-              value: ThemeMode.light,
-              groupValue: settings.themeMode,
-              onChanged: (v) { settings.setThemeMode(v!); Navigator.pop(context); },
-            ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
-  Future<void> _restoreDatabase(BuildContext context, SettingsProvider settings) async {
+  Future<void> _restoreDatabase(
+    BuildContext context,
+    SettingsProvider settings,
+  ) async {
     final result = await FilePicker.platform.pickFiles();
     if (result != null && result.files.single.path != null) {
       final success = await settings.restoreDatabase(result.files.single.path!);

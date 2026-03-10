@@ -10,7 +10,7 @@ class ContentProcessor {
   ContentProcessor._();
 
   static final RegExp _spaceRegex = RegExp(r'\s+');
-  
+
   /// 處理正文內容
   static String processContent(
     Book book,
@@ -28,9 +28,14 @@ class ContentProcessor {
     // 1. 去除重複標題
     try {
       final nameStr = _escapeRegex(book.name);
-      final titleStr = _escapeRegex(chapter.title).replaceAll(_spaceRegex, r'\s*');
-      final pattern = RegExp('^(\\s|\\p{P}|$nameStr)*$titleStr(\\s)*', unicode: true);
-      
+      final titleStr = _escapeRegex(
+        chapter.title,
+      ).replaceAll(_spaceRegex, r'\s*');
+      final pattern = RegExp(
+        '^(\\s|\\p{P}|$nameStr)*$titleStr(\\s)*',
+        unicode: true,
+      );
+
       final match = pattern.firstMatch(mContent);
       if (match != null) {
         mContent = mContent.substring(match.end);
@@ -84,7 +89,10 @@ class ContentProcessor {
   /// 重新分段幫助方法
   static String _reSegment(String content, String title) {
     if (content.contains(RegExp(r'<br[^>]*>', caseSensitive: false))) {
-      return content.replaceAll(RegExp(r'<br[^>]*>', caseSensitive: false), '\n');
+      return content.replaceAll(
+        RegExp(r'<br[^>]*>', caseSensitive: false),
+        '\n',
+      );
     }
     // Basic re-segmentation based on spaces if no newlines
     if (!content.contains('\n') && content.length > 50) {
@@ -97,7 +105,11 @@ class ContentProcessor {
     return text.replaceAll(RegExp(r'[.*+?^${}()|[\]\\]'), r'\$&');
   }
 
-  static String _applyReplaceRules(String content, String bookName, String bookOrigin) {
+  static String _applyReplaceRules(
+    String content,
+    String bookName,
+    String bookOrigin,
+  ) {
     // TODO: Query replacement rules from local DB and apply them
     // Example: For each rule in ReplaceRuleDao where scope matches bookName/origin
     // content = content.replaceAll(rule.regex, rule.replacement)

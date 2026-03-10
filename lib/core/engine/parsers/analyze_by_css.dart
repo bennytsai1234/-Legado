@@ -292,9 +292,13 @@ class _ElementsSingle {
         final el = temp.querySelector('#${rules[1]}');
         elements = el != null ? [el] : [];
       } else if (rules[0] == 'text' && rules.length > 1) {
-        elements = temp.querySelectorAll('*').where((el) {
-           return el.nodes.any((n) => n.nodeType == Node.TEXT_NODE && n.text!.contains(rules[1]));
-        }).toList();
+        elements =
+            temp.querySelectorAll('*').where((el) {
+              return el.nodes.any(
+                (n) =>
+                    n.nodeType == Node.TEXT_NODE && n.text!.contains(rules[1]),
+              );
+            }).toList();
       } else {
         try {
           elements = temp.querySelectorAll(beforeRule);
@@ -307,7 +311,8 @@ class _ElementsSingle {
     final len = elements.length;
     if (len == 0) return [];
 
-    final lastIndexes = indexDefault.isNotEmpty ? indexDefault.length - 1 : indexes.length - 1;
+    final lastIndexes =
+        indexDefault.isNotEmpty ? indexDefault.length - 1 : indexes.length - 1;
     final indexSet = <int>{};
 
     if (indexes.isEmpty) {
@@ -401,11 +406,13 @@ class _ElementsSingle {
               if (curInt == null && rl != '[') break;
               if (curInt != null) indexes.add(curInt);
             } else {
-              indexes.add(_Triple(
-                curInt,
-                curList.last,
-                curList.length == 2 ? (curList.first ?? 1) : 1,
-              ));
+              indexes.add(
+                _Triple(
+                  curInt,
+                  curList.last,
+                  curList.length == 2 ? (curList.first ?? 1) : 1,
+                ),
+              );
               curList.clear();
             }
 
@@ -442,7 +449,7 @@ class _ElementsSingle {
           if (rl == '!' || rl == '.' || rl == ':') {
             final val = int.tryParse(curMinus ? '-$l' : l);
             if (val == null) {
-              len++; 
+              len++;
               break;
             }
             indexDefault.add(val);

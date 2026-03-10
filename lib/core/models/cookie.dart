@@ -7,16 +7,10 @@ class Cookie {
   Cookie({this.url = "", this.cookie = ""});
 
   Map<String, dynamic> toJson() {
-    return {
-      'url': url,
-      'cookie': cookie,
-    };
+    return {'url': url, 'cookie': cookie};
   }
 
   factory Cookie.fromJson(Map<String, dynamic> json) {
-    return Cookie(
-      url: json['url'] ?? "",
-      cookie: json['cookie'] ?? "",
-    );
+    return Cookie(url: json['url'] ?? "", cookie: json['cookie'] ?? "");
   }
 }

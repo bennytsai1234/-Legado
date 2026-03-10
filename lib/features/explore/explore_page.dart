@@ -28,7 +28,7 @@ class ExplorePage extends StatelessWidget {
           if (provider.exploreMap.isEmpty) {
             return const Center(child: Text('暫無可用發現頁的書源'));
           }
-          
+
           final sourceNames = provider.exploreMap.keys.toList();
           return ListView.builder(
             itemCount: sourceNames.length,
@@ -43,7 +43,11 @@ class ExplorePage extends StatelessWidget {
     );
   }
 
-  Widget _buildSourceSection(BuildContext context, String sourceName, List<ExploreItem> items) {
+  Widget _buildSourceSection(
+    BuildContext context,
+    String sourceName,
+    List<ExploreItem> items,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -51,7 +55,11 @@ class ExplorePage extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Text(
             sourceName,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue),
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue,
+            ),
           ),
         ),
         Padding(
@@ -59,17 +67,23 @@ class ExplorePage extends StatelessWidget {
           child: Wrap(
             spacing: 8,
             runSpacing: 0,
-            children: items.map((item) => ActionChip(
-              label: Text(item.title),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CategoryResultPage(item: item),
-                  ),
-                );
-              },
-            )).toList(),
+            children:
+                items
+                    .map(
+                      (item) => ActionChip(
+                        label: Text(item.title),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (context) => CategoryResultPage(item: item),
+                            ),
+                          );
+                        },
+                      ),
+                    )
+                    .toList(),
           ),
         ),
         const Divider(),
@@ -98,7 +112,8 @@ class _CategoryResultPageState extends State<CategoryResultPage> {
     super.initState();
     _loadMore();
     _scrollController.addListener(() {
-      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 200) {
         _loadMore();
       }
     });
@@ -115,8 +130,11 @@ class _CategoryResultPageState extends State<CategoryResultPage> {
     setState(() => _isLoading = true);
 
     final provider = context.read<ExploreProvider>();
-    final newBooks = await provider.loadCategoryBooks(widget.item, _currentPage);
-    
+    final newBooks = await provider.loadCategoryBooks(
+      widget.item,
+      _currentPage,
+    );
+
     if (mounted) {
       setState(() {
         if (newBooks.isEmpty) {
@@ -134,45 +152,54 @@ class _CategoryResultPageState extends State<CategoryResultPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(widget.item.title)),
-      body: _books.isEmpty && _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.separated(
-              controller: _scrollController,
-              itemCount: _books.length + (_hasMore ? 1 : 0),
-              separatorBuilder: (context, index) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                if (index == _books.length) {
-                  return const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                final book = _books[index];
-                return ListTile(
-                  leading: SizedBox(
-                    width: 45,
-                    height: 60,
-                    child: book.coverUrl != null && book.coverUrl!.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: book.coverUrl!,
-                            fit: BoxFit.cover,
-                            errorWidget: (context, url, error) => const Icon(Icons.book),
-                          )
-                        : const Icon(Icons.book),
-                  ),
-                  title: Text(book.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  subtitle: Text(book.author ?? '未知作者'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => BookDetailPage(searchBook: book),
-                      ),
+      body:
+          _books.isEmpty && _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : ListView.separated(
+                controller: _scrollController,
+                itemCount: _books.length + (_hasMore ? 1 : 0),
+                separatorBuilder: (context, index) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  if (index == _books.length) {
+                    return const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Center(child: CircularProgressIndicator()),
                     );
-                  },
-                );
-              },
-            ),
+                  }
+                  final book = _books[index];
+                  return ListTile(
+                    leading: SizedBox(
+                      width: 45,
+                      height: 60,
+                      child:
+                          book.coverUrl != null && book.coverUrl!.isNotEmpty
+                              ? CachedNetworkImage(
+                                imageUrl: book.coverUrl!,
+                                fit: BoxFit.cover,
+                                errorWidget:
+                                    (context, url, error) =>
+                                        const Icon(Icons.book),
+                              )
+                              : const Icon(Icons.book),
+                    ),
+                    title: Text(
+                      book.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(book.author ?? '未知作者'),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => BookDetailPage(searchBook: book),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
     );
   }
 }

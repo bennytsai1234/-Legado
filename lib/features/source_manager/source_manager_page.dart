@@ -28,7 +28,8 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => context.read<SourceManagerProvider>().loadSources(),
+            onPressed:
+                () => context.read<SourceManagerProvider>().loadSources(),
           ),
           PopupMenuButton<String>(
             onSelected: (value) {
@@ -38,19 +39,17 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
                 _importFromClipboard(context);
               }
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'url', child: Text('網路匯入')),
-              const PopupMenuItem(value: 'clipboard', child: Text('剪貼簿匯入')),
-            ],
+            itemBuilder:
+                (context) => [
+                  const PopupMenuItem(value: 'url', child: Text('網路匯入')),
+                  const PopupMenuItem(value: 'clipboard', child: Text('剪貼簿匯入')),
+                ],
             icon: const Icon(Icons.add),
           ),
         ],
       ),
       body: Column(
-        children: [
-          _buildGroupFilter(),
-          Expanded(child: _buildSourceList()),
-        ],
+        children: [_buildGroupFilter(), Expanded(child: _buildSourceList())],
       ),
     );
   }
@@ -106,7 +105,11 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
     );
   }
 
-  Widget _buildSourceItem(BuildContext context, SourceManagerProvider provider, BookSource source) {
+  Widget _buildSourceItem(
+    BuildContext context,
+    SourceManagerProvider provider,
+    BookSource source,
+  ) {
     return Dismissible(
       key: Key(source.bookSourceUrl),
       direction: DismissDirection.endToStart,
@@ -118,9 +121,9 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
       ),
       onDismissed: (direction) {
         provider.deleteSource(source);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('已刪除 ${source.bookSourceName}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('已刪除 ${source.bookSourceName}')));
       },
       child: ListTile(
         title: Text(source.bookSourceName),
@@ -143,47 +146,50 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
     _importController.clear();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isUrl ? '網路匯入' : '文本匯入'),
-        content: TextField(
-          controller: _importController,
-          decoration: InputDecoration(
-            hintText: isUrl ? '請輸入書源 URL' : '請貼上書源 JSON',
+      builder:
+          (context) => AlertDialog(
+            title: Text(isUrl ? '網路匯入' : '文本匯入'),
+            content: TextField(
+              controller: _importController,
+              decoration: InputDecoration(
+                hintText: isUrl ? '請輸入書源 URL' : '請貼上書源 JSON',
+              ),
+              maxLines: isUrl ? 1 : 5,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('取消'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final provider = context.read<SourceManagerProvider>();
+                  final input = _importController.text.trim();
+
+                  if (input.isNotEmpty) {
+                    int count;
+                    if (isUrl) {
+                      count = await provider.importFromUrl(input);
+                    } else {
+                      count = await provider.importFromText(input);
+                    }
+
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(count > 0 ? '成功匯入 $count 個書源' : '匯入失敗'),
+                        ),
+                      );
+                      Navigator.pop(context);
+                    }
+                  } else {
+                    Navigator.pop(context);
+                  }
+                },
+                child: const Text('匯入'),
+              ),
+            ],
           ),
-          maxLines: isUrl ? 1 : 5,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final provider = context.read<SourceManagerProvider>();
-              final input = _importController.text.trim();
-              
-              if (input.isNotEmpty) {
-                int count;
-                if (isUrl) {
-                  count = await provider.importFromUrl(input);
-                } else {
-                  count = await provider.importFromText(input);
-                }
-                
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(count > 0 ? '成功匯入 $count 個書源' : '匯入失敗')),
-                  );
-                  Navigator.pop(context);
-                }
-              } else {
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('匯入'),
-          ),
-        ],
-      ),
     );
   }
 

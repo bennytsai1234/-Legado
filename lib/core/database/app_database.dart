@@ -184,7 +184,10 @@ class AppDatabase {
   }
 
   static Future<void> _onUpgrade(
-      Database db, int oldVersion, int newVersion) async {
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
     // TODO: Handle database migrations
   }
 

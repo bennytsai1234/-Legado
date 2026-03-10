@@ -55,8 +55,10 @@ class BookDetailProvider extends ChangeNotifier {
 
     try {
       final sources = await _sourceDao.getAll();
-      _currentSource = sources.firstWhere((s) => s.bookSourceUrl == _book.origin);
-      
+      _currentSource = sources.firstWhere(
+        (s) => s.bookSourceUrl == _book.origin,
+      );
+
       if (_currentSource != null) {
         // 獲取最新詳情
         _book = await _service.getBookInfo(_currentSource!, _book);
@@ -74,7 +76,7 @@ class BookDetailProvider extends ChangeNotifier {
   Future<void> toggleBookshelf() async {
     _isInBookshelf = !_isInBookshelf;
     _book.isInBookshelf = _isInBookshelf;
-    
+
     if (_isInBookshelf) {
       await _bookDao.insertOrUpdate(_book);
       if (_chapters.isNotEmpty) {
@@ -83,7 +85,7 @@ class BookDetailProvider extends ChangeNotifier {
     } else {
       await _bookDao.updateInBookshelf(_book.bookUrl, false);
     }
-    
+
     notifyListeners();
   }
 

@@ -5,18 +5,10 @@ class SearchKeyword {
   int usage;
   int lastUseTime;
 
-  SearchKeyword({
-    this.word = "",
-    this.usage = 1,
-    this.lastUseTime = 0,
-  });
+  SearchKeyword({this.word = "", this.usage = 1, this.lastUseTime = 0});
 
   Map<String, dynamic> toJson() {
-    return {
-      'word': word,
-      'usage': usage,
-      'lastUseTime': lastUseTime,
-    };
+    return {'word': word, 'usage': usage, 'lastUseTime': lastUseTime};
   }
 
   factory SearchKeyword.fromJson(Map<String, dynamic> json) {

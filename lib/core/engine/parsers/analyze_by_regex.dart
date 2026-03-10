@@ -4,7 +4,11 @@
 /// 支援 Legado 的 ##pattern## 格式
 class AnalyzeByRegex {
   /// 獲取單個匹配項及其分組
-  static List<String>? getElement(String res, List<String> regs, {int index = 0}) {
+  static List<String>? getElement(
+    String res,
+    List<String> regs, {
+    int index = 0,
+  }) {
     if (index >= regs.length) return null;
 
     final regExp = RegExp(regs[index], multiLine: true, dotAll: true);
@@ -28,7 +32,11 @@ class AnalyzeByRegex {
   }
 
   /// 獲取所有匹配項列表及其分組
-  static List<List<String>> getElements(String res, List<String> regs, {int index = 0}) {
+  static List<List<String>> getElements(
+    String res,
+    List<String> regs, {
+    int index = 0,
+  }) {
     if (index >= regs.length) return [];
 
     final regExp = RegExp(regs[index], multiLine: true, dotAll: true);
@@ -59,12 +67,12 @@ class AnalyzeByRegex {
   static String replace(String res, String rule) {
     final parts = rule.split('##');
     if (parts.length < 2) return res;
-    
+
     // parts[0] 為原始規則(可選)，parts[1] 為 regex，parts[2] 為 replacement
     // 注意: split 會導致第一個為空字串，如果是以 ## 開頭
     final regexStr = parts[1];
     final replacement = parts.length > 2 ? parts[2] : "";
-    
+
     final regExp = RegExp(regexStr, multiLine: true, dotAll: true);
     return res.replaceAllMapped(regExp, (match) {
       var result = replacement;
@@ -81,7 +89,7 @@ class AnalyzeByRegex {
     if (rule.contains('##')) {
       return replace(res, rule);
     }
-    
+
     final regs = rule.split('&&').where((s) => s.isNotEmpty).toList();
     final elements = getElements(res, regs);
     if (elements.isEmpty) return "";

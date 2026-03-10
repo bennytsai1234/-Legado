@@ -10,30 +10,30 @@ class RssSource implements BaseSource {
   String? sourceComment;
   bool enabled;
   String? variableComment;
-  
+
   @override
   String? jsLib;
-  
+
   @override
   bool? enabledCookieJar;
-  
+
   @override
   String? concurrentRate;
-  
+
   @override
   String? header;
-  
+
   @override
   String? loginUrl;
-  
+
   @override
   String? loginUi;
-  
+
   String? loginCheckJs;
   String? coverDecodeJs;
   String? sortUrl;
   bool singleUrl;
-  
+
   int articleStyle; // 0, 1, 2
   String? ruleArticles;
   String? ruleNextPage;
@@ -243,7 +243,8 @@ class RssSource implements BaseSource {
       ruleContent: ruleContent ?? this.ruleContent,
       contentWhitelist: contentWhitelist ?? this.contentWhitelist,
       contentBlacklist: contentBlacklist ?? this.contentBlacklist,
-      shouldOverrideUrlLoading: shouldOverrideUrlLoading ?? this.shouldOverrideUrlLoading,
+      shouldOverrideUrlLoading:
+          shouldOverrideUrlLoading ?? this.shouldOverrideUrlLoading,
       style: style ?? this.style,
       enableJs: enableJs ?? this.enableJs,
       loadWithBaseUrl: loadWithBaseUrl ?? this.loadWithBaseUrl,

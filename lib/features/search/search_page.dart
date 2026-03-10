@@ -38,15 +38,16 @@ class _SearchPageState extends State<SearchPage> {
           decoration: InputDecoration(
             hintText: '搜尋書名、作者...',
             border: InputBorder.none,
-            suffixIcon: _controller.text.isNotEmpty 
-              ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _controller.clear();
-                    setState(() {});
-                  },
-                )
-              : null,
+            suffixIcon:
+                _controller.text.isNotEmpty
+                    ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _controller.clear();
+                        setState(() {});
+                      },
+                    )
+                    : null,
           ),
           textInputAction: TextInputAction.search,
           onSubmitted: _onSearch,
@@ -60,9 +61,10 @@ class _SearchPageState extends State<SearchPage> {
               if (provider.isSearching)
                 LinearProgressIndicator(value: provider.progress),
               Expanded(
-                child: provider.results.isEmpty && !provider.isSearching
-                  ? _buildHistory(provider)
-                  : _buildResults(provider),
+                child:
+                    provider.results.isEmpty && !provider.isSearching
+                        ? _buildHistory(provider)
+                        : _buildResults(provider),
               ),
             ],
           );
@@ -90,13 +92,18 @@ class _SearchPageState extends State<SearchPage> {
         ),
         Wrap(
           spacing: 8,
-          children: provider.history.map((h) => ActionChip(
-            label: Text(h),
-            onPressed: () {
-              _controller.text = h;
-              _onSearch(h);
-            },
-          )).toList(),
+          children:
+              provider.history
+                  .map(
+                    (h) => ActionChip(
+                      label: Text(h),
+                      onPressed: () {
+                        _controller.text = h;
+                        _onSearch(h);
+                      },
+                    ),
+                  )
+                  .toList(),
         ),
       ],
     );
@@ -113,14 +120,20 @@ class _SearchPageState extends State<SearchPage> {
           leading: SizedBox(
             width: 50,
             height: 70,
-            child: book.coverUrl != null && book.coverUrl!.isNotEmpty
-              ? CachedNetworkImage(
-                  imageUrl: book.coverUrl!,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(color: Colors.grey[200]),
-                  errorWidget: (context, url, error) => const Icon(Icons.book),
-                )
-              : Container(color: Colors.grey[200], child: const Icon(Icons.book)),
+            child:
+                book.coverUrl != null && book.coverUrl!.isNotEmpty
+                    ? CachedNetworkImage(
+                      imageUrl: book.coverUrl!,
+                      fit: BoxFit.cover,
+                      placeholder:
+                          (context, url) => Container(color: Colors.grey[200]),
+                      errorWidget:
+                          (context, url, error) => const Icon(Icons.book),
+                    )
+                    : Container(
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.book),
+                    ),
           ),
           title: Text(book.name, maxLines: 1, overflow: TextOverflow.ellipsis),
           subtitle: Column(
@@ -149,5 +162,6 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  MainAxisAlignment resolve(MainAxisAlignment val) => val; // Helper for alignment
+  MainAxisAlignment resolve(MainAxisAlignment val) =>
+      val; // Helper for alignment
 }

@@ -18,7 +18,7 @@ class ChapterDao {
         map['isVolume'] = (map['isVolume'] == true) ? 1 : 0;
         map['isVip'] = (map['isVip'] == true) ? 1 : 0;
         map['isPay'] = (map['isPay'] == true) ? 1 : 0;
-        
+
         await txn.insert(
           chaptersTable,
           map,
@@ -50,15 +50,11 @@ class ChapterDao {
   /// 保存章節正文
   Future<void> saveContent(String bookUrl, int index, String content) async {
     final db = await _db;
-    await db.insert(
-      contentsTable,
-      {
-        'bookUrl': bookUrl,
-        'chapterIndex': index,
-        'content': content,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert(contentsTable, {
+      'bookUrl': bookUrl,
+      'chapterIndex': index,
+      'content': content,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   /// 獲取章節正文
@@ -78,8 +74,16 @@ class ChapterDao {
   Future<void> deleteByBook(String bookUrl) async {
     final db = await _db;
     await db.transaction((txn) async {
-      await txn.delete(chaptersTable, where: 'bookUrl = ?', whereArgs: [bookUrl]);
-      await txn.delete(contentsTable, where: 'bookUrl = ?', whereArgs: [bookUrl]);
+      await txn.delete(
+        chaptersTable,
+        where: 'bookUrl = ?',
+        whereArgs: [bookUrl],
+      );
+      await txn.delete(
+        contentsTable,
+        where: 'bookUrl = ?',
+        whereArgs: [bookUrl],
+      );
     });
   }
 }

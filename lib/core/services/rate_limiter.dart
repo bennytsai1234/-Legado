@@ -14,7 +14,7 @@ class ConcurrentRecord {
 /// 對應 Android: help/ConcurrentRateLimiter.kt
 class ConcurrentRateLimiter {
   final BaseSource? source;
-  
+
   static final Map<String, ConcurrentRecord> _concurrentRecordMap = {};
 
   ConcurrentRateLimiter(this.source);
@@ -32,15 +32,17 @@ class ConcurrentRateLimiter {
 
   int _checkFetchStart() {
     if (source == null) return 0;
-    
+
     final concurrentRate = source!.concurrentRate;
-    if (concurrentRate == null || concurrentRate.isEmpty || concurrentRate == "0") {
+    if (concurrentRate == null ||
+        concurrentRate.isEmpty ||
+        concurrentRate == "0") {
       return 0;
     }
 
     final key = source!.getKey();
     final rateIndex = concurrentRate.indexOf("/");
-    
+
     _concurrentRecordMap[key] ??= ConcurrentRecord(
       rateIndex > 0,
       DateTime.now().millisecondsSinceEpoch,
@@ -55,7 +57,7 @@ class ConcurrentRateLimiter {
       if (fetchRecord.frequency > 0) {
         return int.tryParse(concurrentRate) ?? 0;
       }
-      
+
       final nextTime = fetchRecord.time + (int.tryParse(concurrentRate) ?? 0);
       final now = DateTime.now().millisecondsSinceEpoch;
       if (now >= nextTime) {
@@ -68,16 +70,16 @@ class ConcurrentRateLimiter {
       // 模式 B: 次數/毫秒 (例如 10/1000 代表 1秒內最多10次)
       final sj = int.tryParse(concurrentRate.substring(rateIndex + 1)) ?? 1000;
       final cs = int.tryParse(concurrentRate.substring(0, rateIndex)) ?? 1;
-      
+
       final now = DateTime.now().millisecondsSinceEpoch;
       final nextTime = fetchRecord.time + sj;
-      
+
       if (now >= nextTime) {
         fetchRecord.time = now;
         fetchRecord.frequency = 1;
         return 0;
       }
-      
+
       if (fetchRecord.frequency >= cs) {
         return nextTime - now;
       } else {
@@ -96,7 +98,7 @@ class ConcurrentRateLimiter {
   /// 執行帶限制的區塊
   Future<T> withLimit<T>(Future<T> Function() block) async {
     if (source == null) return await block();
-    
+
     final record = await getConcurrentRecord();
     try {
       return await block();

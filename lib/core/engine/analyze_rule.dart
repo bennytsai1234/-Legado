@@ -13,7 +13,7 @@ import '../models/rule_data_interface.dart';
 class AnalyzeRule {
   RuleDataInterface? ruleData;
   dynamic source; // BaseSource equivalent
-  
+
   dynamic _content;
   String? _baseUrl;
   dynamic _chapter;
@@ -23,7 +23,7 @@ class AnalyzeRule {
   AnalyzeByCss? _analyzeByJSoup;
   AnalyzeByJsonPath? _analyzeByJSonPath;
   JsEngine? _jsEngine;
-  
+
   static final HtmlUnescape _htmlUnescape = HtmlUnescape();
   static final Map<String, RegExp> _regexCache = {};
   static final Map<String, List<SourceRule>> _stringRuleCache = {};
@@ -68,21 +68,24 @@ class AnalyzeRule {
   /// 獲取單個元素
   dynamic getElement(String ruleStr) {
     if (ruleStr.isEmpty) return null;
-    
+
     var result = _content;
     final ruleList = _splitSourceRuleCacheString(ruleStr);
-    
+
     if (result != null && ruleList.isNotEmpty) {
       for (final sourceRule in ruleList) {
         if (result == null) break;
-        
+
         sourceRule.makeUpRule(result, this);
         final rule = sourceRule.rule;
-        
+
         switch (sourceRule.mode) {
           case Mode.regex:
-            final elements = AnalyzeByRegex.getElement(result.toString(), rule.split('&&').where((s) => s.isNotEmpty).toList());
-            result = elements != null ? elements.join('') : null;
+            final elements = AnalyzeByRegex.getElement(
+              result.toString(),
+              rule.split('&&').where((s) => s.isNotEmpty).toList(),
+            );
+            result = elements?.join('');
             break;
           case Mode.json:
             result = _getAnalyzeByJSonPath(result).getObject(rule);
@@ -98,9 +101,9 @@ class AnalyzeRule {
             final elements = _getAnalyzeByJSoup(result).getElements(rule);
             result = elements.isNotEmpty ? elements.first : null;
         }
-        
+
         if (result != null && sourceRule.replaceRegex.isNotEmpty) {
-           result = _replaceRegex(result.toString(), sourceRule);
+          result = _replaceRegex(result.toString(), sourceRule);
         }
       }
     }
@@ -110,20 +113,23 @@ class AnalyzeRule {
   /// 獲取列表
   List<dynamic> getElements(String ruleStr) {
     if (ruleStr.isEmpty) return [];
-    
+
     var result = _content;
     final ruleList = _splitSourceRuleCacheString(ruleStr);
-    
+
     if (result != null && ruleList.isNotEmpty) {
       for (final sourceRule in ruleList) {
         if (result == null) break;
-        
+
         sourceRule.makeUpRule(result, this);
         final rule = sourceRule.rule;
-        
+
         switch (sourceRule.mode) {
           case Mode.regex:
-            result = AnalyzeByRegex.getElements(result.toString(), rule.split('&&').where((s) => s.isNotEmpty).toList());
+            result = AnalyzeByRegex.getElements(
+              result.toString(),
+              rule.split('&&').where((s) => s.isNotEmpty).toList(),
+            );
             break;
           case Mode.json:
             result = _getAnalyzeByJSonPath(result).getElements(rule);
@@ -137,17 +143,20 @@ class AnalyzeRule {
           default:
             result = _getAnalyzeByJSoup(result).getElements(rule);
         }
-        
+
         if (result != null && sourceRule.replaceRegex.isNotEmpty) {
-           if (result is List) {
-             result = result.map((e) => _replaceRegex(e.toString(), sourceRule)).toList();
-           } else {
-             result = _replaceRegex(result.toString(), sourceRule);
-           }
+          if (result is List) {
+            result =
+                result
+                    .map((e) => _replaceRegex(e.toString(), sourceRule))
+                    .toList();
+          } else {
+            result = _replaceRegex(result.toString(), sourceRule);
+          }
         }
       }
     }
-    
+
     if (result is List) return result;
     if (result == null) return [];
     return [result];
@@ -156,17 +165,17 @@ class AnalyzeRule {
   /// 獲取單個字串
   String getString(String ruleStr, {bool isUrl = false, bool unescape = true}) {
     if (ruleStr.isEmpty) return "";
-    
+
     final ruleList = _splitSourceRuleCacheString(ruleStr);
     var result = _content;
-    
+
     if (result != null && ruleList.isNotEmpty) {
       for (final sourceRule in ruleList) {
         if (result == null) break;
-        
+
         sourceRule.makeUpRule(result, this);
         final rule = sourceRule.rule;
-        
+
         if (rule.isNotEmpty || sourceRule.replaceRegex.isEmpty) {
           switch (sourceRule.mode) {
             case Mode.js:
@@ -189,19 +198,19 @@ class AnalyzeRule {
               result = _getAnalyzeByJSoup(result).getString(rule);
           }
         }
-        
+
         if (result != null && sourceRule.replaceRegex.isNotEmpty) {
           result = _replaceRegex(result.toString(), sourceRule);
         }
       }
     }
-    
+
     var str = result?.toString() ?? "";
-    
+
     if (unescape && str.contains('&')) {
       str = _htmlUnescape.convert(str);
     }
-    
+
     if (isUrl && str.isEmpty) return _baseUrl ?? "";
     return str;
   }
@@ -209,17 +218,17 @@ class AnalyzeRule {
   /// 獲取字串列表
   List<String> getStringList(String ruleStr, {bool isUrl = false}) {
     if (ruleStr.isEmpty) return [];
-    
+
     final ruleList = _splitSourceRuleCacheString(ruleStr);
     var result = _content;
-    
+
     if (result != null && ruleList.isNotEmpty) {
       for (final sourceRule in ruleList) {
         if (result == null) break;
-        
+
         sourceRule.makeUpRule(result, this);
         final rule = sourceRule.rule;
-        
+
         switch (sourceRule.mode) {
           case Mode.js:
             result = evalJS(rule, result);
@@ -231,22 +240,27 @@ class AnalyzeRule {
             result = _getAnalyzeByXPath(result).getStringList(rule);
             break;
           case Mode.regex:
-            result = [rule]; // Regex mode in getStringList usually returns the rule itself after makeup
+            result = [
+              rule,
+            ]; // Regex mode in getStringList usually returns the rule itself after makeup
             break;
           default:
             result = _getAnalyzeByJSoup(result).getStringList(rule);
         }
-        
+
         if (sourceRule.replaceRegex.isNotEmpty) {
           if (result is List) {
-            result = result.map((e) => _replaceRegex(e.toString(), sourceRule)).toList();
+            result =
+                result
+                    .map((e) => _replaceRegex(e.toString(), sourceRule))
+                    .toList();
           } else {
             result = _replaceRegex(result?.toString() ?? "", sourceRule);
           }
         }
       }
     }
-    
+
     if (result is List) {
       return result.map((e) => e.toString()).toSet().toList();
     }
@@ -268,13 +282,16 @@ class AnalyzeRule {
 
   List<SourceRule> splitSourceRule(String ruleStr) {
     final ruleList = <SourceRule>[];
-    
+
     // Legado JS_PATTERN: @js: 或 <js>...</js>
-    final jsPattern = RegExp(r'@js:|(<js>([\w\W]*?)</js>)', caseSensitive: false);
-    
+    final jsPattern = RegExp(
+      r'@js:|(<js>([\w\W]*?)</js>)',
+      caseSensitive: false,
+    );
+
     var start = 0;
     final matches = jsPattern.allMatches(ruleStr);
-    
+
     for (final match in matches) {
       if (match.start > start) {
         final tmp = ruleStr.substring(start, match.start).trim();
@@ -282,7 +299,7 @@ class AnalyzeRule {
           ruleList.add(SourceRule(tmp));
         }
       }
-      
+
       if (match.group(0)!.toLowerCase() == '@js:') {
         final jsCode = ruleStr.substring(match.end).trim();
         ruleList.add(SourceRule(jsCode, mode: Mode.js));
@@ -300,13 +317,13 @@ class AnalyzeRule {
         ruleList.add(SourceRule(tmp));
       }
     }
-    
+
     return ruleList;
   }
 
   String _replaceRegex(String result, SourceRule rule) {
     if (rule.replaceRegex.isEmpty) return result;
-    
+
     RegExp? regex;
     if (_regexCache.containsKey(rule.replaceRegex)) {
       regex = _regexCache[rule.replaceRegex];
@@ -319,7 +336,7 @@ class AnalyzeRule {
         return result; // Invalid regex
       }
     }
-    
+
     if (regex == null) return result;
 
     if (rule.replaceFirst) {
@@ -343,7 +360,7 @@ class AnalyzeRule {
 
   dynamic evalJS(String jsStr, dynamic result) {
     _jsEngine ??= JsEngine();
-    
+
     final context = {
       'result': result,
       'baseUrl': _baseUrl,
@@ -351,7 +368,7 @@ class AnalyzeRule {
       'chapter': _chapter,
       'nextChapterUrl': _nextChapterUrl,
     };
-    
+
     return _jsEngine!.evaluate(jsStr, context: context);
   }
 
@@ -362,7 +379,7 @@ class AnalyzeRule {
   String get(String key) {
     return ruleData?.getVariable(key) ?? "";
   }
-  
+
   void dispose() {
     _jsEngine?.dispose();
   }
@@ -377,7 +394,7 @@ class SourceRule {
   String replacement = "";
   bool replaceFirst = false;
   Map<String, String> putMap = {};
-  
+
   List<String> ruleParam = [];
   List<int> ruleType = [];
 
@@ -395,7 +412,7 @@ class SourceRule {
         mode = Mode.json;
       }
     }
-    
+
     // Handle @put
     final putPattern = RegExp(r'@put:(\{.*?\})', caseSensitive: false);
     var vRuleStr = rule;
@@ -419,7 +436,7 @@ class SourceRule {
         mode = Mode.regex;
       }
     }
-    
+
     // Handle ##regex##replacement
     if (rule.contains('##')) {
       final parts = rule.split('##');
@@ -438,13 +455,13 @@ class SourceRule {
     String tmp;
     final regexPattern = RegExp(r'\$\d{1,2}');
     final matches = regexPattern.allMatches(ruleStr);
-    
+
     if (matches.isNotEmpty) {
       if (mode != Mode.js && mode != Mode.regex) {
         mode = Mode.regex;
       }
     }
-    
+
     for (final match in matches) {
       if (match.start > start) {
         tmp = ruleStr.substring(start, match.start);
@@ -491,12 +508,16 @@ class SourceRule {
     // Handle nested rules like {$.id} or {$.name}
     if (rule.contains(r'{$.') || rule.contains(r'{$[')) {
       final ra = RuleAnalyzer(rule);
-      rule = ra.innerRuleRange('{', '}', fr: (nestedRule) {
-        if (nestedRule.startsWith(r'$.') || nestedRule.startsWith(r'$[')) {
-          return analyzer.getString(nestedRule);
-        }
-        return null; // Return null to skip if not a rule
-      });
+      rule = ra.innerRuleRange(
+        '{',
+        '}',
+        fr: (nestedRule) {
+          if (nestedRule.startsWith(r'$.') || nestedRule.startsWith(r'$[')) {
+            return analyzer.getString(nestedRule);
+          }
+          return null; // Return null to skip if not a rule
+        },
+      );
     }
 
     // Handle @get:{key}
@@ -507,7 +528,11 @@ class SourceRule {
     // Handle {{js}}
     if (rule.contains('{{')) {
       final ra = RuleAnalyzer(rule);
-      rule = ra.innerRuleRange('{{', '}}', fr: (js) => analyzer.evalJS(js, result)?.toString() ?? "");
+      rule = ra.innerRuleRange(
+        '{{',
+        '}}',
+        fr: (js) => analyzer.evalJS(js, result)?.toString() ?? "",
+      );
     }
   }
 }

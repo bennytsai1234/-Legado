@@ -76,7 +76,10 @@ class SearchProvider extends ChangeNotifier {
 
   Future<void> _searchSingleSource(BookSource source, String keyword) async {
     try {
-      final List<SearchBook> books = await _service.searchBooks(source, keyword);
+      final List<SearchBook> books = await _service.searchBooks(
+        source,
+        keyword,
+      );
       _aggregateResults(books);
     } catch (e) {
       debugPrint('搜尋書源 ${source.bookSourceName} 失敗: $e');
@@ -89,8 +92,8 @@ class SearchProvider extends ChangeNotifier {
   void _aggregateResults(List<SearchBook> newBooks) {
     for (final newBook in newBooks) {
       // 聚合條件：書名 + 作者
-      final index = _results.indexWhere((r) => 
-        r.book.name == newBook.name && r.book.author == newBook.author
+      final index = _results.indexWhere(
+        (r) => r.book.name == newBook.name && r.book.author == newBook.author,
       );
 
       if (index != -1) {
@@ -100,10 +103,12 @@ class SearchProvider extends ChangeNotifier {
         }
       } else {
         // 新書籍
-        _results.add(AggregatedSearchBook(
-          book: newBook,
-          sources: [newBook.originName ?? '未知來源'],
-        ));
+        _results.add(
+          AggregatedSearchBook(
+            book: newBook,
+            sources: [newBook.originName ?? '未知來源'],
+          ),
+        );
       }
     }
     // 依來源數量或自定義規則排序（可選）

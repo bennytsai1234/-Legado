@@ -58,7 +58,9 @@ class BookGroupDao {
 
   Future<int> getIdsSum() async {
     final db = await AppDatabase.database;
-    final List<Map<String, dynamic>> maps = await db.rawQuery('SELECT SUM(groupId) FROM $tableName WHERE groupId >= 0');
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      'SELECT SUM(groupId) FROM $tableName WHERE groupId >= 0',
+    );
     if (maps.isNotEmpty && maps.first.values.first != null) {
       return (maps.first.values.first as num).toInt();
     }
@@ -67,7 +69,9 @@ class BookGroupDao {
 
   Future<int> getMaxOrder() async {
     final db = await AppDatabase.database;
-    final List<Map<String, dynamic>> maps = await db.rawQuery('SELECT MAX("order") FROM $tableName WHERE groupId >= 0');
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      'SELECT MAX("order") FROM $tableName WHERE groupId >= 0',
+    );
     if (maps.isNotEmpty && maps.first.values.first != null) {
       return (maps.first.values.first as num).toInt();
     }
@@ -77,7 +81,8 @@ class BookGroupDao {
   Future<bool> getCanAddGroup() async {
     final db = await AppDatabase.database;
     final List<Map<String, dynamic>> maps = await db.rawQuery(
-        'SELECT count(*) < 64 as canAdd FROM $tableName WHERE groupId >= 0 OR groupId = -9223372036854775808'); // Long.MIN_VALUE in SQLite
+      'SELECT count(*) < 64 as canAdd FROM $tableName WHERE groupId >= 0 OR groupId = -9223372036854775808',
+    ); // Long.MIN_VALUE in SQLite
     if (maps.isNotEmpty) {
       return (maps.first['canAdd'] as int) > 0;
     }
@@ -86,7 +91,9 @@ class BookGroupDao {
 
   Future<void> enableGroup(int groupId) async {
     final db = await AppDatabase.database;
-    await db.rawUpdate('UPDATE $tableName SET "show" = 1 WHERE groupId = ?', [groupId]);
+    await db.rawUpdate('UPDATE $tableName SET "show" = 1 WHERE groupId = ?', [
+      groupId,
+    ]);
   }
 
   Future<List<String>> getGroupNames(int id) async {

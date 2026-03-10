@@ -10,7 +10,8 @@ import '../../services/http_client.dart';
 /// 對應 Android: model/SharedJsScope.kt
 class SharedJsScope {
   // Simple LRU cache implementation using LinkedHashMap (preserves insertion order)
-  static final LinkedHashMap<String, JsEngine> _scopeMap = LinkedHashMap<String, JsEngine>();
+  static final LinkedHashMap<String, JsEngine> _scopeMap =
+      LinkedHashMap<String, JsEngine>();
   static const int _maxCacheSize = 16;
 
   /// Generate MD5 hash for a string
@@ -33,7 +34,7 @@ class SharedJsScope {
     }
 
     final engine = JsEngine();
-    
+
     // Check if jsLib is a JSON object
     bool isJsonStr = jsLib.trim().startsWith('{') && jsLib.trim().endsWith('}');
     if (isJsonStr) {
@@ -78,7 +79,7 @@ class SharedJsScope {
   /// Remove a scope from the cache
   static void remove(String? jsLib) {
     if (jsLib == null || jsLib.trim().isEmpty) return;
-    
+
     final key = _md5Encode(jsLib);
     final engine = _scopeMap.remove(key);
     engine?.dispose();

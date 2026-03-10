@@ -14,12 +14,7 @@ class KeyboardAssist {
   });
 
   Map<String, dynamic> toJson() {
-    return {
-      'type': type,
-      'key': key,
-      'value': value,
-      'serialNo': serialNo,
-    };
+    return {'type': type, 'key': key, 'value': value, 'serialNo': serialNo};
   }
 
   factory KeyboardAssist.fromJson(Map<String, dynamic> json) {

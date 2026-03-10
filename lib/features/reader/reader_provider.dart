@@ -20,7 +20,7 @@ class ReaderProvider extends ChangeNotifier {
   final Book book;
   BookSource? _source;
   List<BookChapter> _chapters = [];
-  
+
   int _currentChapterIndex = 0;
   String _content = "";
   bool _isLoading = false;
@@ -43,8 +43,9 @@ class ReaderProvider extends ChangeNotifier {
   bool get showControls => _showControls;
   int get currentChapterIndex => _currentChapterIndex;
   List<BookChapter> get chapters => _chapters;
-  BookChapter? get currentChapter => _chapters.isNotEmpty ? _chapters[_currentChapterIndex] : null;
-  
+  BookChapter? get currentChapter =>
+      _chapters.isNotEmpty ? _chapters[_currentChapterIndex] : null;
+
   double get fontSize => _fontSize;
   double get lineHeight => _lineHeight;
   int get themeIndex => _themeIndex;
@@ -79,7 +80,10 @@ class ReaderProvider extends ChangeNotifier {
     if (_chapters.isEmpty) {
       // 如果本地沒目錄，嘗試從網路抓取 (這通常在詳情頁已經做過)
       final source = await _sourceDao.getAll();
-      _source = source.cast<BookSource?>().firstWhere((s) => s?.bookSourceUrl == book.origin, orElse: () => null);
+      _source = source.cast<BookSource?>().firstWhere(
+        (s) => s?.bookSourceUrl == book.origin,
+        orElse: () => null,
+      );
       if (_source != null) {
         _chapters = await _service.getChapterList(_source!, book);
         await _chapterDao.insertChapters(_chapters);
@@ -91,12 +95,15 @@ class ReaderProvider extends ChangeNotifier {
   Future<void> _loadSource() async {
     if (_source != null) return;
     final sources = await _sourceDao.getAll();
-    _source = sources.cast<BookSource?>().firstWhere((s) => s?.bookSourceUrl == book.origin, orElse: () => null);
+    _source = sources.cast<BookSource?>().firstWhere(
+      (s) => s?.bookSourceUrl == book.origin,
+      orElse: () => null,
+    );
   }
 
   Future<void> loadChapter(int index) async {
     if (index < 0 || index >= _chapters.length) return;
-    
+
     _isLoading = true;
     _currentChapterIndex = index;
     notifyListeners();
@@ -110,17 +117,25 @@ class ReaderProvider extends ChangeNotifier {
         // 2. 從網路抓取
         if (_source == null) await _loadSource();
         if (_source != null) {
-          final rawContent = await _service.getContent(_source!, book, _chapters[index]);
+          final rawContent = await _service.getContent(
+            _source!,
+            book,
+            _chapters[index],
+          );
           await _chapterDao.saveContent(book.bookUrl, index, rawContent);
           _content = await _applyReplaceRules(rawContent);
         } else {
           _content = "錯誤：找不到書源";
         }
       }
-      
+
       // 3. 更新書籍進度
-      await _bookDao.updateProgress(book.bookUrl, index, 0, _chapters[index].title);
-      
+      await _bookDao.updateProgress(
+        book.bookUrl,
+        index,
+        0,
+        _chapters[index].title,
+      );
     } catch (e) {
       _content = "加載章節失敗: $e";
     } finally {
@@ -133,11 +148,14 @@ class ReaderProvider extends ChangeNotifier {
     final rules = await _replaceDao.getEnabled();
     var result = content;
     for (final rule in rules) {
-      final pattern = rule.isRegex ? RegExp(rule.pattern, multiLine: true, dotAll: true) : RegExp(RegExp.escape(rule.pattern));
+      final pattern =
+          rule.isRegex
+              ? RegExp(rule.pattern, multiLine: true, dotAll: true)
+              : RegExp(RegExp.escape(rule.pattern));
       result = result.replaceAll(pattern, rule.replacement);
     }
     // 基本排版清洗
-    result = result.replaceAll(RegExp(r'\n\s*\n'), '\n\n'); 
+    result = result.replaceAll(RegExp(r'\n\s*\n'), '\n\n');
     return result.trim();
   }
 

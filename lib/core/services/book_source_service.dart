@@ -9,7 +9,6 @@ import 'rate_limiter.dart';
 /// BookSourceService - 書源業務服務
 /// 整合解析引擎與業務流程
 class BookSourceService {
-  
   /// 搜尋書籍
   /// [filter] 提供精確搜尋 (precise search) 匹配條件
   Future<List<SearchBook>> searchBooks(
@@ -35,30 +34,45 @@ class BookSourceService {
       final resBody = await analyzeUrl.getResponseBody();
       if (resBody.isEmpty) return [];
 
-      final list = _analyzeBookList(source, resBody, analyzeUrl.url, isSearch: true);
-      
+      final list = _analyzeBookList(
+        source,
+        resBody,
+        analyzeUrl.url,
+        isSearch: true,
+      );
+
       // 精確搜尋過濾
       if (filter != null) {
-        return list.where((book) => filter(book.name, book.author ?? "")).toList();
+        return list
+            .where((book) => filter(book.name, book.author ?? ""))
+            .toList();
       }
       return list;
     });
   }
 
   /// 精確搜尋
-  Future<SearchBook?> preciseSearch(List<BookSource> sources, String name, String author) async {
+  Future<SearchBook?> preciseSearch(
+    List<BookSource> sources,
+    String name,
+    String author,
+  ) async {
     for (final source in sources) {
-       try {
-         final books = await searchBooks(source, name, filter: (fName, fAuthor) {
+      try {
+        final books = await searchBooks(
+          source,
+          name,
+          filter: (fName, fAuthor) {
             return fName == name && fAuthor == author;
-         });
-         if (books.isNotEmpty) {
-           return books.first;
-         }
-       } catch (e) {
-         // Continue searching next source
-         continue;
-       }
+          },
+        );
+        if (books.isNotEmpty) {
+          return books.first;
+        }
+      } catch (e) {
+        // Continue searching next source
+        continue;
+      }
     }
     return null;
   }
@@ -126,9 +140,9 @@ class BookSourceService {
       final res = await _fetchChapterPage(source, book, nextUrl);
       chapters.addAll(res.chapters);
       nextUrl = res.nextUrl;
-      
+
       // 防止死循環或過多翻頁 (Legado 預設通常也有限制)
-      if (chapters.length > 5000) break; 
+      if (chapters.length > 5000) break;
     }
     return chapters;
   }
@@ -158,16 +172,23 @@ class BookSourceService {
       final List<BookChapter> pageChapters = [];
 
       for (int i = 0; i < elements.length; i++) {
-        final itemRule = AnalyzeRule(source: source).setContent(elements[i], baseUrl: analyzeUrl.url);
-        pageChapters.add(BookChapter(
-          url: itemRule.getString(tocRule.chapterUrl ?? "", isUrl: true),
-          title: itemRule.getString(tocRule.chapterName ?? ""),
-          index: i,
-          bookUrl: book.bookUrl,
-        ));
+        final itemRule = AnalyzeRule(
+          source: source,
+        ).setContent(elements[i], baseUrl: analyzeUrl.url);
+        pageChapters.add(
+          BookChapter(
+            url: itemRule.getString(tocRule.chapterUrl ?? "", isUrl: true),
+            title: itemRule.getString(tocRule.chapterName ?? ""),
+            index: i,
+            bookUrl: book.bookUrl,
+          ),
+        );
       }
 
-      String? nextTocUrl = rule.getString(tocRule.nextTocUrl ?? "", isUrl: true);
+      String? nextTocUrl = rule.getString(
+        tocRule.nextTocUrl ?? "",
+        isUrl: true,
+      );
       if (nextTocUrl == url) nextTocUrl = null; // 避免原地踏步
 
       return (chapters: pageChapters, nextUrl: nextTocUrl);
@@ -175,18 +196,24 @@ class BookSourceService {
   }
 
   /// 獲取正文內容 (支援正文翻頁)
-  Future<String> getContent(BookSource source, Book book, BookChapter chapter, {String? nextChapterUrl}) async {
+  Future<String> getContent(
+    BookSource source,
+    Book book,
+    BookChapter chapter, {
+    String? nextChapterUrl,
+  }) async {
     final limiter = ConcurrentRateLimiter(source);
     return await limiter.withLimit(() async {
       List<String> contents = [];
       String? currentUrl = chapter.url;
       final Set<String> loadedUrls = {currentUrl};
-      
+
       while (currentUrl != null && currentUrl.isNotEmpty) {
-        final analyzeRule = AnalyzeRule(source: source)
-          ..setChapter(chapter)
-          ..setNextChapterUrl(nextChapterUrl);
-        
+        final analyzeRule =
+            AnalyzeRule(source: source)
+              ..setChapter(chapter)
+              ..setNextChapterUrl(nextChapterUrl);
+
         final analyzeUrl = AnalyzeUrl(
           currentUrl,
           baseUrl: book.bookUrl,
@@ -204,11 +231,14 @@ class BookSourceService {
         if (pageContent.isNotEmpty) contents.add(pageContent);
 
         // 正文翻頁邏輯
-        String? nextUrl = rule.getString(contentRule.nextContentUrl ?? "", isUrl: true);
+        String? nextUrl = rule.getString(
+          contentRule.nextContentUrl ?? "",
+          isUrl: true,
+        );
         if (nextUrl.isEmpty || loadedUrls.contains(nextUrl)) {
           break; // 避免死循環或無下一頁
         }
-        
+
         // 如果下一頁剛好等於下一章，就停止抓取
         if (nextChapterUrl != null && nextUrl == nextChapterUrl) {
           break;
@@ -217,7 +247,7 @@ class BookSourceService {
         currentUrl = nextUrl;
         loadedUrls.add(currentUrl);
       }
-      
+
       return contents.join('\n');
     });
   }
@@ -236,18 +266,22 @@ class BookSourceService {
     final books = <SearchBook>[];
 
     for (final element in elements) {
-      final itemRule = AnalyzeRule(source: source).setContent(element, baseUrl: baseUrl);
-      books.add(SearchBook(
-        bookUrl: itemRule.getString(listRule.bookUrl ?? "", isUrl: true),
-        name: itemRule.getString(listRule.name ?? ""),
-        author: itemRule.getString(listRule.author ?? ""),
-        kind: itemRule.getStringList(listRule.kind ?? "").join(','),
-        coverUrl: itemRule.getString(listRule.coverUrl ?? "", isUrl: true),
-        intro: itemRule.getString(listRule.intro ?? ""),
-        latestChapterTitle: itemRule.getString(listRule.lastChapter ?? ""),
-        origin: source.bookSourceUrl,
-        originName: source.bookSourceName,
-      ));
+      final itemRule = AnalyzeRule(
+        source: source,
+      ).setContent(element, baseUrl: baseUrl);
+      books.add(
+        SearchBook(
+          bookUrl: itemRule.getString(listRule.bookUrl ?? "", isUrl: true),
+          name: itemRule.getString(listRule.name ?? ""),
+          author: itemRule.getString(listRule.author ?? ""),
+          kind: itemRule.getStringList(listRule.kind ?? "").join(','),
+          coverUrl: itemRule.getString(listRule.coverUrl ?? "", isUrl: true),
+          intro: itemRule.getString(listRule.intro ?? ""),
+          latestChapterTitle: itemRule.getString(listRule.lastChapter ?? ""),
+          origin: source.bookSourceUrl,
+          originName: source.bookSourceName,
+        ),
+      );
     }
 
     return books;

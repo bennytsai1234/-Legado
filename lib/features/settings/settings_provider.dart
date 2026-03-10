@@ -23,9 +23,12 @@ class SettingsProvider extends ChangeNotifier {
 
   ThemeMode _parseThemeMode(String mode) {
     switch (mode) {
-      case 'light': return ThemeMode.light;
-      case 'dark': return ThemeMode.dark;
-      default: return ThemeMode.system;
+      case 'light':
+        return ThemeMode.light;
+      case 'dark':
+        return ThemeMode.dark;
+      default:
+        return ThemeMode.system;
     }
   }
 
@@ -42,7 +45,7 @@ class SettingsProvider extends ChangeNotifier {
       final dbPath = await getDatabasesPath();
       final path = join(dbPath, 'legado_reader.db');
       final dbFile = File(path);
-      
+
       if (!await dbFile.exists()) return null;
 
       Directory? backupDir;
@@ -56,7 +59,10 @@ class SettingsProvider extends ChangeNotifier {
         backupDir = await getTemporaryDirectory();
       }
 
-      final backupPath = join(backupDir.path, 'legado_reader_backup_${DateTime.now().millisecondsSinceEpoch}.db');
+      final backupPath = join(
+        backupDir.path,
+        'legado_reader_backup_${DateTime.now().millisecondsSinceEpoch}.db',
+      );
       await dbFile.copy(backupPath);
       return backupPath;
     } catch (e) {
@@ -70,13 +76,13 @@ class SettingsProvider extends ChangeNotifier {
     try {
       // 關閉當前資料庫
       await AppDatabase.close();
-      
+
       final dbPath = await getDatabasesPath();
       final path = join(dbPath, 'legado_reader.db');
-      
+
       final backupFile = File(backupPath);
       await backupFile.copy(path);
-      
+
       // 重新開啟資料庫 (會由下一個 get database 觸發)
       return true;
     } catch (e) {

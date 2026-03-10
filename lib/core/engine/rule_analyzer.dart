@@ -20,14 +20,16 @@ class RuleAnalyzer {
   static const int _esc = 92; // '\\'
 
   RuleAnalyzer(String data, {bool isCode = false})
-      : _queue = data,
-        _isCode = isCode;
+    : _queue = data,
+      _isCode = isCode;
 
   /// 修剪當前規則之前的 "@" 或者空白符
   void trim() {
-    if (_pos < _queue.length && (_queue[_pos] == '@' || _queue.codeUnitAt(_pos) < 33)) {
+    if (_pos < _queue.length &&
+        (_queue[_pos] == '@' || _queue.codeUnitAt(_pos) < 33)) {
       _pos++;
-      while (_pos < _queue.length && (_queue[_pos] == '@' || _queue.codeUnitAt(_pos) < 33)) {
+      while (_pos < _queue.length &&
+          (_queue[_pos] == '@' || _queue.codeUnitAt(_pos) < 33)) {
         _pos++;
       }
       _start = _pos; // 開始點推移
@@ -165,7 +167,9 @@ class RuleAnalyzer {
   }
 
   bool _chompBalanced(String open, String close) {
-    return _isCode ? _chompCodeBalanced(open, close) : _chompRuleBalanced(open, close);
+    return _isCode
+        ? _chompCodeBalanced(open, close)
+        : _chompRuleBalanced(open, close);
   }
 
   /// 分割規則
@@ -224,7 +228,9 @@ class RuleAnalyzer {
       _pos = st;
       final next = _queue[_pos] == '[' ? ']' : ')';
       if (!_chompBalanced(_queue[_pos], next)) {
-        throw Error(); // TODO: Better error message
+        throw FormatException(
+          "Unbalanced bracket '\${_queue[_pos]}' or '\$next' near position $_pos in rule: $_queue",
+        );
       }
 
       if (end <= _pos) break;
@@ -263,7 +269,7 @@ class RuleAnalyzer {
           if (_pos > st) {
             _startX = _start;
             // Continue the outer while loop (effectively tailrec)
-            break; 
+            break;
           } else {
             _rule.add(_queue.substring(_pos));
             return _rule;
@@ -273,14 +279,16 @@ class RuleAnalyzer {
         _pos = st;
         final next = _queue[_pos] == '[' ? ']' : ')';
         if (!_chompBalanced(_queue[_pos], next)) {
-          throw Error();
+          throw FormatException(
+            "Unbalanced bracket '\${_queue[_pos]}' or '\$next' near position $_pos in rule: $_queue",
+          );
         }
         if (end <= _pos) break;
       }
-      
+
       if (_pos < end) {
-          // This path happens if we broke out to continue outer loop
-          continue;
+        // This path happens if we broke out to continue outer loop
+        continue;
       }
 
       _start = _pos;
@@ -339,7 +347,7 @@ class RuleAnalyzer {
           _startX = _pos;
         } else {
           // Keep looking after this startStr
-          _pos += 1; 
+          _pos += 1;
         }
       }
     }

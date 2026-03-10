@@ -55,19 +55,19 @@ class SearchBook {
   }
 
   Map<String, dynamic> toJson() => {
-        'bookUrl': bookUrl,
-        'name': name,
-        'author': author,
-        'kind': kind,
-        'coverUrl': coverUrl,
-        'intro': intro,
-        'wordCount': wordCount,
-        'latestChapterTitle': latestChapterTitle,
-        'origin': origin,
-        'originName': originName,
-        'originOrder': originOrder,
-        'type': type,
-        'addTime': addTime,
-        'variable': variable,
-      };
+    'bookUrl': bookUrl,
+    'name': name,
+    'author': author,
+    'kind': kind,
+    'coverUrl': coverUrl,
+    'intro': intro,
+    'wordCount': wordCount,
+    'latestChapterTitle': latestChapterTitle,
+    'origin': origin,
+    'originName': originName,
+    'originOrder': originOrder,
+    'type': type,
+    'addTime': addTime,
+    'variable': variable,
+  };
 }

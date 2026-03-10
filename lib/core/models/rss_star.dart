@@ -34,7 +34,10 @@ class RssStar extends BaseRssArticle {
     this.image,
     this.group = "默认分组",
     this.variable,
-  }) : variableMap = variable != null ? Map<String, String>.from(jsonDecode(variable)) : {};
+  }) : variableMap =
+           variable != null
+               ? Map<String, String>.from(jsonDecode(variable))
+               : {};
 
   Map<String, dynamic> toJson() {
     return {

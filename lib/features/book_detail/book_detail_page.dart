@@ -22,48 +22,67 @@ class BookDetailPage extends StatelessWidget {
               title: Text(book.name),
               actions: [
                 IconButton(
-                  icon: Icon(provider.isInBookshelf ? Icons.favorite : Icons.favorite_border),
+                  icon: Icon(
+                    provider.isInBookshelf
+                        ? Icons.favorite
+                        : Icons.favorite_border,
+                  ),
                   color: provider.isInBookshelf ? Colors.red : null,
                   onPressed: provider.toggleBookshelf,
                 ),
               ],
             ),
-            body: provider.isLoading && provider.chapters.isEmpty
-                ? const Center(child: CircularProgressIndicator())
-                : CustomScrollView(
-                    slivers: [
-                      SliverToBoxAdapter(child: _buildHeader(book)),
-                      SliverToBoxAdapter(child: _buildIntro(book)),
-                      SliverPadding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        sliver: SliverToBoxAdapter(
-                          child: Text(
-                            '目錄 (${provider.chapters.length} 章)',
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            body:
+                provider.isLoading && provider.chapters.isEmpty
+                    ? const Center(child: CircularProgressIndicator())
+                    : CustomScrollView(
+                      slivers: [
+                        SliverToBoxAdapter(child: _buildHeader(book)),
+                        SliverToBoxAdapter(child: _buildIntro(book)),
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          sliver: SliverToBoxAdapter(
+                            child: Text(
+                              '目錄 (${provider.chapters.length} 章)',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                      SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
+                        SliverList(
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
                             final chapter = provider.chapters[index];
                             return ListTile(
-                              title: Text(chapter.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                              title: Text(
+                                chapter.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                               onTap: () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => ReaderPage(book: book, chapterIndex: index),
+                                    builder:
+                                        (context) => ReaderPage(
+                                          book: book,
+                                          chapterIndex: index,
+                                        ),
                                   ),
                                 );
                               },
                             );
-                          },
-                          childCount: provider.chapters.length,
+                          }, childCount: provider.chapters.length),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
             bottomNavigationBar: _buildBottomBar(context, provider),
           );
         },
@@ -80,26 +99,44 @@ class BookDetailPage extends StatelessWidget {
           SizedBox(
             width: 100,
             height: 140,
-            child: book.coverUrl != null && book.coverUrl!.isNotEmpty
-                ? CachedNetworkImage(
-                    imageUrl: book.coverUrl!,
-                    fit: BoxFit.cover,
-                    errorWidget: (context, url, error) => const Icon(Icons.book, size: 50),
-                  )
-                : const Icon(Icons.book, size: 50),
+            child:
+                book.coverUrl != null && book.coverUrl!.isNotEmpty
+                    ? CachedNetworkImage(
+                      imageUrl: book.coverUrl!,
+                      fit: BoxFit.cover,
+                      errorWidget:
+                          (context, url, error) =>
+                              const Icon(Icons.book, size: 50),
+                    )
+                    : const Icon(Icons.book, size: 50),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(book.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(
+                  book.name,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 8),
-                Text('作者：${book.author ?? '未知'}', style: const TextStyle(fontSize: 16)),
+                Text(
+                  '作者：${book.author ?? '未知'}',
+                  style: const TextStyle(fontSize: 16),
+                ),
                 const SizedBox(height: 4),
-                Text('來源：${book.originName ?? '未知'}', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                Text(
+                  '來源：${book.originName ?? '未知'}',
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                ),
                 const SizedBox(height: 4),
-                Text('分類：${book.kind ?? '未知'}', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                Text(
+                  '分類：${book.kind ?? '未知'}',
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                ),
               ],
             ),
           ),
@@ -115,9 +152,15 @@ class BookDetailPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Divider(),
-          const Text('簡介', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text(
+            '簡介',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
-          Text(book.intro ?? '暫無簡介', style: const TextStyle(fontSize: 14, height: 1.5)),
+          Text(
+            book.intro ?? '暫無簡介',
+            style: const TextStyle(fontSize: 14, height: 1.5),
+          ),
           const Divider(),
         ],
       ),
@@ -143,7 +186,9 @@ class BookDetailPage extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ReaderPage(book: provider.book, chapterIndex: 0),
+                      builder:
+                          (context) =>
+                              ReaderPage(book: provider.book, chapterIndex: 0),
                     ),
                   );
                 },

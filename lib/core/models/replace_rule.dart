@@ -43,15 +43,15 @@ class ReplaceRule {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'group': group,
-        'pattern': pattern,
-        'replacement': replacement,
-        'scope': scope,
-        'scopeContent': scopeContent,
-        'isEnabled': isEnabled,
-        'isRegex': isRegex,
-        'order': order,
-      };
+    'id': id,
+    'name': name,
+    'group': group,
+    'pattern': pattern,
+    'replacement': replacement,
+    'scope': scope,
+    'scopeContent': scopeContent,
+    'isEnabled': isEnabled,
+    'isRegex': isRegex,
+    'order': order,
+  };
 }

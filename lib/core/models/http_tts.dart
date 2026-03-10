@@ -7,25 +7,25 @@ class HttpTTS implements BaseSource {
   String name;
   String url;
   String? contentType;
-  
+
   @override
   String? concurrentRate;
-  
+
   @override
   String? loginUrl;
-  
+
   @override
   String? loginUi;
-  
+
   @override
   String? header;
-  
+
   @override
   String? jsLib;
-  
+
   @override
   bool? enabledCookieJar;
-  
+
   String? loginCheckJs;
   int lastUpdateTime;
 

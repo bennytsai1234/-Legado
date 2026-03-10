@@ -86,7 +86,9 @@ class ReadRecordDao {
 
   Future<int> getAllTime() async {
     final db = await AppDatabase.database;
-    final List<Map<String, dynamic>> maps = await db.rawQuery('SELECT SUM(readTime) FROM $tableName');
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      'SELECT SUM(readTime) FROM $tableName',
+    );
     if (maps.isNotEmpty && maps.first.values.first != null) {
       return (maps.first.values.first as num).toInt();
     }
@@ -95,19 +97,25 @@ class ReadRecordDao {
 
   Future<List<ReadRecordShow>> search(String searchKey) async {
     final db = await AppDatabase.database;
-    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      '''
       SELECT bookName, SUM(readTime) as readTime, MAX(lastRead) as lastRead 
       FROM $tableName 
       WHERE bookName LIKE '%' || ? || '%'
       GROUP BY bookName 
       ORDER BY bookName COLLATE NOCASE
-    ''', [searchKey]);
+    ''',
+      [searchKey],
+    );
     return List.generate(maps.length, (i) => ReadRecordShow.fromJson(maps[i]));
   }
 
   Future<int?> getReadTimeByBookName(String bookName) async {
     final db = await AppDatabase.database;
-    final List<Map<String, dynamic>> maps = await db.rawQuery('SELECT SUM(readTime) FROM $tableName WHERE bookName = ?', [bookName]);
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      'SELECT SUM(readTime) FROM $tableName WHERE bookName = ?',
+      [bookName],
+    );
     if (maps.isNotEmpty && maps.first.values.first != null) {
       return (maps.first.values.first as num).toInt();
     }
@@ -163,10 +171,6 @@ class ReadRecordDao {
 
   Future<void> deleteByName(String bookName) async {
     final db = await AppDatabase.database;
-    await db.delete(
-      tableName,
-      where: 'bookName = ?',
-      whereArgs: [bookName],
-    );
+    await db.delete(tableName, where: 'bookName = ?', whereArgs: [bookName]);
   }
 }

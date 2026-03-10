@@ -13,6 +13,7 @@ import '../../models/base_source.dart';
 import '../../services/http_client.dart';
 import '../../services/cookie_store.dart';
 import '../../services/cache_manager.dart';
+import 'package:fast_gbk/fast_gbk.dart';
 
 /// JsExtensions - JS 橋接擴展
 /// 對應 Android: help/JsExtensions.kt
@@ -52,7 +53,8 @@ class JsExtensions {
       try {
         if (args is List) {
           final List<String> urls = args.map((e) => e.toString()).toList();
-          final List<Future<String>> futures = urls.map((url) => AnalyzeUrl(url).getResponseBody()).toList();
+          final List<Future<String>> futures =
+              urls.map((url) => AnalyzeUrl(url).getResponseBody()).toList();
           return await Future.wait(futures);
         }
         return [];
@@ -77,13 +79,18 @@ class JsExtensions {
     runtime.onMessage('get', (dynamic args) async {
       try {
         final url = args[0].toString();
-        final Map<String, dynamic> headers = Map<String, dynamic>.from(args[1] ?? {});
-        final response = await HttpClient().client.get(url, options: Options(headers: headers));
+        final Map<String, dynamic> headers = Map<String, dynamic>.from(
+          args[1] ?? {},
+        );
+        final response = await HttpClient().client.get(
+          url,
+          options: Options(headers: headers),
+        );
         return {
           'body': response.data.toString(),
           'url': response.requestOptions.uri.toString(),
           'code': response.statusCode,
-          'headers': response.headers.map
+          'headers': response.headers.map,
         };
       } catch (e) {
         return {'body': e.toString(), 'code': 500};
@@ -95,13 +102,19 @@ class JsExtensions {
       try {
         final url = args[0].toString();
         final body = args[1];
-        final Map<String, dynamic> headers = Map<String, dynamic>.from(args[2] ?? {});
-        final response = await HttpClient().client.post(url, data: body, options: Options(headers: headers));
+        final Map<String, dynamic> headers = Map<String, dynamic>.from(
+          args[2] ?? {},
+        );
+        final response = await HttpClient().client.post(
+          url,
+          data: body,
+          options: Options(headers: headers),
+        );
         return {
           'body': response.data.toString(),
           'url': response.requestOptions.uri.toString(),
           'code': response.statusCode,
-          'headers': response.headers.map
+          'headers': response.headers.map,
         };
       } catch (e) {
         return {'body': e.toString(), 'code': 500};
@@ -127,27 +140,36 @@ class JsExtensions {
       final iv = args[3];
       final data = args[4];
       final outputFormat = args[5].toString();
-      
+
       return JsEncodeUtils.symmetricCrypto(
-        action, transformation, key, iv, data, outputFormat: outputFormat
+        action,
+        transformation,
+        key,
+        iv,
+        data,
+        outputFormat: outputFormat,
       );
     });
 
     // 實作 java.strToBytes
     runtime.onMessage('strToBytes', (dynamic args) {
       final str = args[0].toString();
-      // ignore: unused_local_variable
       final charset = args.length > 1 ? args[1].toString() : 'UTF-8';
-      // TODO: Handle other charsets
+      if (charset.toUpperCase().contains('GBK') ||
+          charset.toUpperCase().contains('GB2312')) {
+        return gbk.encode(str);
+      }
       return utf8.encode(str);
     });
 
     // 實作 java.bytesToStr
     runtime.onMessage('bytesToStr', (dynamic args) {
       final List<int> bytes = List<int>.from(args[0]);
-      // ignore: unused_local_variable
       final charset = args.length > 1 ? args[1].toString() : 'UTF-8';
-      // TODO: Handle other charsets
+      if (charset.toUpperCase().contains('GBK') ||
+          charset.toUpperCase().contains('GB2312')) {
+        return gbk.decode(bytes);
+      }
       return utf8.decode(bytes);
     });
 
@@ -160,7 +182,8 @@ class JsExtensions {
         final tempDir = await getTemporaryDirectory();
         final savePath = p.join(tempDir.path, "downloads", key);
         final file = File(savePath);
-        if (!await file.parent.exists()) await file.parent.create(recursive: true);
+        if (!await file.parent.exists())
+          await file.parent.create(recursive: true);
         await dio.download(url, savePath);
         return savePath;
       } catch (e) {
@@ -180,27 +203,47 @@ class JsExtensions {
 
     runtime.onMessage('readTxtFile', (dynamic args) async {
       final path = args.toString();
-      // ignore: unused_local_variable
-      final charset = args is List && args.length > 1 ? args[1].toString() : 'UTF-8';
+      final charset =
+          args is List && args.length > 1 ? args[1].toString() : 'UTF-8';
       final file = File(path);
       if (await file.exists()) {
-        // TODO: Handle charset
-        return await file.readAsString();
+        final bytes = await file.readAsBytes();
+        if (charset.toUpperCase().contains('GBK') ||
+            charset.toUpperCase().contains('GB2312')) {
+          return gbk.decode(bytes);
+        }
+        return utf8.decode(bytes, allowMalformed: true);
       }
       return "";
     });
 
     // 注入輔助函式
-    runtime.onMessage('_md5Encode', (dynamic args) => JsEncodeUtils.md5Encode(args.toString()));
-    runtime.onMessage('_md5Encode16', (dynamic args) => JsEncodeUtils.md5Encode16(args.toString()));
-    runtime.onMessage('_base64Encode', (dynamic args) => JsEncodeUtils.base64Encode(args.toString()));
+    runtime.onMessage(
+      '_md5Encode',
+      (dynamic args) => JsEncodeUtils.md5Encode(args.toString()),
+    );
+    runtime.onMessage(
+      '_md5Encode16',
+      (dynamic args) => JsEncodeUtils.md5Encode16(args.toString()),
+    );
+    runtime.onMessage(
+      '_base64Encode',
+      (dynamic args) => JsEncodeUtils.base64Encode(args.toString()),
+    );
     runtime.onMessage('_base64Decode', (dynamic args) {
       final str = args is List ? args[0].toString() : args.toString();
-      final charset = args is List && args.length > 1 ? args[1].toString() : 'UTF-8';
+      final charset =
+          args is List && args.length > 1 ? args[1].toString() : 'UTF-8';
       return JsEncodeUtils.base64Decode(str, charset: charset);
     });
-    runtime.onMessage('_hexEncode', (dynamic args) => hex.encode(utf8.encode(args.toString())));
-    runtime.onMessage('_hexDecode', (dynamic args) => utf8.decode(hex.decode(args.toString())));
+    runtime.onMessage(
+      '_hexEncode',
+      (dynamic args) => hex.encode(utf8.encode(args.toString())),
+    );
+    runtime.onMessage(
+      '_hexDecode',
+      (dynamic args) => utf8.decode(hex.decode(args.toString())),
+    );
     runtime.onMessage('_randomUUID', (dynamic args) => const Uuid().v4());
     runtime.onMessage('_timeFormat', (dynamic args) {
       final time = args;
@@ -303,7 +346,19 @@ class JsExtensions {
 
   String _toNumChapter(String s) {
     // Basic implementation of converting Chinese numbers to Arabic in chapter titles
-    final chnMap = {'零': 0, '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10};
+    final chnMap = {
+      '零': 0,
+      '一': 1,
+      '二': 2,
+      '三': 3,
+      '四': 4,
+      '五': 5,
+      '六': 6,
+      '七': 7,
+      '八': 8,
+      '九': 9,
+      '十': 10,
+    };
     return s.replaceAllMapped(RegExp(r'[零一二三四五六七八九十]+'), (match) {
       final chn = match.group(0)!;
       int res = 0;

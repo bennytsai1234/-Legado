@@ -125,7 +125,7 @@ class AnalyzeByXPath {
   /// 獲取合併字串
   String? getString(String rule) {
     if (rule.isEmpty) return null;
-    
+
     final ruleAnalyzes = RuleAnalyzer(rule);
     final rules = ruleAnalyzes.splitRule(['&&', '||']);
 

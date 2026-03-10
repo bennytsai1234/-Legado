@@ -24,11 +24,11 @@ class JsEngine {
     if (!_isAvailable) {
       // Mock basic JS evaluation for tests if library is missing
       if (jsCode.contains("'https://api.example.com/book/' + result")) {
-         return 'https://api.example.com/book/${context?['result']}';
+        return 'https://api.example.com/book/${context?['result']}';
       }
       return "JS_ERROR: Library not available";
     }
-    
+
     final runtime = _runtime!;
     if (context != null) {
       context.forEach((key, value) {

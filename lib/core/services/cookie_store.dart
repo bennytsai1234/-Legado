@@ -39,7 +39,7 @@ class CookieStore {
   /// 獲取 Cookie
   Future<String> getCookie(String url) async {
     final domain = getSubDomain(url);
-    
+
     // 優先從記憶體快取獲取
     if (_memoryCache.containsKey(domain)) {
       return _memoryCache[domain]!;

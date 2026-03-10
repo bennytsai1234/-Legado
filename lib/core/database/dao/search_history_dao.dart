@@ -10,14 +10,10 @@ class SearchHistoryDao {
   /// 添加歷史記錄（如果已存在則更新時間）
   Future<void> add(String keyword) async {
     final db = await _db;
-    await db.insert(
-      tableName,
-      {
-        'keyword': keyword,
-        'searchTime': DateTime.now().millisecondsSinceEpoch,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert(tableName, {
+      'keyword': keyword,
+      'searchTime': DateTime.now().millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   /// 獲取最近的歷史記錄
@@ -35,11 +31,7 @@ class SearchHistoryDao {
   /// 刪除單個記錄
   Future<void> delete(String keyword) async {
     final db = await _db;
-    await db.delete(
-      tableName,
-      where: 'keyword = ?',
-      whereArgs: [keyword],
-    );
+    await db.delete(tableName, where: 'keyword = ?', whereArgs: [keyword]);
   }
 
   /// 清空所有歷史

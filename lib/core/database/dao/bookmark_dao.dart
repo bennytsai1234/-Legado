@@ -29,7 +29,8 @@ class BookmarkDao {
     final db = await AppDatabase.database;
     final List<Map<String, dynamic>> maps = await db.query(
       tableName,
-      orderBy: 'bookName COLLATE NOCASE, bookAuthor COLLATE NOCASE, chapterIndex, chapterPos',
+      orderBy:
+          'bookName COLLATE NOCASE, bookAuthor COLLATE NOCASE, chapterIndex, chapterPos',
     );
     return List.generate(maps.length, (i) => Bookmark.fromJson(maps[i]));
   }
@@ -47,7 +48,11 @@ class BookmarkDao {
   }
 
   /// 搜尋書籤
-  Future<List<Bookmark>> search(String bookName, String bookAuthor, String key) async {
+  Future<List<Bookmark>> search(
+    String bookName,
+    String bookAuthor,
+    String key,
+  ) async {
     final db = await AppDatabase.database;
     final List<Map<String, dynamic>> maps = await db.rawQuery(
       '''
@@ -85,10 +90,6 @@ class BookmarkDao {
   /// 刪除書籤
   Future<void> delete(Bookmark bookmark) async {
     final db = await AppDatabase.database;
-    await db.delete(
-      tableName,
-      where: 'id = ?',
-      whereArgs: [bookmark.id],
-    );
+    await db.delete(tableName, where: 'id = ?', whereArgs: [bookmark.id]);
   }
 }

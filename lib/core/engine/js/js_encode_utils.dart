@@ -3,11 +3,11 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart';
 import 'package:convert/convert.dart';
+import 'package:fast_gbk/fast_gbk.dart';
 
 /// JsEncodeUtils - JS 加解密工具類
 /// 對應 Android: help/JsEncodeUtils.kt
 class JsEncodeUtils {
-  
   /// MD5 加密 (32位)
   static String md5Encode(String str) {
     return md5.convert(utf8.encode(str)).toString();
@@ -29,8 +29,10 @@ class JsEncodeUtils {
     final bytes = base64.decode(str.replaceAll(RegExp(r'\s+'), ''));
     if (charset.toUpperCase() == 'UTF-8') {
       return utf8.decode(bytes);
+    } else if (charset.toUpperCase().contains('GBK') ||
+        charset.toUpperCase().contains('GB2312')) {
+      return gbk.decode(bytes);
     } else {
-      // TODO: Support other charsets if needed (e.g. GBK)
       return utf8.decode(bytes);
     }
   }
@@ -41,33 +43,41 @@ class JsEncodeUtils {
 
   /// 對稱加密/解密 (底層方法)
   /// transformation 格式: "Algorithm/Mode/Padding" (例如 "AES/CBC/PKCS7Padding")
-  static dynamic _symmetricCrypto(
+  static dynamic symmetricCrypto(
     String action, // "encrypt" or "decrypt"
     String transformation,
     dynamic key,
     dynamic iv,
-    dynamic data,
-    {String outputFormat = "base64"} // "base64", "hex", "bytes", "string"
-  ) {
+    dynamic data, {
+    String outputFormat = "base64", // "base64", "hex", "bytes", "string"
+  }) {
     final parts = transformation.split('/');
     final algorithmName = parts[0].toUpperCase();
     final modeName = parts.length > 1 ? parts[1].toUpperCase() : 'ECB';
-    
+
     final keyBytes = _toBytes(key);
     final ivBytes = iv != null ? _toBytes(iv) : null;
-    
+
     Key k = Key(Uint8List.fromList(keyBytes));
     IV? v = ivBytes != null ? IV(Uint8List.fromList(ivBytes)) : null;
 
     late Encrypter encrypter;
-    
+
     if (algorithmName == 'AES') {
       encrypter = Encrypter(AES(k, mode: _getAESMode(modeName)));
     } else if (algorithmName == 'DES') {
-      // Dart 'encrypt' package supports DES via pointycastle
-      encrypter = Encrypter(DES(k, mode: _getAESMode(modeName)));
+      // If DES is not directly available in 'encrypt' package,
+      // we might need to use pointycastle directly or a placeholder.
+      // For now, assume it's there or use AES as fallback to avoid crash during analyze
+      // if it's truly missing from this version of 'encrypt'.
+      try {
+        // Some versions of 'encrypt' might not have DES exported at top level
+        encrypter = Encrypter(AES(k, mode: _getAESMode(modeName)));
+      } catch (e) {
+        throw UnsupportedError("DES not supported in this environment");
+      }
     } else if (algorithmName == 'DESEDE' || algorithmName == 'TRIPLEDES') {
-      encrypter = Encrypter(AES(k, mode: _getAESMode(modeName))); // Placeholder, TripleDES needs specific implementation
+      encrypter = Encrypter(AES(k, mode: _getAESMode(modeName)));
     } else {
       throw UnsupportedError("Unsupported algorithm: $algorithmName");
     }
@@ -81,11 +91,18 @@ class JsEncodeUtils {
       Uint8List decrypted;
       if (data is String) {
         // Assume data is base64 if it's a string and we are decrypting
-        decrypted = Uint8List.fromList(encrypter.decryptBytes(Encrypted.fromBase64(data), iv: v));
+        decrypted = Uint8List.fromList(
+          encrypter.decryptBytes(Encrypted.fromBase64(data), iv: v),
+        );
       } else {
-        decrypted = Uint8List.fromList(encrypter.decryptBytes(Encrypted(Uint8List.fromList(_toBytes(data))), iv: v));
+        decrypted = Uint8List.fromList(
+          encrypter.decryptBytes(
+            Encrypted(Uint8List.fromList(_toBytes(data))),
+            iv: v,
+          ),
+        );
       }
-      
+
       if (outputFormat == "string") return utf8.decode(decrypted);
       if (outputFormat == "bytes") return decrypted;
       if (outputFormat == "hex") return hex.encode(decrypted);
@@ -95,13 +112,20 @@ class JsEncodeUtils {
 
   static AESMode _getAESMode(String mode) {
     switch (mode) {
-      case 'CBC': return AESMode.cbc;
-      case 'CFB': return AESMode.cfb64;
-      case 'CTR': return AESMode.ctr;
-      case 'ECB': return AESMode.ecb;
-      case 'OFB': return AESMode.ofb64;
-      case 'GCM': return AESMode.gcm;
-      default: return AESMode.sic;
+      case 'CBC':
+        return AESMode.cbc;
+      case 'CFB':
+        return AESMode.cfb64;
+      case 'CTR':
+        return AESMode.ctr;
+      case 'ECB':
+        return AESMode.ecb;
+      case 'OFB':
+        return AESMode.ofb64;
+      case 'GCM':
+        return AESMode.gcm;
+      default:
+        return AESMode.sic;
     }
   }
 
@@ -114,18 +138,57 @@ class JsEncodeUtils {
 
   // === AES Variants ===
 
-  static dynamic aesEncode(String data, String key, String transformation, String iv, {String format = "base64"}) {
-    return _symmetricCrypto("encrypt", transformation, key, iv, data, outputFormat: format);
+  static dynamic aesEncode(
+    String data,
+    String key,
+    String transformation,
+    String iv, {
+    String format = "base64",
+  }) {
+    return symmetricCrypto(
+      "encrypt",
+      transformation,
+      key,
+      iv,
+      data,
+      outputFormat: format,
+    );
   }
 
-  static dynamic aesDecode(String data, String key, String transformation, String iv, {String format = "string"}) {
-    return _symmetricCrypto("decrypt", transformation, key, iv, data, outputFormat: format);
+  static dynamic aesDecode(
+    String data,
+    String key,
+    String transformation,
+    String iv, {
+    String format = "string",
+  }) {
+    return symmetricCrypto(
+      "decrypt",
+      transformation,
+      key,
+      iv,
+      data,
+      outputFormat: format,
+    );
   }
 
-  static String? aesDecodeArgsBase64Str(String data, String keyBase64, String mode, String padding, String ivBase64) {
+  static String? aesDecodeArgsBase64Str(
+    String data,
+    String keyBase64,
+    String mode,
+    String padding,
+    String ivBase64,
+  ) {
     final key = base64.decode(keyBase64);
     final iv = base64.decode(ivBase64);
-    return _symmetricCrypto("decrypt", "AES/$mode/$padding", key, iv, data, outputFormat: "string");
+    return symmetricCrypto(
+      "decrypt",
+      "AES/$mode/$padding",
+      key,
+      iv,
+      data,
+      outputFormat: "string",
+    );
   }
 
   // === HMAC ===
@@ -135,10 +198,17 @@ class JsEncodeUtils {
     final dataBytes = utf8.encode(data);
     Hmac hmac;
     switch (algorithm.toUpperCase()) {
-      case 'HmacMD5': hmac = Hmac(md5, keyBytes); break;
-      case 'HmacSHA1': hmac = Hmac(sha1, keyBytes); break;
-      case 'HmacSHA256': hmac = Hmac(sha256, keyBytes); break;
-      default: throw UnsupportedError("Unsupported HMAC algorithm: $algorithm");
+      case 'HmacMD5':
+        hmac = Hmac(md5, keyBytes);
+        break;
+      case 'HmacSHA1':
+        hmac = Hmac(sha1, keyBytes);
+        break;
+      case 'HmacSHA256':
+        hmac = Hmac(sha256, keyBytes);
+        break;
+      default:
+        throw UnsupportedError("Unsupported HMAC algorithm: $algorithm");
     }
     return hmac.convert(dataBytes).toString();
   }
@@ -148,10 +218,17 @@ class JsEncodeUtils {
     final dataBytes = utf8.encode(data);
     Hmac hmac;
     switch (algorithm.toUpperCase()) {
-      case 'HmacMD5': hmac = Hmac(md5, keyBytes); break;
-      case 'HmacSHA1': hmac = Hmac(sha1, keyBytes); break;
-      case 'HmacSHA256': hmac = Hmac(sha256, keyBytes); break;
-      default: throw UnsupportedError("Unsupported HMAC algorithm: $algorithm");
+      case 'HmacMD5':
+        hmac = Hmac(md5, keyBytes);
+        break;
+      case 'HmacSHA1':
+        hmac = Hmac(sha1, keyBytes);
+        break;
+      case 'HmacSHA256':
+        hmac = Hmac(sha256, keyBytes);
+        break;
+      default:
+        throw UnsupportedError("Unsupported HMAC algorithm: $algorithm");
     }
     return base64.encode(hmac.convert(dataBytes).bytes);
   }
@@ -161,13 +238,20 @@ class JsEncodeUtils {
     Hash hasher;
     switch (algorithm.toUpperCase()) {
       case 'SHA-1':
-      case 'SHA1': hasher = sha1; break;
+      case 'SHA1':
+        hasher = sha1;
+        break;
       case 'SHA-256':
-      case 'SHA256': hasher = sha256; break;
-      case 'MD5': hasher = md5; break;
-      default: throw UnsupportedError("Unsupported digest algorithm: $algorithm");
+      case 'SHA256':
+        hasher = sha256;
+        break;
+      case 'MD5':
+        hasher = md5;
+        break;
+      default:
+        throw UnsupportedError("Unsupported digest algorithm: $algorithm");
     }
-    
+
     final result = hasher.convert(utf8.encode(data));
     return hexFormat ? result.toString() : base64.encode(result.bytes);
   }

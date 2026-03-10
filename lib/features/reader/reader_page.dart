@@ -9,11 +9,7 @@ class ReaderPage extends StatefulWidget {
   final Book book;
   final int chapterIndex;
 
-  const ReaderPage({
-    super.key,
-    required this.book,
-    this.chapterIndex = 0,
-  });
+  const ReaderPage({super.key, required this.book, this.chapterIndex = 0});
 
   @override
   State<ReaderPage> createState() => _ReaderPageState();
@@ -40,11 +36,15 @@ class _ReaderPageState extends State<ReaderPage> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => ReaderProvider(book: widget.book, chapterIndex: widget.chapterIndex),
+      create:
+          (_) => ReaderProvider(
+            book: widget.book,
+            chapterIndex: widget.chapterIndex,
+          ),
       child: Consumer<ReaderProvider>(
         builder: (context, provider, child) {
           final theme = provider.currentTheme;
-          
+
           return Scaffold(
             backgroundColor: theme.backgroundColor,
             body: Stack(
@@ -112,8 +112,14 @@ class _ReaderPageState extends State<ReaderPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              TextButton(onPressed: provider.prevChapter, child: const Text("上一章")),
-              TextButton(onPressed: provider.nextChapter, child: const Text("下一章")),
+              TextButton(
+                onPressed: provider.prevChapter,
+                child: const Text("上一章"),
+              ),
+              TextButton(
+                onPressed: provider.nextChapter,
+                child: const Text("下一章"),
+              ),
             ],
           ),
         ],
@@ -139,8 +145,14 @@ class _ReaderPageState extends State<ReaderPage> {
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(provider.book.name, style: const TextStyle(color: Colors.white, fontSize: 16)),
-              Text(provider.currentChapter?.title ?? "", style: const TextStyle(color: Colors.white70, fontSize: 12)),
+              Text(
+                provider.book.name,
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+              ),
+              Text(
+                provider.currentChapter?.title ?? "",
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
             ],
           ),
         ),
@@ -162,16 +174,25 @@ class _ReaderPageState extends State<ReaderPage> {
             // 進度條
             Row(
               children: [
-                const Text("上一章", style: TextStyle(color: Colors.white, fontSize: 12)),
+                const Text(
+                  "上一章",
+                  style: TextStyle(color: Colors.white, fontSize: 12),
+                ),
                 Expanded(
                   child: Slider(
                     value: provider.currentChapterIndex.toDouble(),
                     min: 0,
-                    max: (provider.chapters.length - 1).clamp(0, 9999).toDouble(),
+                    max:
+                        (provider.chapters.length - 1)
+                            .clamp(0, 9999)
+                            .toDouble(),
                     onChanged: (v) => provider.loadChapter(v.toInt()),
                   ),
                 ),
-                const Text("下一章", style: TextStyle(color: Colors.white, fontSize: 12)),
+                const Text(
+                  "下一章",
+                  style: TextStyle(color: Colors.white, fontSize: 12),
+                ),
               ],
             ),
             // 功能按鈕
@@ -205,7 +226,10 @@ class _ReaderPageState extends State<ReaderPage> {
         children: [
           Icon(icon, color: Colors.white),
           const SizedBox(height: 4),
-          Text(label, style: const TextStyle(color: Colors.white, fontSize: 10)),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white, fontSize: 10),
+          ),
         ],
       ),
     );
@@ -216,57 +240,80 @@ class _ReaderPageState extends State<ReaderPage> {
       context: context,
       backgroundColor: Colors.black.withValues(alpha: 0.9),
       builder: (context) {
-        return StatefulBuilder(builder: (context, setModalState) {
-          return Container(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("字體大小", style: TextStyle(color: Colors.white)),
-                Row(
-                  children: [
-                    IconButton(onPressed: () => provider.setFontSize(provider.fontSize - 1), icon: const Icon(Icons.remove, color: Colors.white)),
-                    Text(provider.fontSize.toInt().toString(), style: const TextStyle(color: Colors.white)),
-                    IconButton(onPressed: () => provider.setFontSize(provider.fontSize + 1), icon: const Icon(Icons.add, color: Colors.white)),
-                  ],
-                ),
-                const Text("行間距", style: TextStyle(color: Colors.white)),
-                Slider(
-                  value: provider.lineHeight,
-                  min: 1.2,
-                  max: 2.5,
-                  onChanged: (v) => provider.setLineHeight(v),
-                ),
-                const Text("閱讀主題", style: TextStyle(color: Colors.white)),
-                const SizedBox(height: 10),
-                SizedBox(
-                  height: 40,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: AppTheme.readingThemes.length,
-                    itemBuilder: (context, index) {
-                      final t = AppTheme.readingThemes[index];
-                      return GestureDetector(
-                        onTap: () => provider.setTheme(index),
-                        child: Container(
-                          width: 60,
-                          margin: const EdgeInsets.only(right: 10),
-                          decoration: BoxDecoration(
-                            color: t.backgroundColor,
-                            border: Border.all(color: provider.themeIndex == index ? Colors.blue : Colors.grey),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Center(child: Text("文", style: TextStyle(color: t.textColor))),
-                        ),
-                      );
-                    },
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("字體大小", style: TextStyle(color: Colors.white)),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed:
+                            () => provider.setFontSize(provider.fontSize - 1),
+                        icon: const Icon(Icons.remove, color: Colors.white),
+                      ),
+                      Text(
+                        provider.fontSize.toInt().toString(),
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      IconButton(
+                        onPressed:
+                            () => provider.setFontSize(provider.fontSize + 1),
+                        icon: const Icon(Icons.add, color: Colors.white),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-          );
-        });
+                  const Text("行間距", style: TextStyle(color: Colors.white)),
+                  Slider(
+                    value: provider.lineHeight,
+                    min: 1.2,
+                    max: 2.5,
+                    onChanged: (v) => provider.setLineHeight(v),
+                  ),
+                  const Text("閱讀主題", style: TextStyle(color: Colors.white)),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    height: 40,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: AppTheme.readingThemes.length,
+                      itemBuilder: (context, index) {
+                        final t = AppTheme.readingThemes[index];
+                        return GestureDetector(
+                          onTap: () => provider.setTheme(index),
+                          child: Container(
+                            width: 60,
+                            margin: const EdgeInsets.only(right: 10),
+                            decoration: BoxDecoration(
+                              color: t.backgroundColor,
+                              border: Border.all(
+                                color:
+                                    provider.themeIndex == index
+                                        ? Colors.blue
+                                        : Colors.grey,
+                              ),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Center(
+                              child: Text(
+                                "文",
+                                style: TextStyle(color: t.textColor),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
       },
     );
   }

@@ -15,11 +15,8 @@ class Cache {
     'deadline': deadline,
   };
 
-  factory Cache.fromJson(Map<String, dynamic> json) => Cache(
-    key: json['key'],
-    value: json['value'],
-    deadline: json['deadline'],
-  );
+  factory Cache.fromJson(Map<String, dynamic> json) =>
+      Cache(key: json['key'], value: json['value'], deadline: json['deadline']);
 }
 
 /// CacheDao - 快取資料表操作
@@ -76,11 +73,7 @@ class CacheDao {
 
   Future<void> delete(String key) async {
     final db = await AppDatabase.database;
-    await db.delete(
-      tableName,
-      where: 'key = ?',
-      whereArgs: [key],
-    );
+    await db.delete(tableName, where: 'key = ?', whereArgs: [key]);
   }
 
   Future<void> deleteSourceVariables(String key) async {

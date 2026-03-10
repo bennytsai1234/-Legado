@@ -40,7 +40,7 @@ class AnalyzeByJsonPath {
   String? getString(String rule) {
     rule = _preProcessRule(rule);
     if (rule.isEmpty) return null;
-    
+
     final ruleAnalyzer = RuleAnalyzer(rule, isCode: true);
     final rules = ruleAnalyzer.splitRule(['&&', '||']);
 
@@ -48,13 +48,13 @@ class AnalyzeByJsonPath {
       ruleAnalyzer.reSetPos();
       // 替換所有 {$.rule...}
       String result = ruleAnalyzer.innerRule(r'{$.', fr: (it) => getString(it));
-      
+
       if (result.isEmpty) {
         try {
           final path = JsonPath(rule);
           final matches = path.read(_jsonData);
           if (matches.isEmpty) return null;
-          
+
           final values = matches.map((m) => m.value).toList();
           if (values.length == 1) {
             return values[0].toString(); // 自動轉字串 (含數字)
@@ -85,7 +85,7 @@ class AnalyzeByJsonPath {
   List<dynamic> getElements(String rule) {
     rule = _preProcessRule(rule);
     if (rule.isEmpty) return [];
-    
+
     final ruleAnalyzer = RuleAnalyzer(rule, isCode: true);
     final rules = ruleAnalyzer.splitRule(['&&', '||', '%%']);
 

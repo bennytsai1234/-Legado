@@ -34,11 +34,7 @@ class CookieDao {
   /// 刪除指定 URL 的 Cookie
   Future<void> delete(String url) async {
     final db = await _db;
-    await db.delete(
-      tableName,
-      where: 'url = ?',
-      whereArgs: [url],
-    );
+    await db.delete(tableName, where: 'url = ?', whereArgs: [url]);
   }
 
   /// 清空所有 Cookie

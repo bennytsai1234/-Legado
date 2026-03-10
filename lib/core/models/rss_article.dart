@@ -36,7 +36,10 @@ class RssArticle extends BaseRssArticle {
     this.group = "默认分组",
     this.read = false,
     this.variable,
-  }) : variableMap = variable != null ? Map<String, String>.from(jsonDecode(variable)) : {};
+  }) : variableMap =
+           variable != null
+               ? Map<String, String>.from(jsonDecode(variable))
+               : {};
 
   Map<String, dynamic> toJson() {
     return {

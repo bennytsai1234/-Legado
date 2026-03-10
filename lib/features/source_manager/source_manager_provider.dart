@@ -13,7 +13,9 @@ class SourceManagerProvider extends ChangeNotifier {
 
   List<BookSource> get sources {
     if (_selectedGroup == '全部') return _sources;
-    return _sources.where((s) => s.bookSourceGroup?.contains(_selectedGroup) ?? false).toList();
+    return _sources
+        .where((s) => s.bookSourceGroup?.contains(_selectedGroup) ?? false)
+        .toList();
   }
 
   List<String> get groups => ['全部', ..._groups];
@@ -30,7 +32,7 @@ class SourceManagerProvider extends ChangeNotifier {
 
     _sources = await _dao.getAll();
     _groups = await _dao.getGroups();
-    
+
     _isLoading = false;
     notifyListeners();
   }
@@ -58,9 +60,14 @@ class SourceManagerProvider extends ChangeNotifier {
     try {
       final dynamic decoded = jsonDecode(text);
       List<BookSource> newSources = [];
-      
+
       if (decoded is List) {
-        newSources = decoded.map((item) => BookSource.fromJson(item as Map<String, dynamic>)).toList();
+        newSources =
+            decoded
+                .map(
+                  (item) => BookSource.fromJson(item as Map<String, dynamic>),
+                )
+                .toList();
       } else if (decoded is Map) {
         newSources = [BookSource.fromJson(decoded as Map<String, dynamic>)];
       }

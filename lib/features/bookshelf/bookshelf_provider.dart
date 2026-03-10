@@ -25,7 +25,7 @@ class BookshelfProvider extends ChangeNotifier {
     notifyListeners();
 
     _books = await _bookDao.getBookshelf();
-    
+
     _isLoading = false;
     notifyListeners();
   }
@@ -33,7 +33,7 @@ class BookshelfProvider extends ChangeNotifier {
   /// 檢查更新
   Future<void> refreshBookshelf() async {
     if (_books.isEmpty) return;
-    
+
     _isLoading = true;
     notifyListeners();
 
@@ -42,8 +42,8 @@ class BookshelfProvider extends ChangeNotifier {
 
     for (final book in _books) {
       final source = sources.cast<BookSource?>().firstWhere(
-        (s) => s?.bookSourceUrl == book.origin, 
-        orElse: () => null
+        (s) => s?.bookSourceUrl == book.origin,
+        orElse: () => null,
       );
       if (source != null) {
         tasks.add(_refreshSingleBook(source, book));
@@ -52,7 +52,7 @@ class BookshelfProvider extends ChangeNotifier {
 
     await Future.wait(tasks);
     _books = await _bookDao.getBookshelf();
-    
+
     _isLoading = false;
     notifyListeners();
   }
@@ -61,7 +61,7 @@ class BookshelfProvider extends ChangeNotifier {
     try {
       final oldLastChapter = book.latestChapterTitle;
       final updatedBook = await _service.getBookInfo(source, book);
-      
+
       if (updatedBook.latestChapterTitle != oldLastChapter) {
         // 有新章節
         updatedBook.lastCheckCount = (updatedBook.lastCheckCount) + 1;

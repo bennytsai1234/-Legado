@@ -4,11 +4,15 @@ import 'rule_analyzer.dart';
 import 'analyze_rule.dart';
 import '../services/http_client.dart';
 import '../services/cookie_store.dart';
+import 'package:fast_gbk/fast_gbk.dart';
 
 /// AnalyzeUrl - URL 構建與請求引擎
 /// 對應 Android: model/analyzeRule/AnalyzeUrl.kt (29KB)
 class AnalyzeUrl {
-  static final RegExp jsPattern = RegExp(r'@js:|(<js>([\w\W]*?)</js>)', caseSensitive: false);
+  static final RegExp jsPattern = RegExp(
+    r'@js:|(<js>([\w\W]*?)</js>)',
+    caseSensitive: false,
+  );
   static final RegExp pagePattern = RegExp(r'<(.*?)>');
   static final RegExp paramPattern = RegExp(r'\s*,\s*(?=\{)');
 
@@ -18,7 +22,7 @@ class AnalyzeUrl {
   String? baseUrl;
   final AnalyzeRule? analyzer;
   final dynamic source; // BaseSource equivalent
-  
+
   String ruleUrl = "";
   String url = "";
   String method = "GET";
@@ -63,7 +67,7 @@ class AnalyzeUrl {
     var start = 0;
     final matches = jsPattern.allMatches(ruleUrl);
     var result = ruleUrl;
-    
+
     for (final match in matches) {
       if (match.start > start) {
         final prefix = ruleUrl.substring(start, match.start).trim();
@@ -71,7 +75,7 @@ class AnalyzeUrl {
           result = prefix.replaceAll('@result', result);
         }
       }
-      
+
       String jsCode;
       if (match.group(0)!.toLowerCase() == '@js:') {
         jsCode = ruleUrl.substring(match.end).trim();
@@ -96,13 +100,17 @@ class AnalyzeUrl {
 
   void _replaceKeyPageJs() {
     var result = ruleUrl;
-    
+
     // 替換 {{js}}
     if (result.contains('{{') && result.contains('}}') && analyzer != null) {
       final ra = RuleAnalyzer(result);
-      result = ra.innerRuleRange('{{', '}}', fr: (js) {
-        return analyzer!.evalJS(js, null)?.toString() ?? "";
-      });
+      result = ra.innerRuleRange(
+        '{{',
+        '}}',
+        fr: (js) {
+          return analyzer!.evalJS(js, null)?.toString() ?? "";
+        },
+      );
     }
 
     if (key != null) {
@@ -148,7 +156,7 @@ class AnalyzeUrl {
         if (options.containsKey('body')) {
           body = options['body'];
           if (body is String && analyzer != null) {
-             body = _replaceInString(body as String);
+            body = _replaceInString(body as String);
           }
         }
         if (options.containsKey('type')) {
@@ -168,7 +176,8 @@ class AnalyzeUrl {
           webJs = options['webJs'].toString();
         }
         if (options.containsKey('webViewDelayTime')) {
-          webViewDelayTime = int.tryParse(options['webViewDelayTime'].toString()) ?? 0;
+          webViewDelayTime =
+              int.tryParse(options['webViewDelayTime'].toString()) ?? 0;
         }
         if (options.containsKey('js')) {
           final jsStr = options['js'].toString();
@@ -203,8 +212,8 @@ class AnalyzeUrl {
       if (body != null && body is String) {
         final bodyStr = body as String;
         // If not JSON/XML and no Content-Type, analyze as fields
-        if (!bodyStr.trim().startsWith('{') && 
-            !bodyStr.trim().startsWith('[') && 
+        if (!bodyStr.trim().startsWith('{') &&
+            !bodyStr.trim().startsWith('[') &&
             !bodyStr.trim().startsWith('<') &&
             headerMap['Content-Type'] == null) {
           analyzeFields(bodyStr);
@@ -224,7 +233,7 @@ class AnalyzeUrl {
   String encodeParams(String params, String? charset, bool isQuery) {
     final parts = params.split('&');
     final sb = StringBuffer();
-    
+
     for (var i = 0; i < parts.length; i++) {
       if (i > 0) sb.write('&');
       final part = parts[i];
@@ -275,7 +284,7 @@ class AnalyzeUrl {
   /// Execute the HTTP request and return response body
   Future<String> getResponseBody() async {
     final dio = HttpClient().client;
-    
+
     await _setCookie();
 
     try {
@@ -285,13 +294,18 @@ class AnalyzeUrl {
       final options = Options(
         method: method,
         headers: headerMap.cast<String, dynamic>(),
-        responseType: ResponseType.bytes, // Use bytes to handle charset manually
+        responseType:
+            ResponseType.bytes, // Use bytes to handle charset manually
         followRedirects: true,
       );
 
       Response response;
       if (method == 'POST') {
-        response = await dio.request(requestUrl, data: requestData, options: options);
+        response = await dio.request(
+          requestUrl,
+          data: requestData,
+          options: options,
+        );
       } else {
         response = await dio.request(requestUrl, options: options);
       }
@@ -302,13 +316,16 @@ class AnalyzeUrl {
       }
 
       final List<int> responseBytes = response.data as List<int>;
-      
+
       // 1. Determine charset
       String effectiveCharset = charset ?? "UTF-8";
       if (charset == null) {
         final contentType = response.headers.value('content-type');
         if (contentType != null) {
-          final match = RegExp(r'charset=([\w-]+)', caseSensitive: false).firstMatch(contentType);
+          final match = RegExp(
+            r'charset=([\w-]+)',
+            caseSensitive: false,
+          ).firstMatch(contentType);
           if (match != null) {
             effectiveCharset = match.group(1)!;
           }
@@ -317,11 +334,10 @@ class AnalyzeUrl {
 
       // 2. Decode based on charset
       String result;
-      if (effectiveCharset.toUpperCase().contains('GBK') || 
+      if (effectiveCharset.toUpperCase().contains('GBK') ||
           effectiveCharset.toUpperCase().contains('GB2312') ||
           effectiveCharset.toUpperCase().contains('GB18030')) {
-        // TODO: Use gbk_codec if available. For now, try fallback to UTF-8
-        result = utf8.decode(responseBytes, allowMalformed: true);
+        result = gbk.decode(responseBytes);
       } else {
         result = utf8.decode(responseBytes, allowMalformed: true);
       }

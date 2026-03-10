@@ -1,4 +1,5 @@
 library;
+
 import 'base_source.dart';
 
 /// BookSource - 書源模型
@@ -11,35 +12,35 @@ class BookSource implements BaseSource {
   int bookSourceType; // 0: 文字, 1: 音頻, 2: 圖片/漫畫, 3: 檔案
   String? bookSourceGroup; // 書源分組
   String? bookSourceComment; // 書源說明
-  
+
   @override
   String? loginUrl; // 登入 URL
-  
+
   @override
   String? loginUi; // 登入 UI JSON
-  
+
   String? loginCheckJs; // 登入檢測 JS
   String? bookUrlPattern; // 書籍 URL 正則
-  
+
   @override
   String? header; // 自訂 Header JSON
-  
+
   String? variableComment; // 變數說明
   String? variable; // 暫存變數
   int customOrder; // 自訂排序
   int weight; // 權重
   bool enabled; // 是否啟用
   bool enabledExplore; // 是否啟用發現
-  
+
   @override
   bool? enabledCookieJar; // 是否啟用 CookieJar
-  
+
   int lastUpdateTime; // 最後更新時間
   int respondTime; // 回應時間
-  
+
   @override
   String? jsLib; // JS 共享庫
-  
+
   int concurrentRateInt; // 併發速率
 
   @override
@@ -114,21 +115,24 @@ class BookSource implements BaseSource {
       respondTime: json['respondTime'] ?? 180000,
       jsLib: json['jsLib'],
       concurrentRateInt: json['concurrentRate'] ?? 0,
-      ruleSearch: json['ruleSearch'] != null
-          ? SearchRule.fromJson(json['ruleSearch'])
-          : null,
-      ruleExplore: json['ruleExplore'] != null
-          ? ExploreRule.fromJson(json['ruleExplore'])
-          : null,
-      ruleBookInfo: json['ruleBookInfo'] != null
-          ? BookInfoRule.fromJson(json['ruleBookInfo'])
-          : null,
-      ruleToc: json['ruleToc'] != null
-          ? TocRule.fromJson(json['ruleToc'])
-          : null,
-      ruleContent: json['ruleContent'] != null
-          ? ContentRule.fromJson(json['ruleContent'])
-          : null,
+      ruleSearch:
+          json['ruleSearch'] != null
+              ? SearchRule.fromJson(json['ruleSearch'])
+              : null,
+      ruleExplore:
+          json['ruleExplore'] != null
+              ? ExploreRule.fromJson(json['ruleExplore'])
+              : null,
+      ruleBookInfo:
+          json['ruleBookInfo'] != null
+              ? BookInfoRule.fromJson(json['ruleBookInfo'])
+              : null,
+      ruleToc:
+          json['ruleToc'] != null ? TocRule.fromJson(json['ruleToc']) : null,
+      ruleContent:
+          json['ruleContent'] != null
+              ? ContentRule.fromJson(json['ruleContent'])
+              : null,
       exploreUrl: json['exploreUrl'],
       searchUrl: json['searchUrl'],
     );
@@ -220,18 +224,18 @@ class SearchRule {
   }
 
   Map<String, dynamic> toJson() => {
-        'bookList': bookList,
-        'name': name,
-        'author': author,
-        'intro': intro,
-        'kind': kind,
-        'lastChapter': lastChapter,
-        'updateTime': updateTime,
-        'bookUrl': bookUrl,
-        'coverUrl': coverUrl,
-        'wordCount': wordCount,
-        'checkKeyWord': checkKeyWord,
-      };
+    'bookList': bookList,
+    'name': name,
+    'author': author,
+    'intro': intro,
+    'kind': kind,
+    'lastChapter': lastChapter,
+    'updateTime': updateTime,
+    'bookUrl': bookUrl,
+    'coverUrl': coverUrl,
+    'wordCount': wordCount,
+    'checkKeyWord': checkKeyWord,
+  };
 }
 
 /// 發現規則
@@ -277,17 +281,17 @@ class ExploreRule {
   }
 
   Map<String, dynamic> toJson() => {
-        'bookList': bookList,
-        'name': name,
-        'author': author,
-        'intro': intro,
-        'kind': kind,
-        'lastChapter': lastChapter,
-        'updateTime': updateTime,
-        'bookUrl': bookUrl,
-        'coverUrl': coverUrl,
-        'wordCount': wordCount,
-      };
+    'bookList': bookList,
+    'name': name,
+    'author': author,
+    'intro': intro,
+    'kind': kind,
+    'lastChapter': lastChapter,
+    'updateTime': updateTime,
+    'bookUrl': bookUrl,
+    'coverUrl': coverUrl,
+    'wordCount': wordCount,
+  };
 }
 
 /// 書籍資訊規則
@@ -339,19 +343,19 @@ class BookInfoRule {
   }
 
   Map<String, dynamic> toJson() => {
-        'init': init,
-        'name': name,
-        'author': author,
-        'intro': intro,
-        'kind': kind,
-        'lastChapter': lastChapter,
-        'updateTime': updateTime,
-        'coverUrl': coverUrl,
-        'tocUrl': tocUrl,
-        'wordCount': wordCount,
-        'canReName': canReName,
-        'downloadUrls': downloadUrls,
-      };
+    'init': init,
+    'name': name,
+    'author': author,
+    'intro': intro,
+    'kind': kind,
+    'lastChapter': lastChapter,
+    'updateTime': updateTime,
+    'coverUrl': coverUrl,
+    'tocUrl': tocUrl,
+    'wordCount': wordCount,
+    'canReName': canReName,
+    'downloadUrls': downloadUrls,
+  };
 }
 
 /// 目錄規則
@@ -397,17 +401,17 @@ class TocRule {
   }
 
   Map<String, dynamic> toJson() => {
-        'preUpdateJs': preUpdateJs,
-        'chapterList': chapterList,
-        'chapterName': chapterName,
-        'chapterUrl': chapterUrl,
-        'formatJs': formatJs,
-        'isVolume': isVolume,
-        'isVip': isVip,
-        'isPay': isPay,
-        'updateTime': updateTime,
-        'nextTocUrl': nextTocUrl,
-      };
+    'preUpdateJs': preUpdateJs,
+    'chapterList': chapterList,
+    'chapterName': chapterName,
+    'chapterUrl': chapterUrl,
+    'formatJs': formatJs,
+    'isVolume': isVolume,
+    'isVip': isVip,
+    'isPay': isPay,
+    'updateTime': updateTime,
+    'nextTocUrl': nextTocUrl,
+  };
 }
 
 /// 正文規則
@@ -447,13 +451,13 @@ class ContentRule {
   }
 
   Map<String, dynamic> toJson() => {
-        'content': content,
-        'nextContentUrl': nextContentUrl,
-        'webJs': webJs,
-        'sourceRegex': sourceRegex,
-        'replaceRegex': replaceRegex,
-        'imageStyle': imageStyle,
-        'imageDecode': imageDecode,
-        'payAction': payAction,
-      };
+    'content': content,
+    'nextContentUrl': nextContentUrl,
+    'webJs': webJs,
+    'sourceRegex': sourceRegex,
+    'replaceRegex': replaceRegex,
+    'imageStyle': imageStyle,
+    'imageDecode': imageDecode,
+    'payAction': payAction,
+  };
 }

@@ -12,11 +12,7 @@ class BookChapterReview {
   });
 
   Map<String, dynamic> toJson() {
-    return {
-      'bookId': bookId,
-      'chapterId': chapterId,
-      'summaryUrl': summaryUrl,
-    };
+    return {'bookId': bookId, 'chapterId': chapterId, 'summaryUrl': summaryUrl};
   }
 
   factory BookChapterReview.fromJson(Map<String, dynamic> json) {

@@ -6,19 +6,19 @@ import 'rule_data_interface.dart';
 abstract class BaseBook implements RuleDataInterface {
   String get name;
   set name(String value);
-  
+
   String get author;
   set author(String value);
-  
+
   String get bookUrl;
   set bookUrl(String value);
-  
+
   String? get kind;
   set kind(String? value);
-  
+
   String? get wordCount;
   set wordCount(String? value);
-  
+
   String? get variable;
   set variable(String? value);
 

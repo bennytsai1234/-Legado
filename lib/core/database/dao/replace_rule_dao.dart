@@ -56,11 +56,7 @@ class ReplaceRuleDao {
   /// 刪除規則
   Future<void> delete(int id) async {
     final db = await _db;
-    await db.delete(
-      tableName,
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    await db.delete(tableName, where: 'id = ?', whereArgs: [id]);
   }
 
   void _serialize(Map<String, dynamic> map) {

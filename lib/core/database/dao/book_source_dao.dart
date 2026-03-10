@@ -13,7 +13,7 @@ class BookSourceDao {
   Future<void> insertOrUpdate(BookSource source) async {
     final db = await _db;
     final map = source.toJson();
-    
+
     // 處理巢狀規則物件轉換為 JSON 字串存儲
     _serializeRules(map);
 
@@ -86,20 +86,16 @@ class BookSourceDao {
   /// 刪除書源
   Future<void> delete(String url) async {
     final db = await _db;
-    await db.delete(
-      tableName,
-      where: 'bookSourceUrl = ?',
-      whereArgs: [url],
-    );
+    await db.delete(tableName, where: 'bookSourceUrl = ?', whereArgs: [url]);
   }
 
   /// 獲取所有分組
   Future<List<String>> getGroups() async {
     final db = await _db;
     final List<Map<String, dynamic>> result = await db.rawQuery(
-      'SELECT DISTINCT bookSourceGroup FROM $tableName WHERE bookSourceGroup IS NOT NULL AND bookSourceGroup != ""'
+      'SELECT DISTINCT bookSourceGroup FROM $tableName WHERE bookSourceGroup IS NOT NULL AND bookSourceGroup != ""',
     );
-    
+
     final groups = <String>{};
     for (final row in result) {
       final groupStr = row['bookSourceGroup'] as String;
@@ -110,12 +106,16 @@ class BookSourceDao {
 
   // 輔助方法：將 Model 的 Map 轉換為 DB 存儲格式 (String)
   void _serializeRules(Map<String, dynamic> map) {
-    if (map['ruleSearch'] != null) map['ruleSearch'] = jsonEncode(map['ruleSearch']);
-    if (map['ruleExplore'] != null) map['ruleExplore'] = jsonEncode(map['ruleExplore']);
-    if (map['ruleBookInfo'] != null) map['ruleBookInfo'] = jsonEncode(map['ruleBookInfo']);
+    if (map['ruleSearch'] != null)
+      map['ruleSearch'] = jsonEncode(map['ruleSearch']);
+    if (map['ruleExplore'] != null)
+      map['ruleExplore'] = jsonEncode(map['ruleExplore']);
+    if (map['ruleBookInfo'] != null)
+      map['ruleBookInfo'] = jsonEncode(map['ruleBookInfo']);
     if (map['ruleToc'] != null) map['ruleToc'] = jsonEncode(map['ruleToc']);
-    if (map['ruleContent'] != null) map['ruleContent'] = jsonEncode(map['ruleContent']);
-    
+    if (map['ruleContent'] != null)
+      map['ruleContent'] = jsonEncode(map['ruleContent']);
+
     // SQLite 不支援 bool，轉換為 0/1
     map['enabled'] = (map['enabled'] == true) ? 1 : 0;
     map['enabledExplore'] = (map['enabledExplore'] == true) ? 1 : 0;
@@ -139,7 +139,7 @@ class BookSourceDao {
     if (map['ruleContent'] != null && map['ruleContent'] is String) {
       map['ruleContent'] = jsonDecode(map['ruleContent']);
     }
-    
+
     map['enabled'] = map['enabled'] == 1;
     map['enabledExplore'] = map['enabledExplore'] == 1;
     map['enabledCookieJar'] = map['enabledCookieJar'] == 1;

@@ -6,7 +6,7 @@ import 'rule_data_interface.dart';
 abstract class BaseRssArticle implements RuleDataInterface {
   String get origin;
   set origin(String value);
-  
+
   String get link;
   set link(String value);
 
