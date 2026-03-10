@@ -25,8 +25,12 @@ class AnalyzeUrl {
   Map<String, dynamic> headerMap = {};
   dynamic body;
   String? charset;
+  String? type;
+  String? proxy;
+  int retry = 0;
   bool useWebView = false;
   String? webJs;
+  int webViewDelayTime = 0;
   String? encodedQuery;
   String? encodedForm;
 
@@ -134,7 +138,11 @@ class AnalyzeUrl {
         if (options.containsKey('headers')) {
           final headers = options['headers'] as Map<String, dynamic>;
           headers.forEach((k, v) {
-            headerMap[k] = v.toString();
+            if (k == 'proxy') {
+              proxy = v.toString();
+            } else {
+              headerMap[k] = v.toString();
+            }
           });
         }
         if (options.containsKey('body')) {
@@ -143,8 +151,14 @@ class AnalyzeUrl {
              body = _replaceInString(body as String);
           }
         }
+        if (options.containsKey('type')) {
+          type = options['type'].toString();
+        }
         if (options.containsKey('charset')) {
           charset = options['charset'].toString();
+        }
+        if (options.containsKey('retry')) {
+          retry = int.tryParse(options['retry'].toString()) ?? 0;
         }
         if (options.containsKey('webView')) {
           final wv = options['webView'];
@@ -152,6 +166,9 @@ class AnalyzeUrl {
         }
         if (options.containsKey('webJs')) {
           webJs = options['webJs'].toString();
+        }
+        if (options.containsKey('webViewDelayTime')) {
+          webViewDelayTime = int.tryParse(options['webViewDelayTime'].toString()) ?? 0;
         }
         if (options.containsKey('js')) {
           final jsStr = options['js'].toString();
@@ -254,64 +271,64 @@ class AnalyzeUrl {
       }
     }
   }
-/// Execute the HTTP request and return response body
-Future<String> getResponseBody() async {
-  final dio = HttpClient().client;
 
-  await _setCookie();
+  /// Execute the HTTP request and return response body
+  Future<String> getResponseBody() async {
+    final dio = HttpClient().client;
+    
+    await _setCookie();
 
-  try {
-    final requestUrl = encodedQuery != null ? "$url?$encodedQuery" : url;
-    final requestData = encodedForm ?? body;
+    try {
+      final requestUrl = encodedQuery != null ? "$url?$encodedQuery" : url;
+      final requestData = encodedForm ?? body;
 
-    final options = Options(
-      method: method,
-      headers: headerMap.cast<String, dynamic>(),
-      responseType: ResponseType.bytes, // Use bytes to handle charset manually
-      followRedirects: true,
-    );
+      final options = Options(
+        method: method,
+        headers: headerMap.cast<String, dynamic>(),
+        responseType: ResponseType.bytes, // Use bytes to handle charset manually
+        followRedirects: true,
+      );
 
-    Response response;
-    if (method == 'POST') {
-      response = await dio.request(requestUrl, data: requestData, options: options);
-    } else {
-      response = await dio.request(requestUrl, options: options);
-    }
+      Response response;
+      if (method == 'POST') {
+        response = await dio.request(requestUrl, data: requestData, options: options);
+      } else {
+        response = await dio.request(requestUrl, options: options);
+      }
 
-    // Handle redirect URL update
-    if (response.realUri.toString() != requestUrl) {
-      setRedirectUrl(response.realUri.toString());
-    }
+      // Handle redirect URL update
+      if (response.realUri.toString() != requestUrl) {
+        setRedirectUrl(response.realUri.toString());
+      }
 
-    final List<int> responseBytes = response.data as List<int>;
-
-    // 1. Determine charset
-    String effectiveCharset = charset ?? "UTF-8";
-    if (charset == null) {
-      final contentType = response.headers.value('content-type');
-      if (contentType != null) {
-        final match = RegExp(r'charset=([\w-]+)', caseSensitive: false).firstMatch(contentType);
-        if (match != null) {
-          effectiveCharset = match.group(1)!;
+      final List<int> responseBytes = response.data as List<int>;
+      
+      // 1. Determine charset
+      String effectiveCharset = charset ?? "UTF-8";
+      if (charset == null) {
+        final contentType = response.headers.value('content-type');
+        if (contentType != null) {
+          final match = RegExp(r'charset=([\w-]+)', caseSensitive: false).firstMatch(contentType);
+          if (match != null) {
+            effectiveCharset = match.group(1)!;
+          }
         }
       }
-    }
 
-    // 2. Decode based on charset
-    String result;
-    if (effectiveCharset.toUpperCase().contains('GBK') || 
-        effectiveCharset.toUpperCase().contains('GB2312') ||
-        effectiveCharset.toUpperCase().contains('GB18030')) {
-      // TODO: Use gbk_codec if available. For now, try fallback or notify
-      // This is a placeholder since we don't have the library yet
-      result = utf8.decode(responseBytes, allowMalformed: true);
-    } else {
-      result = utf8.decode(responseBytes, allowMalformed: true);
-    }
+      // 2. Decode based on charset
+      String result;
+      if (effectiveCharset.toUpperCase().contains('GBK') || 
+          effectiveCharset.toUpperCase().contains('GB2312') ||
+          effectiveCharset.toUpperCase().contains('GB18030')) {
+        // TODO: Use gbk_codec if available. For now, try fallback to UTF-8
+        result = utf8.decode(responseBytes, allowMalformed: true);
+      } else {
+        result = utf8.decode(responseBytes, allowMalformed: true);
+      }
 
-    return result;
-  } catch (e) {
-    return '';
+      return result;
+    } catch (e) {
+      return '';
+    }
   }
-}
 }
