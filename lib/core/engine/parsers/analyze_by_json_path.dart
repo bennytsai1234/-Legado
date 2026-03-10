@@ -139,6 +139,12 @@ class AnalyzeByJsonPath {
   /// Alias for getElements to match Android naming consistency if needed
   List<dynamic> getList(String rule) => getElements(rule);
 
+  /// Get a single object
+  dynamic getObject(String rule) {
+    final list = getElements(rule);
+    return list.isNotEmpty ? list.first : null;
+  }
+
   /// Get a list of strings
   List<String> getStringList(String rule) {
     final list = getElements(rule);
