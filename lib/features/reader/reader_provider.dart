@@ -9,6 +9,8 @@ import '../../core/models/chapter.dart';
 import '../../core/models/book_source.dart';
 import '../../core/services/book_source_service.dart';
 import '../../shared/theme/app_theme.dart';
+import 'engine/text_page.dart';
+import 'engine/chapter_provider.dart';
 
 class ReaderProvider extends ChangeNotifier {
   final BookDao _bookDao = BookDao();
@@ -22,7 +24,11 @@ class ReaderProvider extends ChangeNotifier {
   List<BookChapter> _chapters = [];
 
   int _currentChapterIndex = 0;
+  int _currentPageIndex = 0;
   String _content = "";
+  List<TextPage> _pages = [];
+  Size? _viewSize;
+
   bool _isLoading = false;
   bool _showControls = false;
 
@@ -39,9 +45,11 @@ class ReaderProvider extends ChangeNotifier {
 
   // Getters
   String get content => _content;
+  List<TextPage> get pages => _pages;
   bool get isLoading => _isLoading;
   bool get showControls => _showControls;
   int get currentChapterIndex => _currentChapterIndex;
+  int get currentPageIndex => _currentPageIndex;
   List<BookChapter> get chapters => _chapters;
   BookChapter? get currentChapter =>
       _chapters.isNotEmpty ? _chapters[_currentChapterIndex] : null;
@@ -133,15 +141,67 @@ class ReaderProvider extends ChangeNotifier {
       await _bookDao.updateProgress(
         book.bookUrl,
         index,
-        0,
+        0, // reset to page 0 on new chapter
         _chapters[index].title,
       );
     } catch (e) {
       _content = "加載章節失敗: $e";
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (_viewSize != null) {
+        _doPaginate();
+      } else {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
+  }
+
+  void updateViewSize(Size size) {
+    if (_viewSize != size) {
+      _viewSize = size;
+      _doPaginate();
+    }
+  }
+
+  void onPageChanged(int index) {
+    _currentPageIndex = index;
+    notifyListeners();
+  }
+
+  void _doPaginate() {
+    if (_viewSize == null || _chapters.isEmpty || currentChapter == null) {
+      return;
+    }
+
+    _isLoading = true;
+    notifyListeners();
+
+    // Use Future.microtask or compute if it freezes, but text layout with binary search is fast enough normally in Dart
+    final titleStyle = TextStyle(
+      fontSize: _fontSize + 4,
+      fontWeight: FontWeight.bold,
+      color: currentTheme.textColor,
+    );
+
+    final contentStyle = TextStyle(
+      fontSize: _fontSize,
+      height: _lineHeight,
+      color: currentTheme.textColor,
+    );
+
+    _pages = ChapterProvider.paginate(
+      content: _content,
+      chapter: currentChapter!,
+      chapterIndex: _currentChapterIndex,
+      chapterSize: _chapters.length,
+      viewSize: _viewSize!,
+      titleStyle: titleStyle,
+      contentStyle: contentStyle,
+    );
+
+    _currentPageIndex = 0;
+    _isLoading = false;
+    notifyListeners();
   }
 
   Future<String> _applyReplaceRules(String content) async {
@@ -167,16 +227,19 @@ class ReaderProvider extends ChangeNotifier {
   void setFontSize(double size) {
     _fontSize = size.clamp(14.0, 30.0);
     saveSetting('font_size', _fontSize);
+    _doPaginate();
   }
 
   void setLineHeight(double height) {
     _lineHeight = height.clamp(1.2, 2.5);
     saveSetting('line_height', _lineHeight);
+    _doPaginate();
   }
 
   void setTheme(int index) {
     _themeIndex = index % AppTheme.readingThemes.length;
     saveSetting('theme_index', _themeIndex);
+    // Don't need to re-layout for theme change, just repaint, but colors are read dynamically so notify is enough.
   }
 
   void setBrightness(double value) {

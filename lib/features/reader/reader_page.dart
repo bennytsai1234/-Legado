@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'reader_provider.dart';
 import '../../core/models/book.dart';
 import '../../shared/theme/app_theme.dart';
+import 'engine/page_view_widget.dart';
 
 class ReaderPage extends StatefulWidget {
   final Book book;
@@ -16,11 +17,12 @@ class ReaderPage extends StatefulWidget {
 }
 
 class _ReaderPageState extends State<ReaderPage> {
-  final ScrollController _scrollController = ScrollController();
+  late PageController _pageController;
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController();
     // 進入閱讀器時隱藏系統狀態列
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
@@ -29,7 +31,7 @@ class _ReaderPageState extends State<ReaderPage> {
   void dispose() {
     // 退出時恢復系統狀態列
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    _scrollController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -57,12 +59,39 @@ class _ReaderPageState extends State<ReaderPage> {
                     if (x > width * 0.3 && x < width * 0.7) {
                       provider.toggleControls();
                     } else if (x <= width * 0.3) {
-                      provider.prevChapter();
+                      if (provider.currentPageIndex > 0) {
+                        _pageController.previousPage(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOut,
+                        );
+                      } else {
+                        provider.prevChapter();
+                      }
                     } else {
-                      provider.nextChapter();
+                      if (provider.currentPageIndex <
+                          provider.pages.length - 1) {
+                        _pageController.nextPage(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOut,
+                        );
+                      } else {
+                        provider.nextChapter();
+                      }
                     }
                   },
-                  child: _buildContent(provider, theme),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (constraints.maxWidth > 0 &&
+                          constraints.maxHeight > 0) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          provider.updateViewSize(
+                            Size(constraints.maxWidth, constraints.maxHeight),
+                          );
+                        });
+                      }
+                      return _buildContent(provider, theme);
+                    },
+                  ),
                 ),
 
                 // 頂部工具列
@@ -79,51 +108,43 @@ class _ReaderPageState extends State<ReaderPage> {
   }
 
   Widget _buildContent(ReaderProvider provider, ReadingTheme theme) {
-    if (provider.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+    if (provider.isLoading || provider.pages.isEmpty) {
+      // 顯示純文字載入或空內容
+      return Center(
+        child:
+            provider.isLoading
+                ? const CircularProgressIndicator()
+                : Text(
+                  "內容為空或解析失敗\n${provider.content}",
+                  style: TextStyle(color: theme.textColor),
+                  textAlign: TextAlign.center,
+                ),
+      );
     }
 
-    return SafeArea(
-      child: ListView(
-        controller: _scrollController,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        children: [
-          // 章節標題
-          Text(
-            provider.currentChapter?.title ?? "",
-            style: TextStyle(
-              fontSize: provider.fontSize + 4,
-              fontWeight: FontWeight.bold,
-              color: theme.textColor,
-            ),
-          ),
-          const SizedBox(height: 20),
-          // 正文
-          Text(
-            provider.content,
-            style: TextStyle(
-              fontSize: provider.fontSize,
-              height: provider.lineHeight,
-              color: theme.textColor,
-            ),
-          ),
-          const SizedBox(height: 50),
-          // 章節切換按鈕
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              TextButton(
-                onPressed: provider.prevChapter,
-                child: const Text("上一章"),
-              ),
-              TextButton(
-                onPressed: provider.nextChapter,
-                child: const Text("下一章"),
-              ),
-            ],
-          ),
-        ],
-      ),
+    final titleStyle = TextStyle(
+      fontSize: provider.fontSize + 4,
+      fontWeight: FontWeight.bold,
+      color: theme.textColor,
+    );
+
+    final contentStyle = TextStyle(
+      fontSize: provider.fontSize,
+      height: provider.lineHeight,
+      color: theme.textColor,
+    );
+
+    return PageView.builder(
+      controller: _pageController,
+      itemCount: provider.pages.length,
+      onPageChanged: provider.onPageChanged,
+      itemBuilder: (context, index) {
+        return PageViewWidget(
+          page: provider.pages[index],
+          contentStyle: contentStyle,
+          titleStyle: titleStyle,
+        );
+      },
     );
   }
 

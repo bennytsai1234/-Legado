@@ -2,16 +2,12 @@ import 'package:flutter/material.dart';
 import '../../../core/models/chapter.dart';
 import 'text_page.dart';
 
-/// ChapterProvider - 章節排版引擎
-/// 將長篇文字切割為多個 TextPage 供 PageView 顯示
-/// 對應 Android: ui/book/read/page/provider/ChapterProvider.kt
 class ChapterProvider {
   static const double paddingTop = 40.0;
   static const double paddingBottom = 40.0;
   static const double paddingLeft = 16.0;
   static const double paddingRight = 16.0;
 
-  /// 排版並切割章節內容
   static List<TextPage> paginate({
     required String content,
     required BookChapter chapter,
@@ -26,7 +22,17 @@ class ChapterProvider {
     final double visibleWidth = viewSize.width - paddingLeft - paddingRight;
     final double visibleHeight = viewSize.height - paddingTop - paddingBottom;
 
-    if (visibleWidth <= 0 || visibleHeight <= 0) return pages;
+    if (visibleWidth <= 0 || visibleHeight <= 0)
+      return [
+        TextPage(
+          index: 0,
+          lines: [],
+          title: chapter.title,
+          chapterIndex: chapterIndex,
+          pageSize: 1,
+          chapterSize: chapterSize,
+        ),
+      ];
 
     final paragraphs = content.split('\n');
     List<TextLine> currentLines = [];
@@ -35,122 +41,137 @@ class ChapterProvider {
     int chapterPosition = 0;
     int paragraphNum = 0;
 
-    // TODO: Draw Chapter Title on the first page
-    // Here we simplified that the chapter title is already in the content string by ContentProcessor
-    
+    final TextPainter textPainter = TextPainter(
+      textDirection: TextDirection.ltr,
+    );
+
     for (int pIndex = 0; pIndex < paragraphs.length; pIndex++) {
       String paraText = paragraphs[pIndex];
       paragraphNum++;
-      
-      if (paraText.isEmpty) {
-         // handle empty paragraph as spacing
-         currentHeight += paragraphSpacing;
-         chapterPosition += 1;
-         continue;
+
+      if (paraText.trim().isEmpty) {
+        currentHeight += paragraphSpacing;
+        chapterPosition += paraText.length + 1;
+        continue;
       }
 
-      // Check if it's the title (usually the first paragraph if ContentProcessor included it)
       bool isTitle = (pIndex == 0 && paraText == chapter.title);
       TextStyle style = isTitle ? titleStyle : contentStyle;
 
-      // layout text by wrapping
-      TextPainter textPainter = TextPainter(
-        text: TextSpan(text: paraText, style: style),
-        textDirection: TextDirection.ltr,
-      );
-      
-      textPainter.layout(maxWidth: visibleWidth);
+      int charStartIndex = 0;
+      while (charStartIndex < paraText.length) {
+        int low = charStartIndex + 1;
+        int high = paraText.length;
+        int bestEnd = low;
+        double currentLineWidth = 0;
+        double currentLineHeight = 0;
 
-      final lineMetrics = textPainter.computeLineMetrics();
-      
-      int currentLineStartIndex = 0;
-      
-      for (int i = 0; i < lineMetrics.length; i++) {
-        final metric = lineMetrics[i];
-        final lineHeight = metric.height;
-        
-        // Calculate chars in this line based on textPainter's Position
-        // Note: Flutter's standard TextPainter doesn't yield exact char slices per line metrics easily
-        // We use getPositionForOffset to approximate, or better use TextPainter.getPositionForOffset()
-        
-        // A more reliable way in Flutter to get substring per line:
-        // We find the text offset for the end of the line
-        int charEnd = paraText.length;
-        if (i < lineMetrics.length - 1) {
-            // Find the character index where the line breaks
-            final nextLineOffset = Offset(0, metric.baseline + metric.descent + 1); // just below this line
-            TextPosition endPos = textPainter.getPositionForOffset(nextLineOffset);
-            charEnd = endPos.offset;
-        }
-        
-        String lineText = paraText.substring(currentLineStartIndex, charEnd);
-        bool isParaEnd = (i == lineMetrics.length - 1);
-        
-        // Check if page breaks
-        if (currentHeight + lineHeight > visibleHeight && currentLines.isNotEmpty) {
-           pages.add(TextPage(
-             index: pageIndex++,
-             lines: List.from(currentLines),
-             title: chapter.title,
-             chapterIndex: chapterIndex,
-             chapterSize: chapterSize,
-           ));
-           currentLines.clear();
-           currentHeight = 0.0;
+        // Binary search for the maximum substring that fits in visibleWidth
+        while (low <= high) {
+          int mid = low + (high - low) ~/ 2;
+          textPainter.text = TextSpan(
+            text: paraText.substring(charStartIndex, mid),
+            style: style,
+          );
+          textPainter.layout(maxWidth: double.infinity);
+
+          if (textPainter.width <= visibleWidth) {
+            bestEnd = mid;
+            currentLineWidth = textPainter.width;
+            currentLineHeight = textPainter.height;
+            low = mid + 1;
+          } else {
+            high = mid - 1;
+          }
         }
 
-        currentLines.add(TextLine(
-          text: lineText,
-          width: metric.width,
-          height: lineHeight,
-          isTitle: isTitle,
-          isParagraphEnd: isParaEnd,
-          chapterPosition: chapterPosition + currentLineStartIndex,
-          lineTop: currentHeight,
-          lineBottom: currentHeight + lineHeight,
-          paragraphNum: paragraphNum,
-        ));
+        // Failsafe: if a single character is wider than view (rare), advance by 1
+        if (bestEnd == charStartIndex) {
+          bestEnd = charStartIndex + 1;
+          textPainter.text = TextSpan(
+            text: paraText.substring(charStartIndex, bestEnd),
+            style: style,
+          );
+          textPainter.layout();
+          currentLineWidth = textPainter.width;
+          currentLineHeight = textPainter.height;
+        }
 
-        currentHeight += lineHeight;
-        currentLineStartIndex = charEnd;
+        bool isParaEnd = (bestEnd == paraText.length);
+
+        if (currentHeight + currentLineHeight > visibleHeight &&
+            currentLines.isNotEmpty) {
+          pages.add(
+            TextPage(
+              index: pageIndex++,
+              lines: List.from(currentLines),
+              title: chapter.title,
+              chapterIndex: chapterIndex,
+              chapterSize: chapterSize,
+            ),
+          );
+          currentLines.clear();
+          currentHeight = 0.0;
+        }
+
+        currentLines.add(
+          TextLine(
+            text: paraText.substring(charStartIndex, bestEnd),
+            width: currentLineWidth,
+            height: currentLineHeight,
+            isTitle: isTitle,
+            isParagraphEnd: isParaEnd,
+            chapterPosition: chapterPosition + charStartIndex,
+            lineTop: currentHeight,
+            lineBottom: currentHeight + currentLineHeight,
+            paragraphNum: paragraphNum,
+          ),
+        );
+
+        currentHeight += currentLineHeight;
+        charStartIndex = bestEnd;
       }
-      
+
       currentHeight += paragraphSpacing;
-      // account for newline character length
       chapterPosition += paraText.length + 1;
     }
 
     if (currentLines.isNotEmpty) {
-      pages.add(TextPage(
-        index: pageIndex++,
-        lines: List.from(currentLines),
-        title: chapter.title,
-        chapterIndex: chapterIndex,
-        chapterSize: chapterSize,
-      ));
-    }
-    
-    // Update pageSize for all pages
-    for (var page in pages) {
-      // Dart doesn't allow mutating final fields directly in the constructor, 
-      // but conceptually we would want pageSize injected. 
-      // We should ideally create them with pageSize known, or we can just calculate read progress locally.
-      // Since Dart doesn't have data classes copy with ease without external packages, we will just rebuild the list.
-    }
-    
-    // Re-assign with pageSize populated
-    final List<TextPage> result = [];
-    for (int i = 0; i < pages.length; i++) {
-        result.add(TextPage(
-            index: pages[i].index,
-            lines: pages[i].lines,
-            title: pages[i].title,
-            chapterIndex: pages[i].chapterIndex,
-            chapterSize: pages[i].chapterSize,
-            pageSize: pages.length,
-        ));
+      pages.add(
+        TextPage(
+          index: pageIndex++,
+          lines: List.from(currentLines),
+          title: chapter.title,
+          chapterIndex: chapterIndex,
+          chapterSize: chapterSize,
+        ),
+      );
     }
 
-    return result;
+    if (pages.isEmpty) {
+      return [
+        TextPage(
+          index: 0,
+          lines: [],
+          title: chapter.title,
+          chapterIndex: chapterIndex,
+          pageSize: 1,
+          chapterSize: chapterSize,
+        ),
+      ];
+    }
+
+    return pages
+        .map(
+          (p) => TextPage(
+            index: p.index,
+            lines: p.lines,
+            title: p.title,
+            chapterIndex: p.chapterIndex,
+            chapterSize: p.chapterSize,
+            pageSize: pages.length,
+          ),
+        )
+        .toList();
   }
 }

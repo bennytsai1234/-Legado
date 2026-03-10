@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 /// TextLine - 單行文字資訊
 /// 對應 Android: ui/book/read/page/entities/TextLine.kt
 class TextLine {
@@ -51,11 +49,14 @@ class TextPage {
     if (chapterSize == 0 || (pageSize == 0 && chapterIndex == 0)) {
       return "0.0%";
     } else if (pageSize == 0) {
-      return ((chapterIndex + 1.0) / chapterSize * 100).toStringAsFixed(1) + "%";
+      return "${((chapterIndex + 1.0) / chapterSize * 100).toStringAsFixed(1)}%";
     }
-    double percent = (chapterIndex / chapterSize) + (1.0 / chapterSize) * (index + 1) / pageSize;
-    String formatted = (percent * 100).toStringAsFixed(1) + "%";
-    if (formatted == "100.0%" && (chapterIndex + 1 != chapterSize || index + 1 != pageSize)) {
+    double percent =
+        (chapterIndex / chapterSize) +
+        (1.0 / chapterSize) * (index + 1) / pageSize;
+    String formatted = "${(percent * 100).toStringAsFixed(1)}%";
+    if (formatted == "100.0%" &&
+        (chapterIndex + 1 != chapterSize || index + 1 != pageSize)) {
       formatted = "99.9%";
     }
     return formatted;
