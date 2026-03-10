@@ -67,6 +67,9 @@ dependencies:
   intl: ^0.19.0
   fast_gbk: ^1.0.0
   opencc: ^1.1.0
+  flutter_tts: ^4.2.5
+  webdav_client: ^1.2.2
+  archive: ^4.0.9
 
 dev_dependencies:
   flutter_test:
