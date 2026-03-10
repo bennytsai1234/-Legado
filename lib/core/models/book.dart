@@ -30,9 +30,16 @@ class Book {
   String? readConfig; // 閱讀設定
   bool isInBookshelf; // 是否在書架中
 
+  String tocUrl; // 目錄 URL
+  String? infoHtml; // 詳情頁 HTML 緩存
+  String? tocHtml; // 目錄頁 HTML 緩存
+
   Book({
     required this.bookUrl,
     required this.name,
+    this.tocUrl = '',
+    this.infoHtml,
+    this.tocHtml,
     this.author,
     this.kind,
     this.coverUrl,
@@ -63,6 +70,9 @@ class Book {
     return Book(
       bookUrl: json['bookUrl'] ?? '',
       name: json['name'] ?? '',
+      tocUrl: json['tocUrl'] ?? '',
+      infoHtml: json['infoHtml'],
+      tocHtml: json['tocHtml'],
       author: json['author'],
       kind: json['kind'],
       coverUrl: json['coverUrl'],
@@ -108,6 +118,9 @@ class Book {
       'durChapterPos': durChapterPos,
       'durChapterTitle': durChapterTitle,
       'durChapterTime': durChapterTime,
+      'tocUrl': tocUrl,
+      'infoHtml': infoHtml,
+      'tocHtml': tocHtml,
       'origin': origin,
       'originName': originName,
       'originOrder': originOrder,
