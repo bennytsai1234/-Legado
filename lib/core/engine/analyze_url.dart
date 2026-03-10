@@ -118,12 +118,12 @@ class AnalyzeUrl {
   }
 
   void _analyzeUrl() {
-    // Split by comma followed by {
-    final commaIndex = ruleUrl.indexOf(RegExp(r',\s*\{'));
+    // 1. Split url and options
+    final match = paramPattern.firstMatch(ruleUrl);
     String urlNoOption;
-    if (commaIndex != -1) {
-      urlNoOption = ruleUrl.substring(0, commaIndex).trim();
-      final optionStr = ruleUrl.substring(commaIndex + 1).trim();
+    if (match != null) {
+      urlNoOption = ruleUrl.substring(0, match.start).trim();
+      final optionStr = ruleUrl.substring(match.end).trim();
       try {
         final options = jsonDecode(optionStr) as Map<String, dynamic>;
         if (options.containsKey('method')) {
@@ -138,7 +138,6 @@ class AnalyzeUrl {
         if (options.containsKey('body')) {
           body = options['body'];
           if (body is String && analyzer != null) {
-             // 替換 body 中的變數
              body = _replaceInString(body as String);
           }
         }
@@ -152,6 +151,13 @@ class AnalyzeUrl {
         if (options.containsKey('webJs')) {
           webJs = options['webJs'].toString();
         }
+        if (options.containsKey('js')) {
+          final jsStr = options['js'].toString();
+          final jsResult = analyzer?.evalJS(jsStr, urlNoOption);
+          if (jsResult != null) {
+            urlNoOption = jsResult.toString();
+          }
+        }
       } catch (e) {
         // Ignore invalid JSON options
       }
@@ -159,13 +165,64 @@ class AnalyzeUrl {
       urlNoOption = ruleUrl.trim();
     }
 
-    // Resolve relative URL
+    // 2. Resolve relative URL
     if (baseUrl != null && !urlNoOption.startsWith('http')) {
       final base = Uri.parse(baseUrl!);
       url = base.resolve(urlNoOption).toString();
     } else {
       url = urlNoOption;
     }
+
+    // 3. Analyze Query and Fields
+    if (method == "GET") {
+      final pos = url.indexOf('?');
+      if (pos != -1) {
+        analyzeQuery(url.substring(pos + 1));
+        url = url.substring(0, pos);
+      }
+    } else if (method == "POST") {
+      if (body != null && body is String) {
+        final bodyStr = body as String;
+        // If not JSON/XML and no Content-Type, analyze as fields
+        if (!bodyStr.trim().startsWith('{') && 
+            !bodyStr.trim().startsWith('[') && 
+            !bodyStr.trim().startsWith('<') &&
+            headerMap['Content-Type'] == null) {
+          analyzeFields(bodyStr);
+        }
+      }
+    }
+  }
+
+  void analyzeFields(String fieldsTxt) {
+    encodedForm = encodeParams(fieldsTxt, charset, false);
+  }
+
+  void analyzeQuery(String query) {
+    encodedQuery = encodeParams(query, charset, true);
+  }
+
+  String encodeParams(String params, String? charset, bool isQuery) {
+    // Basic implementation of param encoding
+    // Android version handles more edge cases and charsets
+    final parts = params.split('&');
+    final sb = StringBuffer();
+    
+    for (var i = 0; i < parts.length; i++) {
+      if (i > 0) sb.write('&');
+      final part = parts[i];
+      final eqIndex = part.indexOf('=');
+      if (eqIndex != -1) {
+        final key = part.substring(0, eqIndex);
+        final value = part.substring(eqIndex + 1);
+        sb.write(Uri.encodeQueryComponent(key));
+        sb.write('=');
+        sb.write(Uri.encodeQueryComponent(value));
+      } else {
+        sb.write(Uri.encodeQueryComponent(part));
+      }
+    }
+    return sb.toString();
   }
 
   String _replaceInString(String str) {
