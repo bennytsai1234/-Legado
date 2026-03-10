@@ -1,70 +1,135 @@
+import 'dart:convert';
+import 'package:dio/dio.dart';
+import 'rule_analyzer.dart';
+
 /// AnalyzeUrl - URL 構建與請求引擎
 /// 對應 Android: model/analyzeRule/AnalyzeUrl.kt (29KB)
-///
-/// 職責：
-/// 1. 解析書源 URL 模板 (searchUrl, bookUrl, etc.)
-/// 2. 支援 POST/GET 方法切分
-/// 3. 支援 Header 自訂
-/// 4. 支援 {{page}}, {{pageSize}}, {{key}} 變數替換
-/// 5. 支援 WebView 載入模式
-/// 6. 支援 JS 預處理 URL
-library;
-
-import 'package:dio/dio.dart';
-
-// TODO: Phase 2 實作
-// - [ ] URL 模板解析 (method, body, headers, charset, webView)
-// - [ ] {{page}}, {{pageSize}}, {{key}} 動態替換
-// - [ ] POST body 解析 (form-data vs json)
-// - [ ] JS 預處理 URL
-// - [ ] WebView 載入模式
-
 class AnalyzeUrl {
-  String _url = '';
-  String _method = 'GET';
-  Map<String, String> _headers = {};
-  String? _body;
-  String? _charset;
-  bool _useWebView = false;
-  int _page = 1;
+  final String mUrl;
+  final String? key;
+  final int? page;
+  final String? baseUrl;
+  
+  String ruleUrl = "";
+  String url = "";
+  String method = "GET";
+  Map<String, dynamic> headerMap = {};
+  dynamic body;
+  String? charset;
+  bool useWebView = false;
+  String? webJs;
 
-  /// Parse a raw URL rule string into structured request parameters
-  ///
-  /// Legado URL format examples:
-  /// - Simple: `https://example.com/search?q={{key}}`
-  /// - POST: `https://example.com/api, {"method":"POST","body":"keyword={{key}}"}`
-  /// - With headers: `https://example.com, {"headers":{"User-Agent":"..."}}`
-  /// - WebView: `https://example.com, {"webView":true}`
-  void parse(String rawUrl, {String? key, int page = 1}) {
-    _page = page;
-    // TODO: Implement full URL parsing
-    _url = rawUrl;
+  AnalyzeUrl(
+    this.mUrl, {
+    this.key,
+    this.page,
+    this.baseUrl,
+    Map<String, dynamic>? initialHeaders,
+  }) {
+    if (initialHeaders != null) {
+      headerMap.addAll(initialHeaders);
+    }
+    _initUrl();
+  }
+
+  void _initUrl() {
+    ruleUrl = mUrl;
+    // 1. 替換變數 {{key}}, {{page}}
+    _replaceKeyPage();
+    // 2. 解析 Legado URL 格式: url, {options}
+    _analyzeUrl();
+  }
+
+  void _replaceKeyPage() {
+    var result = ruleUrl;
+    if (key != null) {
+      result = result.replaceAll('{{key}}', key!);
+    }
+    if (page != null) {
+      result = result.replaceAll('{{page}}', page.toString());
+      // Handle <page1,page2,page3>
+      final pagePattern = RegExp(r'<(.*?)>');
+      result = result.replaceAllMapped(pagePattern, (match) {
+        final pages = match.group(1)!.split(',');
+        if (page! <= pages.length) {
+          return pages[page! - 1].trim();
+        } else {
+          return pages.last.trim();
+        }
+      });
+    }
+    ruleUrl = result;
+  }
+
+  void _analyzeUrl() {
+    // Split by comma followed by {
+    final commaIndex = ruleUrl.indexOf(RegExp(r',\s*\{'));
+    String urlNoOption;
+    if (commaIndex != -1) {
+      urlNoOption = ruleUrl.substring(0, commaIndex).trim();
+      final optionStr = ruleUrl.substring(commaIndex + 1).trim();
+      try {
+        final options = jsonDecode(optionStr) as Map<String, dynamic>;
+        if (options.containsKey('method')) {
+          method = options['method'].toString().toUpperCase();
+        }
+        if (options.containsKey('headers')) {
+          final headers = options['headers'] as Map<String, dynamic>;
+          headers.forEach((k, v) {
+            headerMap[k] = v.toString();
+          });
+        }
+        if (options.containsKey('body')) {
+          body = options['body'];
+        }
+        if (options.containsKey('charset')) {
+          charset = options['charset'].toString();
+        }
+        if (options.containsKey('webView')) {
+          final wv = options['webView'];
+          useWebView = wv == true || wv == "true";
+        }
+        if (options.containsKey('webJs')) {
+          webJs = options['webJs'].toString();
+        }
+      } catch (e) {
+        // Ignore invalid JSON options
+      }
+    } else {
+      urlNoOption = ruleUrl.trim();
+    }
+
+    // Resolve relative URL
+    if (baseUrl != null && !urlNoOption.startsWith('http')) {
+      final base = Uri.parse(baseUrl!);
+      url = base.resolve(urlNoOption).toString();
+    } else {
+      url = urlNoOption;
+    }
   }
 
   /// Execute the HTTP request and return response body
   Future<String> getResponseBody() async {
     final dio = Dio();
+    // TODO: Set custom headers from headerMap
+    // TODO: Handle charset if not UTF-8
 
     try {
       final options = Options(
-        method: _method,
-        headers: _headers.isNotEmpty ? _headers : null,
+        method: method,
+        headers: headerMap.cast<String, dynamic>(),
+        responseType: ResponseType.plain, // Important for custom charset handling later
       );
 
       Response response;
-      if (_method.toUpperCase() == 'POST') {
-        response = await dio.request(_url, data: _body, options: options);
+      if (method == 'POST') {
+        response = await dio.request(url, data: body, options: options);
       } else {
-        response = await dio.request(_url, options: options);
+        response = await dio.request(url, options: options);
       }
       return response.data.toString();
     } catch (e) {
       return '';
     }
   }
-
-  String get url => _url;
-  String get method => _method;
-  Map<String, String> get headers => _headers;
-  bool get useWebView => _useWebView;
 }
