@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart';
 import 'package:convert/convert.dart';
 import 'package:fast_gbk/fast_gbk.dart';
+import 'package:pointycastle/export.dart' as pc;
 
 /// JsEncodeUtils - JS 加解密工具類
 /// 對應 Android: help/JsEncodeUtils.kt
@@ -65,21 +66,20 @@ class JsEncodeUtils {
 
     if (algorithmName == 'AES') {
       encrypter = Encrypter(AES(k, mode: _getAESMode(modeName)));
-    } else if (algorithmName == 'DES') {
-      // If DES is not directly available in 'encrypt' package,
-      // we might need to use pointycastle directly or a placeholder.
-      // For now, assume it's there or use AES as fallback to avoid crash during analyze
-      // if it's truly missing from this version of 'encrypt'.
-      try {
-        // Some versions of 'encrypt' might not have DES exported at top level
-        encrypter = Encrypter(AES(k, mode: _getAESMode(modeName)));
-      } catch (e) {
-        throw UnsupportedError("DES not supported in this environment");
-      }
-    } else if (algorithmName == 'DESEDE' || algorithmName == 'TRIPLEDES') {
-      encrypter = Encrypter(AES(k, mode: _getAESMode(modeName)));
+    } else if (algorithmName == 'DES' ||
+        algorithmName == 'DESEDE' ||
+        algorithmName == 'TRIPLEDES') {
+      return _pointycastleSymmetricCrypto(
+        action,
+        algorithmName,
+        modeName,
+        keyBytes,
+        ivBytes,
+        data,
+        outputFormat,
+      );
     } else {
-      throw UnsupportedError("Unsupported algorithm: $algorithmName");
+      throw UnsupportedError("Unsupported algorithm: \$algorithmName");
     }
 
     if (action == "encrypt") {
@@ -90,7 +90,6 @@ class JsEncodeUtils {
     } else {
       Uint8List decrypted;
       if (data is String) {
-        // Assume data is base64 if it's a string and we are decrypting
         decrypted = Uint8List.fromList(
           encrypter.decryptBytes(Encrypted.fromBase64(data), iv: v),
         );
@@ -134,6 +133,71 @@ class JsEncodeUtils {
     if (data is List<int>) return data;
     if (data is String) return utf8.encode(data);
     throw ArgumentError("Unsupported data type: ${data.runtimeType}");
+  }
+
+  static dynamic _pointycastleSymmetricCrypto(
+    String action,
+    String algorithmName,
+    String modeName,
+    List<int> keyBytes,
+    List<int>? ivBytes,
+    dynamic data,
+    String outputFormat,
+  ) {
+    pc.BlockCipher engine;
+    if (algorithmName == 'DES') {
+      engine = pc.BlockCipher('DES');
+    } else {
+      // DESEDE or TRIPLEDES
+      engine = pc.BlockCipher('DESede');
+    }
+
+    pc.BlockCipher cipher;
+    if (modeName == 'ECB') {
+      cipher = engine;
+    } else {
+      cipher = pc.CBCBlockCipher(engine);
+    }
+
+    final pc.PaddedBlockCipher padder = pc.PaddedBlockCipherImpl(
+      pc.PKCS7Padding(),
+      cipher,
+    )..init(
+      action == 'encrypt',
+      modeName == 'ECB'
+          ? pc.PaddedBlockCipherParameters(
+            pc.KeyParameter(Uint8List.fromList(keyBytes)),
+            null,
+          )
+          : pc.PaddedBlockCipherParameters(
+            pc.ParametersWithIV(
+              pc.KeyParameter(Uint8List.fromList(keyBytes)),
+              Uint8List.fromList(ivBytes ?? List.filled(engine.blockSize, 0)),
+            ),
+            null,
+          ),
+    );
+
+    if (action == 'encrypt') {
+      final inputBytes = Uint8List.fromList(_toBytes(data));
+      final encryptedBytes = padder.process(inputBytes);
+      if (outputFormat == "hex") return hex.encode(encryptedBytes);
+      if (outputFormat == "bytes") return encryptedBytes;
+      return base64.encode(encryptedBytes);
+    } else {
+      Uint8List inputBytes;
+      if (data is String) {
+        inputBytes = base64DecodeToBytes(data);
+      } else {
+        inputBytes = Uint8List.fromList(_toBytes(data));
+      }
+      final decryptedBytes = padder.process(inputBytes);
+
+      if (outputFormat == "string") return utf8.decode(decryptedBytes);
+      if (outputFormat == "bytes") return decryptedBytes;
+      if (outputFormat == "hex") return hex.encode(decryptedBytes);
+      return base64.encode(decryptedBytes);
+    }
   }
 
   // === AES Variants ===
