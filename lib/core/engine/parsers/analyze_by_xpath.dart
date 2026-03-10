@@ -14,10 +14,22 @@ class AnalyzeByXPath {
     if (doc is Element) {
       _xpath = HtmlXPath.node(doc);
     } else if (doc is String) {
-      _xpath = HtmlXPath.html(doc);
+      _xpath = HtmlXPath.html(_prepareHtml(doc));
     } else {
-      _xpath = HtmlXPath.html(doc.toString());
+      _xpath = HtmlXPath.html(_prepareHtml(doc.toString()));
     }
+  }
+
+  /// 參考 Android 的 strToJXDocument，處理表格標籤補全
+  String _prepareHtml(String html) {
+    var h = html.trim();
+    if (h.endsWith("</td>")) {
+      h = "<tr>$h</tr>";
+    }
+    if (h.endsWith("</tr>") || h.endsWith("</tbody>")) {
+      h = "<table>$h</table>";
+    }
+    return h;
   }
 
   /// 獲取列表
@@ -28,11 +40,11 @@ class AnalyzeByXPath {
     final rules = ruleAnalyzes.splitRule(['&&', '||', '%%']);
 
     if (rules.length == 1) {
-      return _xpath.query(rules[0]).nodes;
+      return _xpath.query(rules[0].trim()).nodes;
     } else {
       final results = <List<XPathNode>>[];
       for (final rl in rules) {
-        final temp = getElements(rl);
+        final temp = getElements(rl.trim());
         if (temp.isNotEmpty) {
           results.add(temp);
           if (ruleAnalyzes.elementsType == '||') break;
@@ -68,18 +80,18 @@ class AnalyzeByXPath {
     final rules = ruleAnalyzes.splitRule(['&&', '||', '%%']);
 
     if (rules.length == 1) {
-      final queryResult = _xpath.query(rules[0]);
-      // If the rule ends with /@attr or /text(), queryResult.attrs usually contains it
-      if (rules[0].contains('/@') || rules[0].endsWith('/text()')) {
+      final queryResult = _xpath.query(rules[0].trim());
+      // 處理 /@attr 尾綴的屬性提取
+      if (rules[0].contains('/@')) {
         return queryResult.attrs.whereType<String>().toList();
       } else {
-        // Fallback to node text if no attribute requested
-        return queryResult.nodes.map((n) => n.text?.trim() ?? "").where((t) => t.isNotEmpty).toList();
+        // 預設提取 text
+        return queryResult.nodes.map((n) => n.text ?? "").toList();
       }
     } else {
       final results = <List<String>>[];
       for (final rl in rules) {
-        final temp = getStringList(rl);
+        final temp = getStringList(rl.trim());
         if (temp.isNotEmpty) {
           results.add(temp);
           if (ruleAnalyzes.elementsType == '||') break;
@@ -110,9 +122,24 @@ class AnalyzeByXPath {
   /// 獲取合併字串
   String? getString(String rule) {
     if (rule.isEmpty) return null;
-    final list = getStringList(rule);
-    if (list.isEmpty) return null;
-    if (list.length == 1) return list.first;
-    return list.join('\n');
+    
+    final ruleAnalyzes = RuleAnalyzer(rule);
+    final rules = ruleAnalyzes.splitRule(['&&', '||']);
+
+    if (rules.length == 1) {
+      final list = getStringList(rules[0].trim());
+      if (list.isEmpty) return null;
+      return list.join('\n');
+    } else {
+      final textList = <String>[];
+      for (final rl in rules) {
+        final temp = getString(rl.trim());
+        if (temp != null && temp.isNotEmpty) {
+          textList.add(temp);
+          if (ruleAnalyzes.elementsType == '||') break;
+        }
+      }
+      return textList.isEmpty ? null : textList.join('\n');
+    }
   }
 }

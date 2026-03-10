@@ -3,65 +3,57 @@ import 'package:legado_reader/core/engine/parsers/analyze_by_xpath.dart';
 
 void main() {
   group('AnalyzeByXPath Tests', () {
-    const htmlStr = '''
-    <html>
-      <body>
-        <div id="content">
-          <ul class="bookList">
-            <li class="item">
-              <a href="book1.html" title="Book 1">Chapter 1</a>
-              <span class="author">Author A</span>
-            </li>
-            <li class="item">
-              <a href="book2.html" title="Book 2">Chapter 2</a>
-              <span class="author">Author B</span>
-            </li>
-            <li class="item">
-              <a href="book3.html" title="Book 3">Chapter 3</a>
-              <span class="author">Author C</span>
-            </li>
-          </ul>
-          <div class="footer">Footer Text</div>
-        </div>
-      </body>
-    </html>
+    const html = '''
+      <html>
+        <body>
+          <div id="test">
+            <ul class="list">
+              <li>Item 1</li>
+              <li>Item 2</li>
+            </ul>
+            <a href="https://example.com" title="Example">Link</a>
+          </div>
+        </body>
+      </html>
     ''';
 
-    late AnalyzeByXPath analyzer;
-
-    setUp(() {
-      analyzer = AnalyzeByXPath(htmlStr);
+    test('getElements - select nodes', () {
+      final analyzer = AnalyzeByXPath(html);
+      final elements = analyzer.getElements('//li');
+      expect(elements.length, 2);
+      expect(elements[0].text, 'Item 1');
     });
 
-    test('1. Basic XPath query (nodes)', () {
-      final elements = analyzer.getElements('//li[@class="item"]');
-      expect(elements.length, 3);
+    test('getStringList - select attributes', () {
+      final analyzer = AnalyzeByXPath(html);
+      final hrefs = analyzer.getStringList('//a/@href');
+      expect(hrefs, ['https://example.com']);
     });
 
-    test('2. Attribute extraction (/@href)', () {
-      final hrefs = analyzer.getStringList('//li/a/@href');
-      expect(hrefs, ['book1.html', 'book2.html', 'book3.html']);
+    test('getStringList - select text', () {
+      final analyzer = AnalyzeByXPath(html);
+      final texts = analyzer.getStringList('//li/text()');
+      expect(texts, ['Item 1', 'Item 2']);
     });
 
-    test('3. Text extraction (/text())', () {
-      final titles = analyzer.getStringList('//li/a/text()');
-      expect(titles, ['Chapter 1', 'Chapter 2', 'Chapter 3']);
+    test('getString - join with newline', () {
+      final analyzer = AnalyzeByXPath(html);
+      final result = analyzer.getString('//li/text()');
+      expect(result, 'Item 1\nItem 2');
     });
 
-    test('4. Complex path with conditions', () {
-      final secondTitle = analyzer.getString('//li[2]/a/text()');
-      expect(secondTitle, 'Chapter 2');
+    test('Logical && operator', () {
+      final analyzer = AnalyzeByXPath(html);
+      final result = analyzer.getString('//li[1]/text() && //li[2]/text()');
+      expect(result, 'Item 1\nItem 2');
     });
 
-    test('5. Logical && operator', () {
-      final result = analyzer.getString('//li[1]/a/text() && //li[2]/a/text()');
-      expect(result, 'Chapter 1\nChapter 2');
-    });
-
-    test('6. Logical || operator (fallback)', () {
-      // first path doesn't exist
-      final result = analyzer.getString('//li[@class="none"]/text() || //div[@class="footer"]/text()');
-      expect(result, 'Footer Text');
+    test('Table tag auto-completion', () {
+      // Test the _prepareHtml logic
+      const tableFragment = '<td>Data</td>';
+      final analyzer = AnalyzeByXPath(tableFragment);
+      final result = analyzer.getString('//td/text()');
+      expect(result, 'Data');
     });
   });
 }

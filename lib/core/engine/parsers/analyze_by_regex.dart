@@ -36,15 +36,15 @@ class AnalyzeByRegex {
     if (allMatches.isEmpty) return [];
 
     if (index + 1 == regs.length) {
-      final books = <List<String>>[];
+      final matches = <List<String>>[];
       for (final match in allMatches) {
         final info = <String>[];
         for (int i = 0; i <= match.groupCount; i++) {
           info.add(match.group(i) ?? "");
         }
-        books.add(info);
+        matches.add(info);
       }
-      return books;
+      return matches;
     } else {
       final result = StringBuffer();
       for (final match in allMatches) {
@@ -54,8 +54,35 @@ class AnalyzeByRegex {
     }
   }
 
+  /// 執行正則替換 ##regex##replacement
+  /// 支援 $1, $2 等分組引用
+  static String replace(String res, String rule) {
+    final parts = rule.split('##');
+    if (parts.length < 2) return res;
+    
+    // parts[0] 為原始規則(可選)，parts[1] 為 regex，parts[2] 為 replacement
+    // 注意: split 會導致第一個為空字串，如果是以 ## 開頭
+    final regexStr = parts[1];
+    final replacement = parts.length > 2 ? parts[2] : "";
+    
+    final regExp = RegExp(regexStr, multiLine: true, dotAll: true);
+    return res.replaceAllMapped(regExp, (match) {
+      var result = replacement;
+      // 替換 $0, $1, $2...
+      for (int i = 0; i <= match.groupCount; i++) {
+        result = result.replaceAll('\$$i', match.group(i) ?? "");
+      }
+      return result;
+    });
+  }
+
   /// 獲取單個合併字串
-  static String getString(String res, List<String> regs) {
+  static String getString(String res, String rule) {
+    if (rule.contains('##')) {
+      return replace(res, rule);
+    }
+    
+    final regs = rule.split('&&').where((s) => s.isNotEmpty).toList();
     final elements = getElements(res, regs);
     if (elements.isEmpty) return "";
     return elements.map((e) => e[0]).join('\n');

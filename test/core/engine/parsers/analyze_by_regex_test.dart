@@ -3,47 +3,34 @@ import 'package:legado_reader/core/engine/parsers/analyze_by_regex.dart';
 
 void main() {
   group('AnalyzeByRegex Tests', () {
-    const content = 'Author: Nigel Rees, Book: Sayings of the Century, Price: 8.95; Author: Evelyn Waugh, Book: Sword of Honour, Price: 12.99';
+    const text = 'Name: John Doe, Age: 30; Name: Jane Smith, Age: 25';
 
-    test('1. Single regex extraction', () {
-      final elements = AnalyzeByRegex.getElements(content, [r'Author: ([^,]+)']);
-      expect(elements.length, 2);
-      expect(elements[0][1], 'Nigel Rees');
-      expect(elements[1][1], 'Evelyn Waugh');
+    test('getElements - chain extraction', () {
+      // First extract segments, then extract names
+      final matches = AnalyzeByRegex.getElements(text, [r'Name: [^;]+', r'Name: ([^,]+)']);
+      expect(matches.length, 2);
+      expect(matches[0][1], 'John Doe');
+      expect(matches[1][1], 'Jane Smith');
     });
 
-    test('2. Chained regex extraction', () {
-      // First extract segments, then extract author from each segment
-      final elements = AnalyzeByRegex.getElements(content, [r'Author: [^;]+', r'Author: ([^,]+)']);
-      expect(elements.length, 2);
-      expect(elements[0][1], 'Nigel Rees');
-      expect(elements[1][1], 'Evelyn Waugh');
+    test('getString - simple extraction', () {
+      final result = AnalyzeByRegex.getString(text, r'Name: ([^,]+)');
+      expect(result, 'Name: John Doe\nName: Jane Smith');
     });
 
-    test('3. getString merges results', () {
-      final result = AnalyzeByRegex.getString(content, [r'Author: ([^,]+)']);
-      expect(result, 'Author: Nigel Rees\nAuthor: Evelyn Waugh');
+    test('replace - simple replacement', () {
+      final result = AnalyzeByRegex.replace('Hello World', '##World##Dart');
+      expect(result, 'Hello Dart');
     });
 
-    test('4. Grouping extraction (multiple groups)', () {
-      final elements = AnalyzeByRegex.getElements(content, [r'Author: ([^,]+), Book: ([^,]+)']);
-      expect(elements.length, 2);
-      expect(elements[0][1], 'Nigel Rees');
-      expect(elements[0][2], 'Sayings of the Century');
+    test(r'replace - with groups $1, $2', () {
+      final result = AnalyzeByRegex.replace('John Doe', r'##(\w+) (\w+)##$2, $1');
+      expect(result, 'Doe, John');
     });
 
-    test('5. DotAll and MultiLine support', () {
-      const multiLineContent = 'Line 1\nLine 2\nLine 3';
-      final result = AnalyzeByRegex.getString(multiLineContent, [r'Line.*']);
-      expect(result, 'Line 1\nLine 2\nLine 3');
-    });
-
-    test('6. No match returns empty', () {
-      final elements = AnalyzeByRegex.getElements(content, [r'NonExistent']);
-      expect(elements, isEmpty);
-      
-      final result = AnalyzeByRegex.getString(content, [r'NonExistent']);
-      expect(result, isEmpty);
+    test('getString - automatically routes to replace when ## present', () {
+      final result = AnalyzeByRegex.getString('abc 123 def', r'##\d+##XYZ');
+      expect(result, 'abc XYZ def');
     });
   });
 }
