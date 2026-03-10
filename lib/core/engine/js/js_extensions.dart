@@ -17,6 +17,7 @@ import 'package:fast_gbk/fast_gbk.dart';
 
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
+import '../../services/backstage_webview.dart';
 import 'query_ttf.dart';
 
 /// JsExtensions - JS 橋接擴展
@@ -261,6 +262,27 @@ class JsExtensions {
       return doc.body?.text ?? "";
     });
 
+    // 實作 java.webView
+    runtime.onMessage('webView', (dynamic args) async {
+      try {
+        final html = args[0]?.toString();
+        final url = args.length > 1 ? args[1]?.toString() : null;
+        final js = args.length > 2 ? args[2]?.toString() : null;
+        
+        final webView = BackstageWebView(
+          html: html,
+          url: url,
+          javaScript: js,
+        );
+        
+        final response = await webView.getStrResponse();
+        return response['body']?.toString() ?? "";
+      } catch (e) {
+        debugPrint('webView error: \$e');
+        return e.toString();
+      }
+    });
+
     runtime.onMessage('_toNumChapter', (dynamic args) {
       return _toNumChapter(args.toString());
     });
@@ -407,6 +429,9 @@ class JsExtensions {
           var eId = errTTF ? errTTF._ttfId : null;
           var cId = correctTTF ? correctTTF._ttfId : null;
           return sendMessage('replaceFont', JSON.stringify([text, eId, cId]));
+        },
+        webView: function(html, url, js) {
+          return sendMessage('webView', JSON.stringify([html, url, js]));
         }
       };
     ''');
