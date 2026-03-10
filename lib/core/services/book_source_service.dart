@@ -1,5 +1,3 @@
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import '../models/book.dart';
 import '../models/chapter.dart';
 import '../models/search_book.dart';
@@ -39,6 +37,29 @@ class BookSourceService {
     });
   }
 
+  /// 獲取發現頁書籍
+  Future<List<SearchBook>> exploreBooks(
+    BookSource source,
+    String url, {
+    int page = 1,
+  }) async {
+    final limiter = ConcurrentRateLimiter(source);
+    return await limiter.withLimit(() async {
+      final analyzeRule = AnalyzeRule(source: source);
+      final analyzeUrl = AnalyzeUrl(
+        url,
+        page: page,
+        baseUrl: source.bookSourceUrl,
+        analyzer: analyzeRule,
+      );
+
+      final resBody = await analyzeUrl.getResponseBody();
+      if (resBody.isEmpty) return [];
+
+      return _analyzeBookList(source, resBody, analyzeUrl.url, isSearch: false);
+    });
+  }
+
   /// 獲取書籍詳情
   Future<Book> getBookInfo(BookSource source, Book book) async {
     final limiter = ConcurrentRateLimiter(source);
@@ -59,8 +80,8 @@ class BookSourceService {
         if (infoRule.init != null && infoRule.init!.isNotEmpty) {
           rule.setContent(rule.getElements(infoRule.init!));
         }
-        book.name = rule.getString(infoRule.name ?? "") ?? book.name;
-        book.author = rule.getString(infoRule.author ?? "") ?? book.author;
+        book.name = rule.getString(infoRule.name ?? "");
+        book.author = rule.getString(infoRule.author ?? "");
         book.kind = rule.getStringList(infoRule.kind ?? "").join(',');
         book.coverUrl = rule.getString(infoRule.coverUrl ?? "", isUrl: true);
         book.intro = rule.getString(infoRule.intro ?? "");
@@ -158,7 +179,7 @@ class BookSourceService {
     required bool isSearch,
   }) {
     final rule = AnalyzeRule(source: source).setContent(body, baseUrl: baseUrl);
-    final listRule = isSearch ? source.ruleSearch : source.ruleExplore;
+    final dynamic listRule = isSearch ? source.ruleSearch : source.ruleExplore;
     if (listRule == null) return [];
 
     final elements = rule.getElements(listRule.bookList ?? "");
@@ -168,7 +189,7 @@ class BookSourceService {
       final itemRule = AnalyzeRule(source: source).setContent(element, baseUrl: baseUrl);
       books.add(SearchBook(
         bookUrl: itemRule.getString(listRule.bookUrl ?? "", isUrl: true),
-        name: itemRule.getString(listRule.name ?? "") ?? "Unknown",
+        name: itemRule.getString(listRule.name ?? ""),
         author: itemRule.getString(listRule.author ?? ""),
         kind: itemRule.getStringList(listRule.kind ?? "").join(','),
         coverUrl: itemRule.getString(listRule.coverUrl ?? "", isUrl: true),

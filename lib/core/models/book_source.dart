@@ -1,14 +1,11 @@
 library;
-
 import 'base_source.dart';
-import 'dart:convert';
 
 /// BookSource - 書源模型
 /// 完整相容 Legado 3.0 JSON 書源格式
 ///
 /// 對應 Android: data/entities/BookSource.kt
 class BookSource implements BaseSource {
-  @override
   String bookSourceUrl; // 書源 URL (唯一識別)
   String bookSourceName; // 書源名稱
   int bookSourceType; // 0: 文字, 1: 音頻, 2: 圖片/漫畫, 3: 檔案

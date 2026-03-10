@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
-import '../engine/js/js_encode_utils.dart';
 
 /// CacheManager - 檔案快取管理器
 /// 參考 Android: help/CacheManager.kt
