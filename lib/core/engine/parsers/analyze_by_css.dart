@@ -402,7 +402,9 @@ class _ElementsSingle {
 
             if (rl == '!') {
               split = '!';
-              while (len > 0 && rus[len - 1] == ' ') len--;
+              while (len > 0 && rus[len - 1] == ' ') {
+                len--;
+              }
             }
 
             if (rl == '[') {

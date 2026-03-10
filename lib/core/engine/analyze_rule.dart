@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'package:html/dom.dart';
-import 'package:xpath_selector/xpath_selector.dart';
 import 'parsers/analyze_by_css.dart';
 import 'parsers/analyze_by_json_path.dart';
 import 'parsers/analyze_by_xpath.dart';
@@ -24,7 +21,6 @@ class AnalyzeRule {
   
   dynamic _content;
   String? _baseUrl;
-  bool _isJson = false;
 
   AnalyzeByXPath? _analyzeByXPath;
   AnalyzeByCss? _analyzeByJSoup;
@@ -35,23 +31,11 @@ class AnalyzeRule {
   AnalyzeRule setContent(dynamic content, {String? baseUrl}) {
     if (content == null) throw ArgumentError("Content cannot be null");
     _content = content;
-    if (content is String) {
-      _isJson = _checkIsJson(content);
-    } else if (content is Node) {
-      _isJson = false;
-    } else {
-      _isJson = true; // Assume Map/List is JSON
-    }
     _baseUrl = baseUrl;
     _analyzeByXPath = null;
     _analyzeByJSoup = null;
     _analyzeByJSonPath = null;
     return this;
-  }
-
-  bool _checkIsJson(String str) {
-    final s = str.trim();
-    return (s.startsWith('{') && s.endsWith('}')) || (s.startsWith('[') && s.endsWith(']'));
   }
 
   AnalyzeByXPath _getAnalyzeByXPath(dynamic o) {
@@ -84,16 +68,16 @@ class AnalyzeRule {
         final rule = sourceRule.rule;
         
         switch (sourceRule.mode) {
-          case _Mode.regex:
+          case Mode.regex:
             result = AnalyzeByRegex.getElements(result.toString(), rule.split('&&').where((s) => s.isNotEmpty).toList());
             break;
-          case _Mode.json:
+          case Mode.json:
             result = _getAnalyzeByJSonPath(result).getList(rule);
             break;
-          case _Mode.xpath:
+          case Mode.xpath:
             result = _getAnalyzeByXPath(result).getElements(rule);
             break;
-          case _Mode.js:
+          case Mode.js:
             result = evalJS(rule, result);
             break;
           default:
@@ -122,16 +106,16 @@ class AnalyzeRule {
         
         if (rule.isNotEmpty || sourceRule.replaceRegex.isEmpty) {
           switch (sourceRule.mode) {
-            case _Mode.js:
+            case Mode.js:
               result = evalJS(rule, result);
               break;
-            case _Mode.json:
+            case Mode.json:
               result = _getAnalyzeByJSonPath(result).getString(rule);
               break;
-            case _Mode.xpath:
+            case Mode.xpath:
               result = _getAnalyzeByXPath(result).getString(rule);
               break;
-            case _Mode.regex:
+            case Mode.regex:
               // Just return the rule if it's regex mode (it already replaced variables)
               result = rule;
               break;
@@ -147,10 +131,8 @@ class AnalyzeRule {
     }
     
     var str = result?.toString() ?? "";
-    // TODO: Unescape HTML entities if needed
     
     if (isUrl && str.isEmpty) return _baseUrl ?? "";
-    // TODO: Absolute URL conversion
     return str;
   }
 
@@ -168,16 +150,16 @@ class AnalyzeRule {
         final rule = sourceRule.rule;
         
         switch (sourceRule.mode) {
-          case _Mode.js:
+          case Mode.js:
             result = evalJS(rule, result);
             break;
-          case _Mode.json:
+          case Mode.json:
             result = _getAnalyzeByJSonPath(result).getStringList(rule);
             break;
-          case _Mode.xpath:
+          case Mode.xpath:
             result = _getAnalyzeByXPath(result).getStringList(rule);
             break;
-          case _Mode.regex:
+          case Mode.regex:
             result = [rule];
             break;
           default:
@@ -200,21 +182,20 @@ class AnalyzeRule {
     return str.split('\n');
   }
 
-  List<_SourceRule> splitSourceRule(String ruleStr) {
-    final ruleList = <_SourceRule>[];
-    // Simple split for now, Legado's JS_PATTERN logic is complex
-    // Most rules are single or split by @js:
+  List<SourceRule> splitSourceRule(String ruleStr) {
+    final ruleList = <SourceRule>[];
+    // Simple split for now
     if (ruleStr.contains('@js:')) {
       final parts = ruleStr.split('@js:');
-      if (parts[0].isNotEmpty) ruleList.add(_SourceRule(parts[0]));
-      ruleList.add(_SourceRule(parts[1], mode: _Mode.js));
+      if (parts[0].isNotEmpty) ruleList.add(SourceRule(parts[0]));
+      ruleList.add(SourceRule(parts[1], mode: Mode.js));
     } else {
-      ruleList.add(_SourceRule(ruleStr));
+      ruleList.add(SourceRule(ruleStr));
     }
     return ruleList;
   }
 
-  String _replaceRegex(String result, _SourceRule rule) {
+  String _replaceRegex(String result, SourceRule rule) {
     if (rule.replaceRegex.isEmpty) return result;
     final regex = RegExp(rule.replaceRegex, multiLine: true, dotAll: true);
     if (rule.replaceFirst) {
@@ -226,7 +207,6 @@ class AnalyzeRule {
 
   dynamic evalJS(String jsStr, dynamic result) {
     // TODO: Implement using flutter_js in Phase 3
-    // For now, return a stub or some basic logic
     if (jsStr == "result") return result;
     return "JS_STUB: $jsStr";
   }
@@ -240,35 +220,35 @@ class AnalyzeRule {
   }
 }
 
-enum _Mode { xpath, json, defaultMode, js, regex }
+enum Mode { xpath, json, defaultMode, js, regex }
 
-class _SourceRule {
+class SourceRule {
   String rule;
-  _Mode mode;
+  Mode mode;
   String replaceRegex = "";
   String replacement = "";
   bool replaceFirst = false;
   Map<String, String> putMap = {};
 
-  _SourceRule(this.rule, {this.mode = _Mode.defaultMode}) {
-    if (mode == _Mode.defaultMode) {
+  SourceRule(this.rule, {this.mode = Mode.defaultMode}) {
+    if (mode == Mode.defaultMode) {
       if (rule.startsWith('@Json:')) {
-        mode = _Mode.json;
+        mode = Mode.json;
         rule = rule.substring(6);
       } else if (rule.startsWith('@XPath:')) {
-        mode = _Mode.xpath;
+        mode = Mode.xpath;
         rule = rule.substring(7);
       } else if (rule.startsWith('/')) {
-        mode = _Mode.xpath;
+        mode = Mode.xpath;
       } else if (rule.startsWith(r'$.') || rule.startsWith(r'$[')) {
-        mode = _Mode.json;
+        mode = Mode.json;
       }
     }
     
     // Handle @get:{key} and {{js}}
     if (rule.contains('@get:{') || rule.contains('{{')) {
-      if (mode == _Mode.defaultMode) {
-        mode = _Mode.regex;
+      if (mode == Mode.defaultMode) {
+        mode = Mode.regex;
       }
     }
     

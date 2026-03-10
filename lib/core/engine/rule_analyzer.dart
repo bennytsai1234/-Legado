@@ -6,7 +6,6 @@
 /// {{javascript}}
 /// @put:{key:rule}
 /// @get:{key}
-
 class RuleAnalyzer {
   final String _queue; // 被處理字串
   int _pos = 0; // 當前處理到的位置
