@@ -353,6 +353,7 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
       } else {
         count = await provider.importFromText(result);
       }
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(count > 0 ? '成功匯入 $count 個書源' : '未找到有效書源')),
