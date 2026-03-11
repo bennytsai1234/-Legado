@@ -279,7 +279,7 @@ class _ReaderPageState extends State<ReaderPage> {
     );
 
     final results = await provider.searchContent(keyword);
-    if (!mounted) return;
+    if (!context.mounted) return;
     Navigator.pop(context); // Close loading
 
     showModalBottomSheet(
