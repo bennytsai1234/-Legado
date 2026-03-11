@@ -13,6 +13,7 @@ import '../../shared/theme/app_theme.dart';
 import 'engine/text_page.dart';
 import 'engine/chapter_provider.dart';
 import '../../core/database/dao/bookmark_dao.dart';
+import '../../core/database/app_database.dart';
 import '../../core/models/bookmark.dart';
 import '../../core/services/content_processor.dart';
 
@@ -336,6 +337,39 @@ class ReaderProvider extends ChangeNotifier {
 
   Future<void> nextChapter() => loadChapter(_currentChapterIndex + 1);
   Future<void> prevChapter() => loadChapter(_currentChapterIndex - 1);
+
+  /// 搜尋已快取章節的正文內容
+  Future<List<Map<String, dynamic>>> searchContent(String keyword) async {
+    final List<Map<String, dynamic>> results = [];
+    final db = await AppDatabase.database;
+    
+    // 獲取這本書所有已快取的內容
+    final List<Map<String, dynamic>> maps = await db.query(
+      'chapter_contents',
+      where: 'bookUrl = ?',
+      whereArgs: [book.bookUrl],
+    );
+
+    for (final map in maps) {
+      final String content = map['content'] as String;
+      final int chapterIndex = map['chapterIndex'] as int;
+      
+      if (content.contains(keyword)) {
+        // 提取包含關鍵字的片段 (前後 20 個字)
+        int index = content.indexOf(keyword);
+        int start = (index - 20).clamp(0, content.length);
+        int end = (index + keyword.length + 20).clamp(0, content.length);
+        String snippet = content.substring(start, end).replaceAll('\n', ' ');
+        
+        results.add({
+          'chapterIndex': chapterIndex,
+          'chapterTitle': _chapters[chapterIndex].title,
+          'snippet': '...$snippet...',
+        });
+      }
+    }
+    return results;
+  }
 
   // === TTS Methods ===
   void toggleTts() {

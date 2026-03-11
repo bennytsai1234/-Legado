@@ -90,6 +90,15 @@ class BookDetailProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 更新書籍封面
+  Future<void> updateCover(String newCoverUrl) async {
+    _book.coverUrl = newCoverUrl;
+    if (_isInBookshelf) {
+      await _bookDao.insertOrUpdate(_book);
+    }
+    notifyListeners();
+  }
+
   // --- 來源切換邏輯 ---
 
   /// 搜尋所有可用書源中的同名書籍

@@ -102,19 +102,22 @@ class BookDetailPage extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 100,
-            height: 140,
-            child:
-                book.coverUrl != null && book.coverUrl!.isNotEmpty
-                    ? CachedNetworkImage(
-                      imageUrl: book.coverUrl!,
-                      fit: BoxFit.cover,
-                      errorWidget:
-                          (context, url, error) =>
-                              const Icon(Icons.book, size: 50),
-                    )
-                    : const Icon(Icons.book, size: 50),
+          GestureDetector(
+            onLongPress: () => _showChangeCoverDialog(context, provider),
+            child: SizedBox(
+              width: 100,
+              height: 140,
+              child:
+                  book.coverUrl != null && book.coverUrl!.isNotEmpty
+                      ? CachedNetworkImage(
+                        imageUrl: book.coverUrl!,
+                        fit: BoxFit.cover,
+                        errorWidget:
+                            (context, url, error) =>
+                                const Icon(Icons.book, size: 50),
+                      )
+                      : const Icon(Icons.book, size: 50),
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -254,6 +257,62 @@ class BookDetailPage extends StatelessWidget {
                             provider.switchSource(item);
                             Navigator.pop(context);
                           },
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showChangeCoverDialog(BuildContext context, BookDetailProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.8,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              const Text('換封面', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Divider(),
+              Expanded(
+                child: FutureBuilder<List<SearchBook>>(
+                  future: provider.searchAlternativeSources(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final list = snapshot.data?.where((b) => b.coverUrl != null && b.coverUrl!.isNotEmpty).toList() ?? [];
+                    if (list.isEmpty) return const Center(child: Text('未找到可用封面'));
+                    
+                    return GridView.builder(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        childAspectRatio: 0.7,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                      ),
+                      itemCount: list.length,
+                      itemBuilder: (context, index) {
+                        final item = list[index];
+                        return GestureDetector(
+                          onTap: () {
+                            provider.updateCover(item.coverUrl!);
+                            Navigator.pop(context);
+                          },
+                          child: CachedNetworkImage(
+                            imageUrl: item.coverUrl!,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                            errorWidget: (context, url, error) => const Icon(Icons.broken_image),
+                          ),
                         );
                       },
                     );

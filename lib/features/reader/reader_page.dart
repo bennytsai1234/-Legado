@@ -121,7 +121,6 @@ class _ReaderPageState extends State<ReaderPage> {
 
   Widget _buildContent(ReaderProvider provider, ReadingTheme theme) {
     if (provider.isLoading || provider.pages.isEmpty) {
-      // 顯示純文字載入或空內容
       return Center(
         child:
             provider.isLoading
@@ -203,11 +202,88 @@ class _ReaderPageState extends State<ReaderPage> {
           ),
           actions: [
             IconButton(
+              icon: const Icon(Icons.search, color: Colors.white),
+              onPressed: () => _showSearchDialog(context, provider),
+            ),
+            IconButton(
               icon: Icon(
                 provider.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
                 color: Colors.white,
               ),
               onPressed: provider.toggleBookmark,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSearchDialog(BuildContext context, ReaderProvider provider) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('正文搜尋'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(hintText: '輸入搜尋關鍵字 (僅限已快取章節)'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          ElevatedButton(
+            onPressed: () {
+              final keyword = controller.text;
+              if (keyword.isNotEmpty) {
+                Navigator.pop(context);
+                _doSearch(context, provider, keyword);
+              }
+            },
+            child: const Text('搜尋'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _doSearch(BuildContext context, ReaderProvider provider, String keyword) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final results = await provider.searchContent(keyword);
+    if (!mounted) return;
+    Navigator.pop(context); // Close loading
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Text('搜尋結果: "$keyword" (${results.length})', 
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Divider(),
+            Expanded(
+              child: results.isEmpty 
+                ? const Center(child: Text('未找到結果'))
+                : ListView.builder(
+                    itemCount: results.length,
+                    itemBuilder: (context, index) {
+                      final res = results[index];
+                      return ListTile(
+                        title: Text(res['chapterTitle'] ?? ""),
+                        subtitle: Text(res['snippet'] ?? "", maxLines: 2),
+                        onTap: () {
+                          provider.loadChapter(res['chapterIndex']);
+                          Navigator.pop(context);
+                        },
+                      );
+                    },
+                  ),
             ),
           ],
         ),
@@ -226,7 +302,6 @@ class _ReaderPageState extends State<ReaderPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 進度條
             Row(
               children: [
                 const Text(
@@ -250,7 +325,6 @@ class _ReaderPageState extends State<ReaderPage> {
                 ),
               ],
             ),
-            // 功能按鈕
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
