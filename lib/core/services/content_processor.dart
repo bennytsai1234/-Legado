@@ -1,5 +1,7 @@
 import '../models/chapter.dart';
 import '../models/book.dart';
+import '../models/replace_rule.dart';
+import 'chinese_utils.dart';
 // import '../models/rule_data_interface.dart';
 // import '../../services/app_config.dart';
 
@@ -20,6 +22,7 @@ class ContentProcessor {
     bool useReplace = true,
     bool chineseConvert = true,
     bool reSegment = true,
+    List<ReplaceRule>? rules,
   }) {
     if (content == "null" || content.isEmpty) return content;
 
@@ -51,16 +54,17 @@ class ContentProcessor {
       mContent = _reSegment(mContent, chapter.title);
     }
 
-    // 3. 簡繁轉換 (Placeholder for mapping)
+    // 3. 簡繁轉換
     if (chineseConvert) {
-      // TODO: Implement opencc or similar dictionary logic
-      // e.g. mContent = ChineseUtils.t2s(mContent)
+      mContent = ChineseUtils.t2s(mContent);
     }
 
     // 4. 執行取代規則
     if (useReplace && (book.getUseReplaceRule() ?? true)) {
       mContent = mContent.split('\n').map((e) => e.trim()).join('\n');
-      mContent = _applyReplaceRules(mContent, book.name, book.origin);
+      if (rules != null && rules.isNotEmpty) {
+        mContent = _applyReplaceRules(mContent, book.name, book.origin, rules);
+      }
     }
 
     // 5. 重新加上標題
@@ -109,10 +113,32 @@ class ContentProcessor {
     String content,
     String bookName,
     String bookOrigin,
+    List<ReplaceRule> rules,
   ) {
-    // TODO: Query replacement rules from local DB and apply them
-    // Example: For each rule in ReplaceRuleDao where scope matches bookName/origin
-    // content = content.replaceAll(rule.regex, rule.replacement)
-    return content;
+    var result = content;
+    for (final rule in rules) {
+      if (!rule.isEnabled) continue;
+      // Check scope
+      if (rule.scope != null && rule.scope!.isNotEmpty) {
+        final scopeContent = rule.scopeContent ?? "";
+        if (rule.scope == "1") { // Book Name
+          if (!scopeContent.contains(bookName)) continue;
+        } else if (rule.scope == "2") { // Source URL
+          if (!scopeContent.contains(bookOrigin)) continue;
+        }
+      }
+
+      try {
+        if (rule.isRegex) {
+          final pattern = RegExp(rule.pattern, multiLine: true, dotAll: true);
+          result = result.replaceAll(pattern, rule.replacement);
+        } else {
+          result = result.replaceAll(rule.pattern, rule.replacement);
+        }
+      } catch (e) {
+        // Skip invalid regex
+      }
+    }
+    return result;
   }
 }

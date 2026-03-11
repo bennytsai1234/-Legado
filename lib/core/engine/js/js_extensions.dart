@@ -13,6 +13,7 @@ import '../../models/base_source.dart';
 import '../../services/http_client.dart';
 import '../../services/cookie_store.dart';
 import '../../services/cache_manager.dart';
+import '../../services/chinese_utils.dart';
 import 'package:fast_gbk/fast_gbk.dart';
 
 import 'dart:typed_data';
@@ -279,10 +280,13 @@ class JsExtensions {
         final response = await webView.getStrResponse();
         return response['body']?.toString() ?? "";
       } catch (e) {
-        debugPrint('webView error: \$e');
+        debugPrint('webView error: $e');
         return e.toString();
       }
     });
+
+    runtime.onMessage('t2s', (dynamic args) => ChineseUtils.t2s(args.toString()));
+    runtime.onMessage('s2t', (dynamic args) => ChineseUtils.s2t(args.toString()));
 
     runtime.onMessage('_toNumChapter', (dynamic args) {
       return _toNumChapter(args.toString());
@@ -410,8 +414,8 @@ class JsExtensions {
         randomUUID: function() { return sendMessage('_randomUUID', null); },
         timeFormat: function(time) { return sendMessage('_timeFormat', JSON.stringify(time)); },
         htmlFormat: function(str) { return sendMessage('_htmlFormat', JSON.stringify(str)); },
-        t2s: function(text) { return text; }, // Placeholder
-        s2t: function(text) { return text; }, // Placeholder
+        t2s: function(text) { return sendMessage('t2s', JSON.stringify(text)); },
+        s2t: function(text) { return sendMessage('s2t', JSON.stringify(text)); },
         strToBytes: function(str, charset) { return sendMessage('strToBytes', JSON.stringify([str, charset])); },
         bytesToStr: function(bytes, charset) { return sendMessage('bytesToStr', JSON.stringify([bytes, charset])); },
         readFile: function(path) { return sendMessage('readFile', JSON.stringify(path)); },

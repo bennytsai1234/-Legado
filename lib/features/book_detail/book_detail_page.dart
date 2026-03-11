@@ -22,6 +22,11 @@ class BookDetailPage extends StatelessWidget {
               title: Text(book.name),
               actions: [
                 IconButton(
+                  icon: const Icon(Icons.find_replace),
+                  tooltip: '換源',
+                  onPressed: () => _showChangeSourceDialog(context, provider),
+                ),
+                IconButton(
                   icon: Icon(
                     provider.isInBookshelf
                         ? Icons.favorite
@@ -37,7 +42,7 @@ class BookDetailPage extends StatelessWidget {
                     ? const Center(child: CircularProgressIndicator())
                     : CustomScrollView(
                       slivers: [
-                        SliverToBoxAdapter(child: _buildHeader(book)),
+                        SliverToBoxAdapter(child: _buildHeader(context, provider)),
                         SliverToBoxAdapter(child: _buildIntro(book)),
                         SliverPadding(
                           padding: const EdgeInsets.symmetric(
@@ -90,7 +95,8 @@ class BookDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(dynamic book) {
+  Widget _buildHeader(BuildContext context, BookDetailProvider provider) {
+    final book = provider.book;
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(
@@ -128,11 +134,21 @@ class BookDetailPage extends StatelessWidget {
                   style: const TextStyle(fontSize: 16),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  '來源：${book.originName ?? '未知'}',
-                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '來源：${book.originName ?? '未知'}',
+                        style: const TextStyle(fontSize: 14, color: Colors.grey),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => _showChangeSourceDialog(context, provider),
+                      child: const Text('換源', style: TextStyle(fontSize: 12)),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
                 Text(
                   '分類：${book.kind ?? '未知'}',
                   style: const TextStyle(fontSize: 14, color: Colors.grey),
@@ -198,6 +214,56 @@ class BookDetailPage extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _showChangeSourceDialog(BuildContext context, BookDetailProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.7,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              const Text('換源搜尋', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Divider(),
+              Expanded(
+                child: FutureBuilder<List<SearchBook>>(
+                  future: provider.searchAlternativeSources(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(child: Text('搜尋出錯: ${snapshot.error}'));
+                    }
+                    final list = snapshot.data ?? [];
+                    if (list.isEmpty) {
+                      return const Center(child: Text('未找到同名書源'));
+                    }
+                    return ListView.builder(
+                      itemCount: list.length,
+                      itemBuilder: (context, index) {
+                        final item = list[index];
+                        return ListTile(
+                          title: Text(item.originName ?? '未知'),
+                          subtitle: Text(item.latestChapterTitle ?? '未知最新章節'),
+                          onTap: () {
+                            provider.switchSource(item);
+                            Navigator.pop(context);
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

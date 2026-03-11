@@ -59,6 +59,28 @@ class ReplaceRuleDao {
     await db.delete(tableName, where: 'id = ?', whereArgs: [id]);
   }
 
+  /// 更新啟用狀態
+  Future<void> updateEnabled(int id, bool enabled) async {
+    final db = await _db;
+    await db.update(
+      tableName,
+      {'isEnabled': enabled ? 1 : 0},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  /// 更新排序
+  Future<void> updateOrder(int id, int order) async {
+    final db = await _db;
+    await db.update(
+      tableName,
+      {'order': order},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   void _serialize(Map<String, dynamic> map) {
     map['isEnabled'] = (map['isEnabled'] == true) ? 1 : 0;
     map['isRegex'] = (map['isRegex'] == true) ? 1 : 0;

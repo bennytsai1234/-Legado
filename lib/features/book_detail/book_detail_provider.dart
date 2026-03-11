@@ -55,9 +55,10 @@ class BookDetailProvider extends ChangeNotifier {
 
     try {
       final sources = await _sourceDao.getAll();
-      _currentSource = sources.firstWhere(
-        (s) => s.bookSourceUrl == _book.origin,
-      );
+      _currentSource = sources.cast<BookSource?>().firstWhere(
+            (s) => s?.bookSourceUrl == _book.origin,
+            orElse: () => null,
+          );
 
       if (_currentSource != null) {
         // 獲取最新詳情
@@ -89,5 +90,56 @@ class BookDetailProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // TODO: 來源切換邏輯
+  // --- 來源切換邏輯 ---
+
+  /// 搜尋所有可用書源中的同名書籍
+  Future<List<SearchBook>> searchAlternativeSources() async {
+    final sources = await _sourceDao.getEnabled();
+    return await _service.preciseSearch(sources, _book.name, _book.author ?? "");
+  }
+
+  /// 切換到選定的書源
+  Future<void> switchSource(SearchBook newSource) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final sources = await _sourceDao.getAll();
+      final source = sources.cast<BookSource?>().firstWhere(
+            (s) => s?.bookSourceUrl == newSource.origin,
+            orElse: () => null,
+          );
+      
+      if (source == null) return;
+
+      // 如果在書架中，需要更新資料庫
+      if (_isInBookshelf) {
+        final oldUrl = _book.bookUrl;
+        _book.bookUrl = newSource.bookUrl;
+        _book.origin = newSource.origin;
+        _book.originName = newSource.originName;
+        
+        await _bookDao.delete(oldUrl); // 刪除舊紀錄
+        await _bookDao.insertOrUpdate(_book); // 插入新紀錄
+      } else {
+        _book.bookUrl = newSource.bookUrl;
+        _book.origin = newSource.origin;
+        _book.originName = newSource.originName;
+      }
+
+      _currentSource = source;
+      // 重新加載詳情與目錄
+      _book = await _service.getBookInfo(source, _book);
+      _chapters = await _service.getChapterList(source, _book);
+      
+      if (_isInBookshelf) {
+        await _chapterDao.insertChapters(_chapters);
+      }
+    } catch (e) {
+      debugPrint('切換書源失敗: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }

@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/webdav_service.dart';
 import 'settings_provider.dart';
+import '../replace_rule/replace_rule_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -46,6 +47,19 @@ class SettingsPage extends StatelessWidget {
                 subtitle: const Text('從備份檔案匯入資料'),
                 leading: const Icon(Icons.restore_outlined),
                 onTap: () => _restoreDatabase(context, settings),
+              ),
+              ListTile(
+                title: const Text('替換規則'),
+                subtitle: const Text('管理正文替換規則'),
+                leading: const Icon(Icons.find_replace),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ReplaceRulePage(),
+                    ),
+                  );
+                },
               ),
               ListTile(
                 title: const Text('清除快取'),

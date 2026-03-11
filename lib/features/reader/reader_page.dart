@@ -414,6 +414,16 @@ class _ReaderPageState extends State<ReaderPage> {
                     max: 1.0,
                     onChanged: (v) => provider.setBrightness(v),
                   ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("繁簡轉換", style: TextStyle(color: Colors.white)),
+                      Switch(
+                        value: provider.chineseConvert,
+                        onChanged: (v) => provider.setChineseConvert(v),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             );

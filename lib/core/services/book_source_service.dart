@@ -51,30 +51,32 @@ class BookSourceService {
     });
   }
 
-  /// 精確搜尋
-  Future<SearchBook?> preciseSearch(
+  /// 精確搜尋 (換源)
+  Future<List<SearchBook>> preciseSearch(
     List<BookSource> sources,
     String name,
     String author,
   ) async {
+    final List<SearchBook> allResults = [];
+    final List<Future<List<SearchBook>>> futures = [];
+
     for (final source in sources) {
-      try {
-        final books = await searchBooks(
+      futures.add(
+        searchBooks(
           source,
           name,
           filter: (fName, fAuthor) {
-            return fName == name && fAuthor == author;
+            return fName == name && (author.isEmpty || fAuthor == author);
           },
-        );
-        if (books.isNotEmpty) {
-          return books.first;
-        }
-      } catch (e) {
-        // Continue searching next source
-        continue;
-      }
+        ),
+      );
     }
-    return null;
+
+    final results = await Future.wait(futures);
+    for (final list in results) {
+      allResults.addAll(list);
+    }
+    return allResults;
   }
 
   /// 獲取發現頁書籍

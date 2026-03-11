@@ -14,6 +14,7 @@ import 'engine/text_page.dart';
 import 'engine/chapter_provider.dart';
 import '../../core/database/dao/bookmark_dao.dart';
 import '../../core/models/bookmark.dart';
+import '../../core/services/content_processor.dart';
 
 class ReaderProvider extends ChangeNotifier {
   final BookDao _bookDao = BookDao();
@@ -40,6 +41,7 @@ class ReaderProvider extends ChangeNotifier {
   double _lineHeight = 1.5;
   int _themeIndex = 0;
   double _brightness = 1.0;
+  bool _chineseConvert = false;
 
   final TTSService tts = TTSService();
   final BookmarkDao _bookmarkDao = BookmarkDao();
@@ -69,6 +71,7 @@ class ReaderProvider extends ChangeNotifier {
   ReadingTheme get currentTheme => AppTheme.readingThemes[_themeIndex];
   double get brightness => _brightness;
   int get pageTurnMode => _pageTurnMode;
+  bool get chineseConvert => _chineseConvert;
 
   bool get isBookmarked {
     return _bookmarks.any((b) =>
@@ -91,6 +94,7 @@ class ReaderProvider extends ChangeNotifier {
     _themeIndex = prefs.getInt('reader_theme_index') ?? 0;
     _brightness = prefs.getDouble('reader_brightness') ?? 1.0;
     _pageTurnMode = prefs.getInt('reader_page_turn_mode') ?? 0;
+    _chineseConvert = prefs.getBool('reader_chinese_convert') ?? false;
     notifyListeners();
   }
 
@@ -103,6 +107,7 @@ class ReaderProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     if (value is double) await prefs.setDouble('reader_$key', value);
     if (value is int) await prefs.setInt('reader_$key', value);
+    if (value is bool) await prefs.setBool('reader_$key', value);
     notifyListeners();
   }
 
@@ -142,25 +147,35 @@ class ReaderProvider extends ChangeNotifier {
     try {
       // 1. 嘗試從快取讀取
       String? cachedContent = await _chapterDao.getContent(book.bookUrl, index);
+      String rawContent = "";
       if (cachedContent != null && cachedContent.isNotEmpty) {
-        _content = await _applyReplaceRules(cachedContent);
+        rawContent = cachedContent;
       } else {
         // 2. 從網路抓取
         if (_source == null) await _loadSource();
         if (_source != null) {
-          final rawContent = await _service.getContent(
+          rawContent = await _service.getContent(
             _source!,
             book,
             _chapters[index],
           );
           await _chapterDao.saveContent(book.bookUrl, index, rawContent);
-          _content = await _applyReplaceRules(rawContent);
         } else {
-          _content = "錯誤：找不到書源";
+          rawContent = "錯誤：找不到書源";
         }
       }
 
-      // 3. 更新書籍進度
+      // 3. 處理內容 (替換規則 + 繁簡轉換)
+      final enabledRules = await _replaceDao.getEnabled();
+      _content = ContentProcessor.processContent(
+        book,
+        _chapters[index],
+        rawContent,
+        chineseConvert: _chineseConvert,
+        rules: enabledRules,
+      );
+
+      // 4. 更新書籍進度
       await _bookDao.updateProgress(
         book.bookUrl,
         index,
@@ -251,21 +266,6 @@ class ReaderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<String> _applyReplaceRules(String content) async {
-    final rules = await _replaceDao.getEnabled();
-    var result = content;
-    for (final rule in rules) {
-      final pattern =
-          rule.isRegex
-              ? RegExp(rule.pattern, multiLine: true, dotAll: true)
-              : RegExp(RegExp.escape(rule.pattern));
-      result = result.replaceAll(pattern, rule.replacement);
-    }
-    // 基本排版清洗
-    result = result.replaceAll(RegExp(r'\n\s*\n'), '\n\n');
-    return result.trim();
-  }
-
   void toggleControls() {
     _showControls = !_showControls;
     notifyListeners();
@@ -297,6 +297,12 @@ class ReaderProvider extends ChangeNotifier {
   void setPageTurnMode(int mode) {
     _pageTurnMode = mode;
     saveSetting('page_turn_mode', _pageTurnMode);
+  }
+
+  void setChineseConvert(bool value) {
+    _chineseConvert = value;
+    saveSetting('chinese_convert', _chineseConvert);
+    loadChapter(_currentChapterIndex); // Reload to apply conversion
   }
 
   Future<void> toggleBookmark() async {
