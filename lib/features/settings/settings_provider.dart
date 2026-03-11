@@ -35,7 +35,27 @@ class SettingsProvider extends ChangeNotifier {
     _webdavPassword = prefs.getString('webdav_password') ?? '';
     _webdavEnabled = prefs.getBool('webdav_enabled') ?? false;
 
+    ignoreAudioFocusAloud = prefs.getBool('ignore_audio_focus_aloud') ?? false;
+    pauseReadAloudWhilePhoneCalls = prefs.getBool('pause_read_aloud_while_phone_calls') ?? false;
+    readAloudWakeLock = prefs.getBool('read_aloud_wake_lock') ?? false;
+    systemMediaControlCompatibilityChange = prefs.getBool('system_media_control_compatibility_change') ?? false;
+    mediaButtonPerNext = prefs.getBool('media_button_per_next') ?? false;
+    readAloudByPage = prefs.getBool('read_aloud_by_page') ?? false;
+    streamReadAloudAudio = prefs.getBool('stream_read_aloud_audio') ?? false;
+
+    speechRate = prefs.getDouble('speech_rate') ?? 0.5;
+    speechPitch = prefs.getDouble('speech_pitch') ?? 1.0;
+    speechVolume = prefs.getDouble('speech_volume') ?? 1.0;
+
     notifyListeners();
+  }
+
+  Future<void> _save(String key, dynamic value) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (value is bool) await prefs.setBool(key, value);
+    if (value is double) await prefs.setDouble(key, value);
+    if (value is int) await prefs.setInt(key, value);
+    if (value is String) await prefs.setString(key, value);
   }
 
   ThemeMode _parseThemeMode(String mode) {
@@ -148,31 +168,39 @@ class SettingsProvider extends ChangeNotifier {
   bool readAloudByPage = false;
   bool streamReadAloudAudio = false;
 
-  Future<void> setAutoRefresh(bool v) async { autoRefresh = v; notifyListeners(); }
-  Future<void> setDefaultToRead(bool v) async { defaultToRead = v; notifyListeners(); }
-  Future<void> setShowDiscovery(bool v) async { showDiscovery = v; notifyListeners(); }
-  Future<void> setShowRss(bool v) async { showRss = v; notifyListeners(); }
-  Future<void> setWebServiceWakeLock(bool v) async { webServiceWakeLock = v; notifyListeners(); }
-  Future<void> setEnableCronet(bool v) async { enableCronet = v; notifyListeners(); }
-  Future<void> setAntiAlias(bool v) async { antiAlias = v; notifyListeners(); }
-  Future<void> setReplaceEnableDefault(bool v) async { replaceEnableDefault = v; notifyListeners(); }
-  Future<void> setMediaButtonOnExit(bool v) async { mediaButtonOnExit = v; notifyListeners(); }
-  Future<void> setReadAloudByMediaButton(bool v) async { readAloudByMediaButton = v; notifyListeners(); }
-  Future<void> setIgnoreAudioFocus(bool v) async { ignoreAudioFocus = v; notifyListeners(); }
-  Future<void> setAutoClearExpired(bool v) async { autoClearExpired = v; notifyListeners(); }
-  Future<void> setShowAddToShelfAlert(bool v) async { showAddToShelfAlert = v; notifyListeners(); }
-  Future<void> setShowMangaUi(bool v) async { showMangaUi = v; notifyListeners(); }
-  Future<void> setProcessText(bool v) async { processText = v; notifyListeners(); }
-  Future<void> setRecordLog(bool v) async { recordLog = v; notifyListeners(); }
-  Future<void> setRecordHeapDump(bool v) async { recordHeapDump = v; notifyListeners(); }
+  double speechRate = 0.5;
+  double speechPitch = 1.0;
+  double speechVolume = 1.0;
 
-  Future<void> setIgnoreAudioFocusAloud(bool v) async { ignoreAudioFocusAloud = v; notifyListeners(); }
-  Future<void> setPauseReadAloudWhilePhoneCalls(bool v) async { pauseReadAloudWhilePhoneCalls = v; notifyListeners(); }
-  Future<void> setReadAloudWakeLock(bool v) async { readAloudWakeLock = v; notifyListeners(); }
-  Future<void> setSystemMediaControlCompatibilityChange(bool v) async { systemMediaControlCompatibilityChange = v; notifyListeners(); }
-  Future<void> setMediaButtonPerNext(bool v) async { mediaButtonPerNext = v; notifyListeners(); }
-  Future<void> setReadAloudByPage(bool v) async { readAloudByPage = v; notifyListeners(); }
-  Future<void> setStreamReadAloudAudio(bool v) async { streamReadAloudAudio = v; notifyListeners(); }
+  Future<void> setAutoRefresh(bool v) async { autoRefresh = v; _save('auto_refresh', v); notifyListeners(); }
+  Future<void> setDefaultToRead(bool v) async { defaultToRead = v; _save('default_to_read', v); notifyListeners(); }
+  Future<void> setShowDiscovery(bool v) async { showDiscovery = v; _save('show_discovery', v); notifyListeners(); }
+  Future<void> setShowRss(bool v) async { showRss = v; _save('show_rss', v); notifyListeners(); }
+  Future<void> setWebServiceWakeLock(bool v) async { webServiceWakeLock = v; _save('web_service_wake_lock', v); notifyListeners(); }
+  Future<void> setEnableCronet(bool v) async { enableCronet = v; _save('enable_cronet', v); notifyListeners(); }
+  Future<void> setAntiAlias(bool v) async { antiAlias = v; _save('anti_alias', v); notifyListeners(); }
+  Future<void> setReplaceEnableDefault(bool v) async { replaceEnableDefault = v; _save('replace_enable_default', v); notifyListeners(); }
+  Future<void> setMediaButtonOnExit(bool v) async { mediaButtonOnExit = v; _save('media_button_on_exit', v); notifyListeners(); }
+  Future<void> setReadAloudByMediaButton(bool v) async { readAloudByMediaButton = v; _save('read_aloud_by_media_button', v); notifyListeners(); }
+  Future<void> setIgnoreAudioFocus(bool v) async { ignoreAudioFocus = v; _save('ignore_audio_focus', v); notifyListeners(); }
+  Future<void> setAutoClearExpired(bool v) async { autoClearExpired = v; _save('auto_clear_expired', v); notifyListeners(); }
+  Future<void> setShowAddToShelfAlert(bool v) async { showAddToShelfAlert = v; _save('show_add_to_shelf_alert', v); notifyListeners(); }
+  Future<void> setShowMangaUi(bool v) async { showMangaUi = v; _save('show_manga_ui', v); notifyListeners(); }
+  Future<void> setProcessText(bool v) async { processText = v; _save('process_text', v); notifyListeners(); }
+  Future<void> setRecordLog(bool v) async { recordLog = v; _save('record_log', v); notifyListeners(); }
+  Future<void> setRecordHeapDump(bool v) async { recordHeapDump = v; _save('record_heap_dump', v); notifyListeners(); }
+
+  Future<void> setIgnoreAudioFocusAloud(bool v) async { ignoreAudioFocusAloud = v; _save('ignore_audio_focus_aloud', v); notifyListeners(); }
+  Future<void> setPauseReadAloudWhilePhoneCalls(bool v) async { pauseReadAloudWhilePhoneCalls = v; _save('pause_read_aloud_while_phone_calls', v); notifyListeners(); }
+  Future<void> setReadAloudWakeLock(bool v) async { readAloudWakeLock = v; _save('read_aloud_wake_lock', v); notifyListeners(); }
+  Future<void> setSystemMediaControlCompatibilityChange(bool v) async { systemMediaControlCompatibilityChange = v; _save('system_media_control_compatibility_change', v); notifyListeners(); }
+  Future<void> setMediaButtonPerNext(bool v) async { mediaButtonPerNext = v; _save('media_button_per_next', v); notifyListeners(); }
+  Future<void> setReadAloudByPage(bool v) async { readAloudByPage = v; _save('read_aloud_by_page', v); notifyListeners(); }
+  Future<void> setStreamReadAloudAudio(bool v) async { streamReadAloudAudio = v; _save('stream_read_aloud_audio', v); notifyListeners(); }
+
+  Future<void> setSpeechRate(double v) async { speechRate = v; _save('speech_rate', v); notifyListeners(); }
+  Future<void> setSpeechPitch(double v) async { speechPitch = v; _save('speech_pitch', v); notifyListeners(); }
+  Future<void> setSpeechVolume(double v) async { speechVolume = v; _save('speech_volume', v); notifyListeners(); }
 
   // Reading Settings Properties
   bool hideStatusBar = false;
@@ -197,27 +225,27 @@ class SettingsProvider extends ChangeNotifier {
   bool showReadTitleAddition = true;
   bool readBarStyleFollowPage = false;
 
-  Future<void> setHideStatusBar(bool v) async { hideStatusBar = v; notifyListeners(); }
-  Future<void> setHideNavigationBar(bool v) async { hideNavigationBar = v; notifyListeners(); }
-  Future<void> setReadBodyToLh(bool v) async { readBodyToLh = v; notifyListeners(); }
-  Future<void> setPaddingDisplayCutouts(bool v) async { paddingDisplayCutouts = v; notifyListeners(); }
-  Future<void> setUseZhLayout(bool v) async { useZhLayout = v; notifyListeners(); }
-  Future<void> setTextFullJustify(bool v) async { textFullJustify = v; notifyListeners(); }
-  Future<void> setTextBottomJustify(bool v) async { textBottomJustify = v; notifyListeners(); }
-  Future<void> setMouseWheelPage(bool v) async { mouseWheelPage = v; notifyListeners(); }
-  Future<void> setVolumeKeyPage(bool v) async { volumeKeyPage = v; notifyListeners(); }
-  Future<void> setVolumeKeyPageOnPlay(bool v) async { volumeKeyPageOnPlay = v; notifyListeners(); }
-  Future<void> setKeyPageOnLongPress(bool v) async { keyPageOnLongPress = v; notifyListeners(); }
-  Future<void> setAutoChangeSource(bool v) async { autoChangeSource = v; notifyListeners(); }
-  Future<void> setSelectText(bool v) async { selectText = v; notifyListeners(); }
-  Future<void> setShowBrightnessView(bool v) async { showBrightnessView = v; notifyListeners(); }
-  Future<void> setNoAnimScrollPage(bool v) async { noAnimScrollPage = v; notifyListeners(); }
-  Future<void> setPreviewImageByClick(bool v) async { previewImageByClick = v; notifyListeners(); }
-  Future<void> setOptimizeRender(bool v) async { optimizeRender = v; notifyListeners(); }
-  Future<void> setDisableReturnKey(bool v) async { disableReturnKey = v; notifyListeners(); }
-  Future<void> setExpandTextMenu(bool v) async { expandTextMenu = v; notifyListeners(); }
-  Future<void> setShowReadTitleAddition(bool v) async { showReadTitleAddition = v; notifyListeners(); }
-  Future<void> setReadBarStyleFollowPage(bool v) async { readBarStyleFollowPage = v; notifyListeners(); }
+  Future<void> setHideStatusBar(bool v) async { hideStatusBar = v; _save('hide_status_bar', v); notifyListeners(); }
+  Future<void> setHideNavigationBar(bool v) async { hideNavigationBar = v; _save('hide_navigation_bar', v); notifyListeners(); }
+  Future<void> setReadBodyToLh(bool v) async { readBodyToLh = v; _save('read_body_to_lh', v); notifyListeners(); }
+  Future<void> setPaddingDisplayCutouts(bool v) async { paddingDisplayCutouts = v; _save('padding_display_cutouts', v); notifyListeners(); }
+  Future<void> setUseZhLayout(bool v) async { useZhLayout = v; _save('use_zh_layout', v); notifyListeners(); }
+  Future<void> setTextFullJustify(bool v) async { textFullJustify = v; _save('text_full_justify', v); notifyListeners(); }
+  Future<void> setTextBottomJustify(bool v) async { textBottomJustify = v; _save('text_bottom_justify', v); notifyListeners(); }
+  Future<void> setMouseWheelPage(bool v) async { mouseWheelPage = v; _save('mouse_wheel_page', v); notifyListeners(); }
+  Future<void> setVolumeKeyPage(bool v) async { volumeKeyPage = v; _save('volume_key_page', v); notifyListeners(); }
+  Future<void> setVolumeKeyPageOnPlay(bool v) async { volumeKeyPageOnPlay = v; _save('volume_key_page_on_play', v); notifyListeners(); }
+  Future<void> setKeyPageOnLongPress(bool v) async { keyPageOnLongPress = v; _save('key_page_on_long_press', v); notifyListeners(); }
+  Future<void> setAutoChangeSource(bool v) async { autoChangeSource = v; _save('auto_change_source', v); notifyListeners(); }
+  Future<void> setSelectText(bool v) async { selectText = v; _save('select_text', v); notifyListeners(); }
+  Future<void> setShowBrightnessView(bool v) async { showBrightnessView = v; _save('show_brightness_view', v); notifyListeners(); }
+  Future<void> setNoAnimScrollPage(bool v) async { noAnimScrollPage = v; _save('no_anim_scroll_page', v); notifyListeners(); }
+  Future<void> setPreviewImageByClick(bool v) async { previewImageByClick = v; _save('preview_image_by_click', v); notifyListeners(); }
+  Future<void> setOptimizeRender(bool v) async { optimizeRender = v; _save('optimize_render', v); notifyListeners(); }
+  Future<void> setDisableReturnKey(bool v) async { disableReturnKey = v; _save('disable_return_key', v); notifyListeners(); }
+  Future<void> setExpandTextMenu(bool v) async { expandTextMenu = v; _save('expand_text_menu', v); notifyListeners(); }
+  Future<void> setShowReadTitleAddition(bool v) async { showReadTitleAddition = v; _save('show_read_title_addition', v); notifyListeners(); }
+  Future<void> setReadBarStyleFollowPage(bool v) async { readBarStyleFollowPage = v; _save('read_bar_style_follow_page', v); notifyListeners(); }
 
   // Backup & WebDAV Settings Properties
   bool syncBookProgress = true;
@@ -225,10 +253,10 @@ class SettingsProvider extends ChangeNotifier {
   bool onlyLatestBackup = true;
   bool autoCheckNewBackup = true;
 
-  Future<void> setSyncBookProgress(bool v) async { syncBookProgress = v; notifyListeners(); }
-  Future<void> setSyncBookProgressPlus(bool v) async { syncBookProgressPlus = v; notifyListeners(); }
-  Future<void> setOnlyLatestBackup(bool v) async { onlyLatestBackup = v; notifyListeners(); }
-  Future<void> setAutoCheckNewBackup(bool v) async { autoCheckNewBackup = v; notifyListeners(); }
+  Future<void> setSyncBookProgress(bool v) async { syncBookProgress = v; _save('sync_book_progress', v); notifyListeners(); }
+  Future<void> setSyncBookProgressPlus(bool v) async { syncBookProgressPlus = v; _save('sync_book_progress_plus', v); notifyListeners(); }
+  Future<void> setOnlyLatestBackup(bool v) async { onlyLatestBackup = v; _save('only_latest_backup', v); notifyListeners(); }
+  Future<void> setAutoCheckNewBackup(bool v) async { autoCheckNewBackup = v; _save('auto_check_new_backup', v); notifyListeners(); }
 
   /// 資料庫備份
   Future<String?> backupDatabase() async {

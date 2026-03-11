@@ -3,11 +3,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../../core/database/dao/book_source_dao.dart';
+import '../../core/database/dao/book_dao.dart';
 import '../../core/models/book_source.dart';
 import '../../core/services/check_source_service.dart';
 
 class SourceManagerProvider extends ChangeNotifier {
   final BookSourceDao _dao = BookSourceDao();
+  final BookDao _bookDao = BookDao();
   final CheckSourceService _checkService = CheckSourceService();
   
   List<BookSource> _sources = [];
@@ -17,10 +19,6 @@ class SourceManagerProvider extends ChangeNotifier {
 
   bool _isBatchMode = false;
   Set<String> _selectedUrls = {};
-
-  // 校驗結果
-  final Map<String, CheckSourceResult> _checkResults = {};
-  bool _isChecking = false;
 
   List<BookSource> get sources {
     if (_selectedGroup == '全部') return _sources;
@@ -34,18 +32,25 @@ class SourceManagerProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isBatchMode => _isBatchMode;
   Set<String> get selectedUrls => _selectedUrls;
-  Map<String, CheckSourceResult> get checkResults => _checkResults;
-  bool get isChecking => _isChecking;
+  
+  CheckSourceService get checkService => _checkService;
 
   SourceManagerProvider() {
     loadSources();
+    // 監聽校驗服務的變化以更新 UI
+    _checkService.addListener(() {
+      if (!_checkService.isChecking) {
+        loadSources(); // 校驗完成後重新載入
+      }
+      notifyListeners();
+    });
   }
 
   Future<void> loadSources() async {
     _isLoading = true;
     notifyListeners();
 
-    _sources = await _dao.getAll();
+    _sources = await _dao.getAllPart();
     _groups = await _dao.getGroups();
 
     _isLoading = false;
@@ -54,7 +59,6 @@ class SourceManagerProvider extends ChangeNotifier {
 
   void selectGroup(String group) {
     _selectedGroup = group;
-    // 重置選取狀態
     if (_isBatchMode) {
       _selectedUrls.clear();
     }
@@ -63,15 +67,14 @@ class SourceManagerProvider extends ChangeNotifier {
 
   Future<void> toggleEnabled(BookSource source) async {
     final newState = !source.enabled;
-    await _dao.updateEnabled(source.bookSourceUrl, newState);
     source.enabled = newState;
+    await _dao.insertOrUpdate(source);
     notifyListeners();
   }
 
   Future<void> deleteSource(BookSource source) async {
-    await _dao.delete(source.bookSourceUrl);
-    _sources.removeWhere((s) => s.bookSourceUrl == source.bookSourceUrl);
-    notifyListeners();
+    await _dao.deleteSources([source.bookSourceUrl]);
+    await loadSources();
   }
 
   // --- 批量管理功能 ---
@@ -101,9 +104,7 @@ class SourceManagerProvider extends ChangeNotifier {
   }
   
   Future<void> deleteSelected() async {
-    for (final url in _selectedUrls) {
-      await _dao.delete(url);
-    }
+    await _dao.deleteSources(_selectedUrls.toList());
     _selectedUrls.clear();
     _isBatchMode = false;
     await loadSources();
@@ -112,50 +113,49 @@ class SourceManagerProvider extends ChangeNotifier {
   Future<void> exportSelected() async {
     if (_selectedUrls.isEmpty) return;
     
-    final exportSources = _sources.where((s) => _selectedUrls.contains(s.bookSourceUrl)).toList();
-    final jsonStr = jsonEncode(exportSources.map((s) => s.toJson()).toList());
+    // 需要獲取完整書源數據進行匯出
+    final List<BookSource> exportList = [];
+    for (var url in _selectedUrls) {
+      final s = await _dao.getByUrl(url);
+      if (s != null) exportList.add(s);
+    }
     
+    final jsonStr = jsonEncode(exportList.map((s) => s.toJson()).toList());
     await Clipboard.setData(ClipboardData(text: jsonStr));
     
     _isBatchMode = false;
     _selectedUrls.clear();
     notifyListeners();
   }
-  
+
   // --- 校驗功能 ---
-
-  Future<void> checkVisibleSources() async {
-    if (_isChecking) return;
-    _isChecking = true;
-    _checkResults.clear();
-    notifyListeners();
-
-    final currentVisible = sources;
-    final List<Future<void>> tasks = [];
-    for (final source in currentVisible) {
-      tasks.add(_checkSingleSource(source));
-    }
-
-    await Future.wait(tasks);
-    _isChecking = false;
-    notifyListeners();
+  Future<void> checkSelectedSources() async {
+    if (_selectedUrls.isEmpty) return;
+    final urls = _selectedUrls.toList();
+    _isBatchMode = false;
+    _selectedUrls.clear();
+    await _checkService.check(urls);
   }
 
-  Future<void> _checkSingleSource(BookSource source) async {
-    final result = await _checkService.checkSource(source);
-    _checkResults[source.bookSourceUrl] = result;
+  // --- 書源遷移 (高度還原 Android migrateSource) ---
+  Future<void> migrateSource(String oldUrl, String newUrl) async {
+    final books = await _bookDao.getAll();
+    final toUpdate = books.where((b) => b.origin == oldUrl).toList();
     
-    // 更新書源的回應時間
-    if (result.result == CheckResult.success) {
-      source.respondTime = result.milliseconds;
-    } else {
-      source.respondTime = -1;
+    for (var book in toUpdate) {
+      book.origin = newUrl;
+      await _bookDao.insertOrUpdate(book);
     }
-    await _dao.insertOrUpdate(source);
     notifyListeners();
   }
 
-  /// 從文本匯入 (JSON 格式)
+  // --- 分組清理 ---
+  Future<void> cleanupGroups() async {
+    // 重新載入分組數據即可更新清單
+    await loadSources();
+  }
+
+  /// 從文本匯入
   Future<int> importFromText(String text) async {
     try {
       final dynamic decoded = jsonDecode(text);
@@ -168,7 +168,6 @@ class SourceManagerProvider extends ChangeNotifier {
       }
 
       if (newSources.isNotEmpty) {
-        // 設定更新時間
         for (var element in newSources) {
           element.lastUpdateTime = DateTime.now().millisecondsSinceEpoch;
         }
@@ -176,8 +175,8 @@ class SourceManagerProvider extends ChangeNotifier {
         await loadSources();
         return newSources.length;
       }
-    } catch (e, stack) {
-      debugPrint('匯入書源失敗: $e\n$stack');
+    } catch (e) {
+      debugPrint('匯入書源失敗: $e');
     }
     return 0;
   }
@@ -191,12 +190,7 @@ class SourceManagerProvider extends ChangeNotifier {
       try {
         final response = await Dio().get(url);
         if (response.data != null) {
-          String content;
-          if (response.data is String) {
-            content = response.data;
-          } else {
-            content = jsonEncode(response.data);
-          }
+          String content = response.data is String ? response.data : jsonEncode(response.data);
           totalCount += await importFromText(content);
         }
       } catch (e) {

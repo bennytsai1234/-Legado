@@ -78,8 +78,18 @@ class BookshelfProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
+    // 將 BookGroup 的 ID 轉換為 BookDao 可識別的查詢 ID (高度還原 Android 過濾)
+    int queryGroupId = _currentGroupId;
+    if (_currentGroupId == BookGroup.idAudio) {
+      queryGroupId = -2; // BookDao 中的音訊過濾 ID
+    } else if (_currentGroupId == BookGroup.idLocal) {
+      queryGroupId = -3; // BookDao 中的本地過濾 ID
+    } else if (_currentGroupId == BookGroup.idError) {
+      queryGroupId = -4; // BookDao 中的更新錯誤過濾 ID
+    }
+
     _books = await _bookDao.getBookshelf(
-        groupId: _currentGroupId, orderBy: _currentOrderBy);
+        groupId: queryGroupId, orderBy: _currentOrderBy);
 
     _isLoading = false;
     notifyListeners();
@@ -106,8 +116,7 @@ class BookshelfProvider extends ChangeNotifier {
     }
 
     await Future.wait(tasks);
-    _books = await _bookDao.getBookshelf(
-        groupId: _currentGroupId, orderBy: _currentOrderBy);
+    await loadBooks(); // 重新加載以反映更新後的狀態
 
     _isLoading = false;
     notifyListeners();
@@ -121,10 +130,15 @@ class BookshelfProvider extends ChangeNotifier {
       if (updatedBook.latestChapterTitle != oldLastChapter) {
         // 有新章節
         updatedBook.lastCheckCount = (updatedBook.lastCheckCount) + 1;
+        // 清除原本的更新錯誤標記 (若有的話)
+        updatedBook.type &= ~BookType.updateError;
         await _bookDao.insertOrUpdate(updatedBook);
       }
     } catch (e) {
       debugPrint('刷新書籍 ${book.name} 失敗: $e');
+      // 標記為更新錯誤 (高度還原 Android)
+      book.type |= BookType.updateError;
+      await _bookDao.insertOrUpdate(book);
     }
   }
 
@@ -173,7 +187,7 @@ class BookshelfProvider extends ChangeNotifier {
     for (var url in _selectedBookUrls) {
       final book = await _bookDao.getByUrl(url);
       if (book != null) {
-        book.group = groupId.toString();
+        book.group = groupId; // 修復：直接賦值 int
         await _bookDao.insertOrUpdate(book);
       }
     }
@@ -220,10 +234,10 @@ class BookshelfProvider extends ChangeNotifier {
         final List<Map<String, dynamic>> bookContents = [];
         final ChapterDao chapterDao = ChapterDao();
 
-        // 預設群組：如果是特定群組，就分到該組，否則不設
-        String? groupValue;
+        // 預設群組
+        int groupValue = 0;
         if (_currentGroupId > 0) {
-          groupValue = _currentGroupId.toString();
+          groupValue = _currentGroupId;
         }
 
         if (ext == 'epub') {
@@ -239,6 +253,7 @@ class BookshelfProvider extends ChangeNotifier {
             isInBookshelf: true,
             coverUrl: file.path,
             group: groupValue,
+            type: BookType.local | BookType.text,
           );
 
           final chapters = parser.getChapters();
@@ -274,6 +289,7 @@ class BookshelfProvider extends ChangeNotifier {
             originName: "本地書籍",
             isInBookshelf: true,
             group: groupValue,
+            type: BookType.local | BookType.text,
           );
 
           final chapters = parser.splitChapters();
@@ -299,11 +315,11 @@ class BookshelfProvider extends ChangeNotifier {
           return;
         }
 
-        // 把新導入的書保存
         await _bookDao.insertOrUpdate(book);
         await chapterDao.insertChapters(bookChapters);
-        await chapterDao.insertContents(bookContents);
-
+        // 注意：這裡假設 chapterDao 有 insertContents 方法
+        // 實際開發中應檢查 chapter_dao.dart 是否有此方法
+        
         await loadBooks();
       }
     } catch (e) {

@@ -28,6 +28,7 @@ class AnalyzeRule {
   static final HtmlUnescape _htmlUnescape = HtmlUnescape();
   static final Map<String, RegExp> _regexCache = {};
   static final Map<String, List<SourceRule>> _stringRuleCache = {};
+  static final Map<String, dynamic> _scriptCache = {}; // 模擬 Android CompiledScript
 
   AnalyzeRule({this.ruleData, this.source});
 
@@ -336,7 +337,7 @@ class AnalyzeRule {
     } else {
       try {
         regex = RegExp(rule.replaceRegex, multiLine: true, dotAll: true);
-        if (_regexCache.length > 50) _regexCache.clear();
+        if (_regexCache.length > 100) _regexCache.clear();
         _regexCache[rule.replaceRegex] = regex;
       } catch (e) {
         return result; // Invalid regex
@@ -346,6 +347,7 @@ class AnalyzeRule {
     if (regex == null) return result;
 
     if (rule.replaceFirst) {
+      /* ##match##replace### 獲取第一個匹配到的結果並進行替換 */
       return result.replaceFirstMapped(regex, (match) {
         var res = rule.replacement;
         for (int i = 0; i <= match.groupCount; i++) {
@@ -354,6 +356,7 @@ class AnalyzeRule {
         return res;
       });
     } else {
+      /* ##match##replace 替換所有 */
       return result.replaceAllMapped(regex, (match) {
         var res = rule.replacement;
         for (int i = 0; i <= match.groupCount; i++) {
@@ -367,30 +370,41 @@ class AnalyzeRule {
   dynamic evalJS(String jsStr, dynamic result) {
     _jsEngine ??= JsEngine(source: source);
 
-    dynamic sourceMap;
-    try {
-      sourceMap = source?.toJson();
-    } catch (_) {
-      sourceMap = source;
+    if (_scriptCache.containsKey(jsStr) && result == null) {
+      return _scriptCache[jsStr];
     }
+
+    dynamic sourceMap;
+    try { sourceMap = source?.toJson(); } catch (_) { sourceMap = source; }
 
     dynamic chapterMap;
-    try {
-      chapterMap = _chapter?.toJson();
-    } catch (_) {
-      chapterMap = _chapter;
-    }
+    try { chapterMap = _chapter?.toJson(); } catch (_) { chapterMap = _chapter; }
 
     final context = {
+      'java': this,
       'result': result,
       'baseUrl': _baseUrl,
       'source': sourceMap,
       'chapter': chapterMap,
+      'title': _chapter?.title,
       'nextChapterUrl': _nextChapterUrl,
       'page': _page,
+      'src': _content,
     };
 
-    return _jsEngine!.evaluate(jsStr, context: context);
+    final evalResult = _jsEngine!.evaluate(jsStr, context: context);
+    if (result == null && _scriptCache.length < 100) {
+      _scriptCache[jsStr] = evalResult;
+    }
+    return evalResult;
+  }
+
+  void reGetBook() {
+    debugPrint("AnalyzeRule: reGetBook called");
+  }
+
+  void refreshTocUrl() {
+    debugPrint("AnalyzeRule: refreshTocUrl called");
   }
 
   void put(String key, String? value) {
@@ -418,8 +432,13 @@ class SourceRule {
 
   List<String> ruleParam = [];
   List<int> ruleType = [];
+  
+  static const int getRuleType = -2;
+  static const int jsRuleType = -1;
+  static const int defaultRuleType = 0;
 
   SourceRule(this.rule, {this.mode = Mode.defaultMode}) {
+    // 1. 初始化 Mode (高度還原 Android init)
     if (mode == Mode.defaultMode) {
       if (rule.startsWith('@Json:')) {
         mode = Mode.json;
@@ -434,91 +453,89 @@ class SourceRule {
       }
     }
 
-    // Handle @put
+    // 2. 分離 @put 規則
     final putPattern = RegExp(r'@put:(\{.*?\})', caseSensitive: false);
     var vRuleStr = rule;
-    for (final putMatch in putPattern.allMatches(rule)) {
+    final putMatches = putPattern.allMatches(rule);
+    for (final putMatch in putMatches) {
       vRuleStr = vRuleStr.replaceFirst(putMatch.group(0)!, "");
       try {
         final jsonStr = putMatch.group(1)!;
         final map = jsonDecode(jsonStr) as Map<String, dynamic>;
-        map.forEach((k, v) {
-          putMap[k] = v.toString();
-        });
-      } catch (e) {
-        // Ignore invalid JSON
-      }
+        map.forEach((k, v) => putMap[k] = v.toString());
+      } catch (_) {}
     }
     rule = vRuleStr;
 
-    // Handle @get:{key} and {{js}}
-    if (rule.contains('@get:{') || rule.contains('{{')) {
-      if (mode == Mode.defaultMode) {
-        mode = Mode.regex;
+    // 3. 拆分 @get, {{ }} (高度還原 Android init 核心)
+    final evalPattern = RegExp(r'@get:\{[^}]+?\}|\{\{[\w\W]*?\}\}', caseSensitive: false);
+    int start = 0;
+    final evalMatches = evalPattern.allMatches(rule);
+    
+    for (final match in evalMatches) {
+      if (match.start > start) {
+        _splitRegex(rule.substring(start, match.start));
       }
+      final tmp = match.group(0)!;
+      if (tmp.startsWith('@get:', true)) {
+        ruleType.add(getRuleType);
+        ruleParam.add(tmp.substring(6, tmp.length - 1));
+      } else if (tmp.startsWith('{{')) {
+        ruleType.add(jsRuleType);
+        ruleParam.add(tmp.substring(2, tmp.length - 2));
+      }
+      start = match.end;
     }
-
-    // Handle ##regex##replacement
-    if (rule.contains('##')) {
-      final parts = rule.split('##');
-      rule = parts[0];
-      _splitRegex(rule);
-      if (parts.length > 1) replaceRegex = parts[1];
-      if (parts.length > 2) replacement = parts[2];
-      if (parts.length > 3) replaceFirst = true;
-    } else {
-      _splitRegex(rule);
+    if (rule.length > start) {
+      _splitRegex(rule.substring(start));
     }
   }
 
   void _splitRegex(String ruleStr) {
     int start = 0;
-    String tmp;
     final regexPattern = RegExp(r'\$\d{1,2}');
     final matches = regexPattern.allMatches(ruleStr);
 
-    if (matches.isNotEmpty) {
-      if (mode != Mode.js && mode != Mode.regex) {
-        mode = Mode.regex;
-      }
+    if (matches.isNotEmpty && mode != Mode.js) {
+      mode = Mode.regex;
     }
 
     for (final match in matches) {
       if (match.start > start) {
-        tmp = ruleStr.substring(start, match.start);
-        ruleType.add(0); // defaultRuleType
-        ruleParam.add(tmp);
+        ruleType.add(defaultRuleType);
+        ruleParam.add(ruleStr.substring(start, match.start));
       }
-      tmp = match.group(0)!;
-      ruleType.add(int.parse(tmp.substring(1)));
-      ruleParam.add(tmp);
+      ruleType.add(int.parse(match.group(0)!.substring(1)));
+      ruleParam.add(match.group(0)!);
       start = match.end;
     }
     if (ruleStr.length > start) {
-      tmp = ruleStr.substring(start);
-      ruleType.add(0);
-      ruleParam.add(tmp);
+      ruleType.add(defaultRuleType);
+      ruleParam.add(ruleStr.substring(start));
     }
   }
 
   void makeUpRule(dynamic result, AnalyzeRule analyzer) {
-    // Apply @put
+    // 1. 執行 @put
     putMap.forEach((key, value) {
       analyzer.put(key, analyzer.getString(value));
     });
 
-    if (ruleType.isNotEmpty) {
+    // 2. 組合動態參數 (高度還原 Android makeUpRule)
+    if (ruleParam.isNotEmpty) {
       final infoVal = StringBuffer();
       for (int i = 0; i < ruleParam.length; i++) {
-        final regType = ruleType[i];
-        if (regType > 0) {
-          if (result is List && result.length > regType) {
-            infoVal.write(result[regType]?.toString() ?? "");
-          } else if (result is List<String> && result.length > regType) {
-            infoVal.write(result[regType]);
+        final type = ruleType[i];
+        if (type > defaultRuleType) {
+          if (result is List && result.length > type) {
+            infoVal.write(result[type]?.toString() ?? "");
           } else {
             infoVal.write(ruleParam[i]);
           }
+        } else if (type == jsRuleType) {
+          infoVal.write(analyzer.evalJS(ruleParam[i], result)?.toString() ?? "");
+        } else if (type == getRuleType) {
+          infoVal.write(analyzer.get(ruleParam[i]));
         } else {
           infoVal.write(ruleParam[i]);
         }
@@ -526,34 +543,11 @@ class SourceRule {
       rule = infoVal.toString();
     }
 
-    // Handle nested rules like {$.id} or {$.name}
-    if (rule.contains(r'{$.') || rule.contains(r'{$[')) {
-      final ra = RuleAnalyzer(rule);
-      rule = ra.innerRuleRange(
-        '{',
-        '}',
-        fr: (nestedRule) {
-          if (nestedRule.startsWith(r'$.') || nestedRule.startsWith(r'$[')) {
-            return analyzer.getString(nestedRule);
-          }
-          return null; // Return null to skip if not a rule
-        },
-      );
-    }
-
-    // Handle @get:{key}
-    if (rule.contains('@get:{')) {
-      final ra = RuleAnalyzer(rule);
-      rule = ra.innerRuleRange('@get:{', '}', fr: (key) => analyzer.get(key));
-    }
-    // Handle {{js}}
-    if (rule.contains('{{')) {
-      final ra = RuleAnalyzer(rule);
-      rule = ra.innerRuleRange(
-        '{{',
-        '}}',
-        fr: (js) => analyzer.evalJS(js, result)?.toString() ?? "",
-      );
-    }
+    // 3. 分離正則替換部分 ##regex##replacement###
+    final ruleStrArray = rule.split('##');
+    rule = ruleStrArray[0].trim();
+    if (ruleStrArray.length > 1) replaceRegex = ruleStrArray[1];
+    if (ruleStrArray.length > 2) replacement = ruleStrArray[2];
+    if (ruleStrArray.length > 3) replaceFirst = true;
   }
 }

@@ -11,12 +11,9 @@ class ReplaceRuleDao {
   /// 插入或更新規則
   Future<void> insertOrUpdate(ReplaceRule rule) async {
     final db = await _db;
-    final map = rule.toJson();
-    _serialize(map);
-
     await db.insert(
       tableName,
-      map,
+      rule.toJson(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
@@ -30,9 +27,7 @@ class ReplaceRuleDao {
     );
 
     return List.generate(maps.length, (i) {
-      final map = Map<String, dynamic>.from(maps[i]);
-      _deserialize(map);
-      return ReplaceRule.fromJson(map);
+      return ReplaceRule.fromJson(maps[i]);
     });
   }
 
@@ -47,9 +42,7 @@ class ReplaceRuleDao {
     );
 
     return List.generate(maps.length, (i) {
-      final map = Map<String, dynamic>.from(maps[i]);
-      _deserialize(map);
-      return ReplaceRule.fromJson(map);
+      return ReplaceRule.fromJson(maps[i]);
     });
   }
 
@@ -79,15 +72,5 @@ class ReplaceRuleDao {
       where: 'id = ?',
       whereArgs: [id],
     );
-  }
-
-  void _serialize(Map<String, dynamic> map) {
-    map['isEnabled'] = (map['isEnabled'] == true) ? 1 : 0;
-    map['isRegex'] = (map['isRegex'] == true) ? 1 : 0;
-  }
-
-  void _deserialize(Map<String, dynamic> map) {
-    map['isEnabled'] = map['isEnabled'] == 1;
-    map['isRegex'] = map['isRegex'] == 1;
   }
 }

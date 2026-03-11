@@ -6,7 +6,6 @@ import 'source_editor_page.dart';
 import 'source_login_page.dart';
 import 'qr_scan_page.dart';
 import '../../core/models/book_source.dart';
-import '../../core/services/check_source_service.dart';
 
 class SourceManagerPage extends StatefulWidget {
   const SourceManagerPage({super.key});
@@ -52,13 +51,6 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
                       tooltip: '刷新列表',
                       onPressed: provider.loadSources,
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.playlist_add_check),
-                      tooltip: '校驗可見書源',
-                      onPressed: provider.isChecking
-                          ? null
-                          : provider.checkVisibleSources,
-                    ),
                     PopupMenuButton<String>(
                       onSelected: (value) {
                         if (value == 'url') {
@@ -89,6 +81,24 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
           ),
           body: Column(
             children: [
+              if (provider.checkService.isChecking)
+                Container(
+                  color: Colors.blue.withValues(alpha: 0.1),
+                  padding: const EdgeInsets.all(8),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          '正在校驗 (${provider.checkService.currentCount}/${provider.checkService.totalCount}): ${provider.checkService.statusMsg}',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                      TextButton(onPressed: provider.checkService.cancel, child: const Text('取消')),
+                    ],
+                  ),
+                ),
               if (!provider.isBatchMode) _buildGroupFilter(),
               Expanded(child: _buildSourceList()),
             ],
@@ -154,20 +164,24 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
       BuildContext context, SourceManagerProvider provider, BookSource source) {
     bool isSelected = provider.selectedUrls.contains(source.bookSourceUrl);
     
-    // 判斷狀態
-    final checkResult = provider.checkResults[source.bookSourceUrl];
+    // 判斷狀態 (高度還原 Android 顯示)
     String statusStr = "未校驗";
     Color statusColor = Colors.grey;
 
-    if (checkResult != null) {
-      statusStr = checkResult.summary;
-      statusColor = checkResult.result == CheckResult.success ? Colors.green : Colors.red;
-    } else if (source.respondTime > 0) {
+    if (source.respondTime > 0) {
       statusStr = "${source.respondTime}ms";
       statusColor = source.respondTime < 1000 ? Colors.green : Colors.orange;
     } else if (source.respondTime == -1) {
       statusStr = "失效";
       statusColor = Colors.red;
+    }
+
+    if (source.bookSourceGroup?.contains("搜尋失效") ?? false) {
+      statusStr = "搜尋失效";
+      statusColor = Colors.red;
+    } else if (source.bookSourceGroup?.contains("校驗超時") ?? false) {
+      statusStr = "超時";
+      statusColor = Colors.orange;
     }
 
     final tile = ListTile(
@@ -260,12 +274,7 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
           TextButton.icon(
             icon: const Icon(Icons.playlist_add_check),
             label: const Text('校驗'),
-            onPressed: provider.selectedUrls.isEmpty ? null : () async {
-              await provider.checkVisibleSources();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('校驗完成')));
-              }
-            },
+            onPressed: provider.selectedUrls.isEmpty ? null : () => provider.checkSelectedSources(),
           ),
           TextButton.icon(
             icon: const Icon(Icons.output),

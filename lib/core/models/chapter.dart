@@ -1,72 +1,151 @@
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
+import 'replace_rule.dart';
+import '../../services/chinese_utils.dart';
+
 /// BookChapter - 章節模型
 /// 對應 Android: data/entities/BookChapter.kt
-library;
-
 class BookChapter {
-  String url; // 章節 URL
+  String url; // 章節地址
   String title; // 章節名稱
-  String bookUrl; // 所屬書籍 URL
-  int index; // 章節索引
   bool isVolume; // 是否為卷標題
-  bool isVip; // 是否 VIP
-  bool isPay; // 是否付費
-  String? resourceUrl; // 音頻/圖片資源 URL
-  String? tag; // 來源標記
-  String? variable; // 暫存變數
-  int startFragmentId; // 分段起始 ID
-  int endFragmentId; // 分段結束 ID
+  String baseUrl; // 基礎 URL (用於拼接相對路徑)
+  String bookUrl; // 所屬書籍地址
+  int index; // 章節索引
+  bool isVip; // 是否為 VIP 章節
+  bool isPay; // 是否已購買
+  String? resourceUrl; // 音訊或資源真實 URL
+  String? tag; // 標籤 (如更新時間)
+  String? wordCount; // 本章字數
+  int? start; // 文本起始偏移 (針對本地大文件)
+  int? end; // 文本終止偏移
+  String? startFragmentId; // EPUB 章節 fragmentId
+  String? endFragmentId; // EPUB 下一章 fragmentId
+  String? variable; // 自定義變量 (JSON)
 
   BookChapter({
-    required this.url,
-    required this.title,
-    required this.bookUrl,
-    required this.index,
+    this.url = "",
+    this.title = "",
     this.isVolume = false,
+    this.baseUrl = "",
+    this.bookUrl = "",
+    this.index = 0,
     this.isVip = false,
     this.isPay = false,
     this.resourceUrl,
     this.tag,
+    this.wordCount,
+    this.start,
+    this.end,
+    this.startFragmentId,
+    this.endFragmentId,
     this.variable,
-    this.startFragmentId = 0,
-    this.endFragmentId = 0,
   });
+
+  // 變量地圖 (對應 Android variableMap)
+  Map<String, String> get variableMap {
+    if (variable == null || variable!.isEmpty) return {};
+    try {
+      return Map<String, String>.from(jsonDecode(variable!));
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// 獲取顯示標題 (高度還原 Android getDisplayTitle)
+  String getDisplayTitle({
+    List<ReplaceRule>? replaceRules,
+    bool useReplace = true,
+    int chineseConvertType = 0, // 0: 不轉換, 1: 簡, 2: 繁
+  }) {
+    String displayTitle = title.replaceAll(RegExp(r'[\r\n]'), '');
+    
+    // 繁簡轉換
+    if (chineseConvertType == 1) {
+      displayTitle = ChineseUtils.t2s(displayTitle);
+    } else if (chineseConvertType == 2) {
+      displayTitle = ChineseUtils.s2t(displayTitle);
+    }
+
+    // 標題淨化規則
+    if (useReplace && replaceRules != null) {
+      for (var rule in replaceRules) {
+        if (rule.pattern.isNotEmpty) {
+          try {
+            if (rule.isRegex) {
+              displayTitle = displayTitle.replaceAll(RegExp(rule.pattern), rule.replacement);
+            } else {
+              displayTitle = displayTitle.replaceAll(rule.pattern, rule.replacement);
+            }
+          } catch (e) {
+            // 忽略錯誤的正則
+          }
+        }
+      }
+    }
+    return displayTitle;
+  }
+
+  /// 獲取絕對 URL (高度還原 Android getAbsoluteURL)
+  String getAbsoluteURL() {
+    if (url.startsWith(title) && isVolume) return baseUrl;
+    if (url.startsWith('http')) return url;
+    
+    // 簡單的拼接邏輯，未來可進一步優化參數處理
+    try {
+      Uri base = Uri.parse(baseUrl);
+      return base.resolve(url).toString();
+    } catch (e) {
+      return url;
+    }
+  }
+
+  /// 獲取緩存文件名 (高度還原 Android getFileName)
+  String getFileName({String suffix = "nb"}) {
+    String titleMD5 = md5.convert(utf8.encode(title)).toString().substring(0, 16);
+    String idxStr = index.toString().padLeft(5, '0');
+    return "$idxStr-$titleMD5.$suffix";
+  }
 
   factory BookChapter.fromJson(Map<String, dynamic> json) {
     return BookChapter(
-      url: json['url'] ?? '',
-      title: json['title'] ?? '',
-      bookUrl: json['bookUrl'] ?? '',
+      url: json['url'] ?? "",
+      title: json['title'] ?? "",
+      isVolume: json['isVolume'] == 1 || json['isVolume'] == true,
+      baseUrl: json['baseUrl'] ?? "",
+      bookUrl: json['bookUrl'] ?? "",
       index: json['index'] ?? 0,
-      isVolume: json['isVolume'] ?? false,
-      isVip: json['isVip'] ?? false,
-      isPay: json['isPay'] ?? false,
+      isVip: json['isVip'] == 1 || json['isVip'] == true,
+      isPay: json['isPay'] == 1 || json['isPay'] == true,
       resourceUrl: json['resourceUrl'],
       tag: json['tag'],
+      wordCount: json['wordCount'],
+      start: json['start'],
+      end: json['end'],
+      startFragmentId: json['startFragmentId']?.toString(),
+      endFragmentId: json['endFragmentId']?.toString(),
       variable: json['variable'],
-      startFragmentId: _asInt(json['startFragmentId']),
-      endFragmentId: _asInt(json['endFragmentId']),
     );
   }
 
-  static int _asInt(dynamic value) {
-    if (value == null) return 0;
-    if (value is int) return value;
-    if (value is String) return int.tryParse(value) ?? 0;
-    return 0;
+  Map<String, dynamic> toJson() {
+    return {
+      'url': url,
+      'title': title,
+      'isVolume': isVolume ? 1 : 0,
+      'baseUrl': baseUrl,
+      'bookUrl': bookUrl,
+      'index': index,
+      'isVip': isVip ? 1 : 0,
+      'isPay': isPay ? 1 : 0,
+      'resourceUrl': resourceUrl,
+      'tag': tag,
+      'wordCount': wordCount,
+      'start': start,
+      'end': end,
+      'startFragmentId': startFragmentId,
+      'endFragmentId': endFragmentId,
+      'variable': variable,
+    };
   }
-
-  Map<String, dynamic> toJson() => {
-    'url': url,
-    'title': title,
-    'bookUrl': bookUrl,
-    'index': index,
-    'isVolume': isVolume,
-    'isVip': isVip,
-    'isPay': isPay,
-    'resourceUrl': resourceUrl,
-    'tag': tag,
-    'variable': variable,
-    'startFragmentId': startFragmentId,
-    'endFragmentId': endFragmentId,
-  };
 }

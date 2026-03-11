@@ -80,6 +80,9 @@ class BookshelfPage extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
           _buildGroupChip(context, provider, BookGroup.idAll, '全部'),
+          _buildGroupChip(context, provider, BookGroup.idLocal, '本地'),
+          _buildGroupChip(context, provider, BookGroup.idAudio, '音訊'),
+          _buildGroupChip(context, provider, BookGroup.idError, '更新錯誤'),
           ...provider.groups.map((g) => _buildGroupChip(context, provider, g.groupId, g.groupName)),
           ActionChip(
             label: const Icon(Icons.add, size: 18),

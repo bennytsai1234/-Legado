@@ -7,6 +7,8 @@ import '../../core/models/chapter.dart';
 import '../../core/services/dictionary_service.dart';
 import '../../shared/theme/app_theme.dart';
 import '../settings/font_manager_page.dart';
+import '../settings/settings_page.dart';
+import '../replace_rule/replace_rule_page.dart';
 import 'engine/page_view_widget.dart';
 
 class ReaderPage extends StatefulWidget {
@@ -23,6 +25,7 @@ class _ReaderPageState extends State<ReaderPage> {
   late PageController _pageController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String _selectedText = "";
+  bool? _lastShowControls;
 
   @override
   void initState() {
@@ -40,6 +43,16 @@ class _ReaderPageState extends State<ReaderPage> {
     super.dispose();
   }
 
+  void _updateSystemUI(bool show) {
+    if (_lastShowControls == show) return;
+    _lastShowControls = show;
+    if (show) {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    } else {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -51,6 +64,7 @@ class _ReaderPageState extends State<ReaderPage> {
       child: Consumer<ReaderProvider>(
         builder: (context, provider, child) {
           final theme = provider.currentTheme;
+          _updateSystemUI(provider.showControls);
 
           return Scaffold(
             key: _scaffoldKey,
@@ -63,6 +77,13 @@ class _ReaderPageState extends State<ReaderPage> {
                   onTapUp: (details) {
                     final width = MediaQuery.of(context).size.width;
                     final x = details.globalPosition.dx;
+                    
+                    // 如果選單已經開啟，點擊任何非工具列區域都應該關閉選單
+                    if (provider.showControls) {
+                      provider.toggleControls();
+                      return;
+                    }
+
                     if (x > width * 0.3 && x < width * 0.7) {
                       provider.toggleControls();
                     } else if (x <= width * 0.3) {
@@ -109,11 +130,14 @@ class _ReaderPageState extends State<ReaderPage> {
                   ),
                 ),
 
-                // 頂部工具列
-                if (provider.showControls) _buildTopBar(context, provider),
+                // 頂部工具列 (帶動畫)
+                _buildTopBar(context, provider),
 
-                // 底部工具列
-                if (provider.showControls) _buildBottomBar(context, provider),
+                // 側邊亮度條 (帶動畫)
+                _buildBrightnessBar(context, provider),
+
+                // 底部工具列 (帶動畫)
+                _buildBottomBar(context, provider),
               ],
             ),
           );
@@ -161,20 +185,77 @@ class _ReaderPageState extends State<ReaderPage> {
               anchors: selectableRegionState.contextMenuAnchors,
               buttonItems: [
                 ...selectableRegionState.contextMenuButtonItems,
-                if (_selectedText.isNotEmpty &&
-                    num.tryParse(_selectedText) == null)
+                if (_selectedText.isNotEmpty) ...[
+                  if (num.tryParse(_selectedText) == null)
+                    ContextMenuButtonItem(
+                      label: '查詞',
+                      onPressed: () {
+                        selectableRegionState.hideToolbar();
+                        DictionaryService().lookup(_selectedText);
+                      },
+                    ),
                   ContextMenuButtonItem(
-                    label: '查詞',
+                    label: '筆記',
                     onPressed: () {
                       selectableRegionState.hideToolbar();
-                      DictionaryService().lookup(_selectedText);
+                      _showAnnotationDialog(context, provider, _selectedText);
                     },
                   ),
+                ],
               ],
             );
           },
+...
+  void _showAnnotationDialog(BuildContext context, ReaderProvider provider, String selectedText) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('新增筆記'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('原文: "$selectedText"', 
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              maxLines: 3, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 10),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(hintText: '輸入筆記內容...'),
+              maxLines: 3,
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          ElevatedButton(
+            onPressed: () async {
+              final bookmark = Bookmark(
+                time: DateTime.now().millisecondsSinceEpoch,
+                bookName: provider.book.name,
+                bookAuthor: provider.book.author ?? "",
+                bookUrl: provider.book.bookUrl,
+                chapterIndex: provider.currentChapterIndex,
+                chapterPos: provider.currentPageIndex,
+                chapterName: provider.currentChapter?.title ?? "",
+                bookText: selectedText,
+                content: controller.text,
+              );
+              await BookmarkDao().insert(bookmark);
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('筆記已儲存')));
+            },
+            child: const Text('儲存'),
+          ),
+        ],
+      ),
+    );
+  }
           child: PageView.builder(
             controller: _pageController,
+            physics: provider.showControls ? const NeverScrollableScrollPhysics() : const BouncingScrollPhysics(),
             scrollDirection: isVertical ? Axis.vertical : Axis.horizontal,
             itemCount: provider.pages.length,
             onPageChanged: provider.onPageChanged,
@@ -198,44 +279,106 @@ class _ReaderPageState extends State<ReaderPage> {
   }
 
   Widget _buildTopBar(BuildContext context, ReaderProvider provider) {
-    return Positioned(
-      top: 0,
+    final topPadding = MediaQuery.of(context).padding.top;
+    final topBarHeight = topPadding + kToolbarHeight;
+
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 200),
+      top: provider.showControls ? 0 : -topBarHeight,
       left: 0,
       right: 0,
       child: Container(
-        color: Colors.black.withValues(alpha: 0.8),
-        padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
-        child: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
-          ),
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                provider.book.name,
-                style: const TextStyle(color: Colors.white, fontSize: 16),
-              ),
-              Text(
-                provider.currentChapter?.title ?? "",
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
-              ),
-            ],
-          ),
-          actions: [
+        height: topBarHeight,
+        color: Colors.black.withValues(alpha: 0.9),
+        padding: EdgeInsets.only(top: topPadding),
+        child: Row(
+          children: [
             IconButton(
-              icon: const Icon(Icons.search, color: Colors.white),
-              onPressed: () => _showSearchDialog(context, provider),
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
             ),
-            IconButton(
-              icon: Icon(
-                provider.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                color: Colors.white,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    provider.book.name,
+                    style: const TextStyle(color: Colors.white, fontSize: 16, overflow: TextOverflow.ellipsis),
+                  ),
+                  Text(
+                    provider.currentChapter?.title ?? "",
+                    style: const TextStyle(color: Colors.white70, fontSize: 12, overflow: TextOverflow.ellipsis),
+                  ),
+                ],
               ),
-              onPressed: provider.toggleBookmark,
+            ),
+            if (provider.book.origin != "local")
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: TextButton(
+                  onPressed: () {
+                    // 原版點擊書源名稱會彈出選單
+                  },
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.white.withValues(alpha: 0.2),
+                    minimumSize: Size.zero,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                  ),
+                  child: Text(
+                    provider.book.origin.length > 10 
+                        ? provider.book.origin.substring(0, 10) 
+                        : provider.book.origin,
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBrightnessBar(BuildContext context, ReaderProvider provider) {
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 200),
+      left: provider.showControls ? 16 : -60,
+      top: MediaQuery.of(context).size.height * 0.25,
+      bottom: MediaQuery.of(context).size.height * 0.35,
+      child: Container(
+        width: 40,
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.7),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 8.0),
+              child: Icon(Icons.brightness_7, color: Colors.white, size: 20),
+            ),
+            Expanded(
+              child: RotatedBox(
+                quarterTurns: 3,
+                child: SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: 2,
+                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                  ),
+                  child: Slider(
+                    value: provider.brightness,
+                    min: 0.1,
+                    max: 1.0,
+                    onChanged: (v) => provider.setBrightness(v),
+                  ),
+                ),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8.0),
+              child: Icon(Icons.brightness_4, color: Colors.white, size: 20),
             ),
           ],
         ),
@@ -317,67 +460,189 @@ class _ReaderPageState extends State<ReaderPage> {
   }
 
   Widget _buildBottomBar(BuildContext context, ReaderProvider provider) {
-    return Positioned(
-      bottom: 0,
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    
+    // 計算底部選單高度：懸浮按鈕排 + 進度條排 + 按鈕導覽排
+    final bottomBarHeight = 160.0 + bottomPadding;
+
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 200),
+      bottom: provider.showControls ? 0 : -bottomBarHeight,
       left: 0,
       right: 0,
-      child: Container(
-        color: Colors.black.withValues(alpha: 0.8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 懸浮按鈕排 (仿原版 FloatingActionButton 排列)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  "上一章",
-                  style: TextStyle(color: Colors.white, fontSize: 12),
+                _buildMiniFab(Icons.search, () => _showSearchDialog(context, provider)),
+                _buildMiniFab(Icons.auto_stories, () {
+                   // 暫未實作自動翻頁
+                }),
+                _buildMiniFab(Icons.find_replace, () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ReplaceRulePage()),
+                  );
+                }),
+                _buildMiniFab(
+                  provider.themeIndex == 1 ? Icons.brightness_7 : Icons.brightness_2, 
+                  () => provider.setTheme(provider.themeIndex == 1 ? 0 : 1)
                 ),
-                Expanded(
-                  child: Slider(
-                    value: provider.currentChapterIndex.toDouble(),
-                    min: 0,
-                    max:
-                        (provider.chapters.length - 1)
-                            .clamp(0, 9999)
-                            .toDouble(),
-                    onChanged: (v) => provider.loadChapter(v.toInt()),
+              ],
+            ),
+          ),
+          
+          Container(
+            color: Colors.black.withValues(alpha: 0.9),
+            padding: EdgeInsets.fromLTRB(16, 5, 16, bottomPadding + 5),
+            child: Column(
+              children: [
+                // 翻頁/進度條
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: () => provider.prevChapter(),
+                      child: const Text("上一章", style: TextStyle(color: Colors.white, fontSize: 13)),
+                    ),
+                    Expanded(
+                      child: Slider(
+                        value: provider.currentChapterIndex.toDouble(),
+                        min: 0,
+                        max: (provider.chapters.length - 1).clamp(0, 9999).toDouble(),
+                        onChanged: (v) => provider.loadChapter(v.toInt()),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => provider.nextChapter(),
+                      child: const Text("下一章", style: TextStyle(color: Colors.white, fontSize: 13)),
+                    ),
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildIconButton(Icons.toc, "目錄", () {
+                      provider.toggleControls();
+                      _scaffoldKey.currentState?.openDrawer();
+                    }),
+                    GestureDetector(
+                      onLongPress: () => _showTtsSettingsPanel(context, provider),
+                      child: _buildIconButton(
+                        provider.tts.isPlaying || provider.httpTts.isPlaying ? Icons.stop : Icons.record_voice_over, 
+                        "朗讀", 
+                        () => provider.toggleTts()
+                      ),
+                    ),
+                    _buildIconButton(Icons.text_format, "界面", () {
+                      _showSettingsPanel(context, provider);
+                    }),
+                    _buildIconButton(Icons.settings, "設定", () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SettingsPage()),
+                      );
+                    }),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTtsSettingsPanel(BuildContext context, ReaderProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.black.withValues(alpha: 0.9),
+      builder: (context) {
+        return Consumer<ReaderProvider>(
+          builder: (context, provider, child) {
+            return Container(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("朗讀引擎", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      ChoiceChip(
+                        label: const Text("系統 TTS"),
+                        selected: provider.ttsMode == 0,
+                        onSelected: (v) => provider.setTtsMode(0),
+                      ),
+                      const SizedBox(width: 10),
+                      ChoiceChip(
+                        label: const Text("HTTP TTS"),
+                        selected: provider.ttsMode == 1,
+                        onSelected: (v) => provider.setTtsMode(1),
+                      ),
+                    ],
                   ),
-                ),
-                const Text(
-                  "下一章",
-                  style: TextStyle(color: Colors.white, fontSize: 12),
-                ),
-              ],
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildIconButton(Icons.list, "目錄", () {
-                  provider.toggleControls();
-                  _scaffoldKey.currentState?.openDrawer();
-                }),
-                _buildIconButton(Icons.settings, "設定", () {
-                  _showSettingsPanel(context, provider);
-                }),
-                ListenableBuilder(
-                  listenable: provider.tts,
-                  builder: (context, _) {
-                    return _buildIconButton(
-                      provider.tts.isPlaying ? Icons.stop : Icons.headset,
-                      provider.tts.isPlaying ? "停止朗讀" : "朗讀",
-                      () {
-                        provider.toggleTts();
-                      },
-                    );
-                  },
-                ),
-                _buildIconButton(Icons.brightness_medium, "主題", () {
-                  provider.setTheme(provider.themeIndex + 1);
-                }),
-              ],
-            ),
-          ],
+                  if (provider.ttsMode == 1) ...[
+                    const SizedBox(height: 20),
+                    const Text("選擇 HTTP 引擎", style: TextStyle(color: Colors.white)),
+                    const SizedBox(height: 10),
+                    provider.httpTtsEngines.isEmpty 
+                      ? const Text("未找到 HTTP TTS 引擎，請先匯入", style: TextStyle(color: Colors.grey, fontSize: 12))
+                      : SizedBox(
+                          height: 150,
+                          child: ListView.builder(
+                            itemCount: provider.httpTtsEngines.length,
+                            itemBuilder: (context, index) {
+                              final engine = provider.httpTtsEngines[index];
+                              return ListTile(
+                                title: Text(engine.name, style: const TextStyle(color: Colors.white)),
+                                trailing: provider.selectedHttpTtsId == engine.id 
+                                  ? const Icon(Icons.check, color: Colors.blue) 
+                                  : null,
+                                onTap: () => provider.setSelectedHttpTts(engine.id),
+                              );
+                            },
+                          ),
+                        ),
+                  ],
+                  const SizedBox(height: 20),
+                  Center(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text("確定"),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildMiniFab(IconData icon, VoidCallback onTap) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.8),
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 4, offset: const Offset(0, 2))
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Icon(icon, color: Colors.white, size: 20),
         ),
       ),
     );

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter/foundation.dart';
 
@@ -12,22 +13,40 @@ class TTSService extends ChangeNotifier {
   bool _isPlaying = false;
   double _pitch = 1.0;
   double _volume = 1.0;
-  double _rate = 0.5; // flutter_tts default rate is around 0.5
+  double _rate = 0.5;
   String? _language;
   List<dynamic> _languages = [];
+  Map<String, String>? _voice;
+
+  VoidCallback? onComplete; // 讀完回調
+  Timer? _sleepTimer;
+  int _remainingMinutes = 0;
 
   bool get isPlaying => _isPlaying;
+  int get remainingMinutes => _remainingMinutes;
   double get pitch => _pitch;
   double get volume => _volume;
   double get rate => _rate;
   String? get language => _language;
   List<dynamic> get languages => _languages;
+  Map<String, String>? get voice => _voice;
 
   TTSService._internal() {
     _initTts();
   }
 
   Future<void> _initTts() async {
+    // 啟用 iOS 背景播放模式 (高度還原 Android AudioPlayService 音訊焦點)
+    await _flutterTts.setIosAudioCategory(
+      IosTextToSpeechAudioCategory.playback,
+      [
+        IosTextToSpeechAudioCategoryOptions.allowBluetooth,
+        IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
+        IosTextToSpeechAudioCategoryOptions.duckOthers,
+      ],
+      IosTextToSpeechAudioMode.voicePrompt,
+    );
+
     _flutterTts.setStartHandler(() {
       _isPlaying = true;
       notifyListeners();
@@ -36,11 +55,7 @@ class TTSService extends ChangeNotifier {
     _flutterTts.setCompletionHandler(() {
       _isPlaying = false;
       notifyListeners();
-    });
-
-    _flutterTts.setCancelHandler(() {
-      _isPlaying = false;
-      notifyListeners();
+      if (onComplete != null) onComplete!();
     });
 
     _flutterTts.setErrorHandler((msg) {
@@ -54,6 +69,24 @@ class TTSService extends ChangeNotifier {
       _language = _languages.first.toString();
       await _flutterTts.setLanguage(_language!);
     }
+  }
+
+  /// 設定睡眠定時 (高度還原 Android addTimer)
+  void setSleepTimer(int minutes) {
+    _remainingMinutes = minutes;
+    _sleepTimer?.cancel();
+    if (minutes > 0) {
+      _sleepTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+        if (_remainingMinutes > 0) {
+          _remainingMinutes--;
+          notifyListeners();
+        } else {
+          stop();
+          timer.cancel();
+        }
+      });
+    }
+    notifyListeners();
   }
 
   Future<void> setLanguage(String lang) async {
@@ -88,11 +121,19 @@ class TTSService extends ChangeNotifier {
 
   Future<void> stop() async {
     await _flutterTts.stop();
+    _isPlaying = false;
+    notifyListeners();
   }
 
   Future<void> pause() async {
     await _flutterTts.pause();
     _isPlaying = false;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _sleepTimer?.cancel();
+    super.dispose();
   }
 }

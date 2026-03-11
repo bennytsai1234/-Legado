@@ -6,6 +6,7 @@ import 'analyze_rule.dart';
 import '../services/http_client.dart';
 import '../services/cookie_store.dart';
 import '../services/backstage_webview.dart';
+import '../services/rate_limiter.dart';
 import 'package:fast_gbk/fast_gbk.dart';
 
 /// AnalyzeUrl - URL 構建與請求引擎
@@ -21,6 +22,9 @@ class AnalyzeUrl {
   final String mUrl;
   final String? key;
   final int? page;
+  final String? speakText;
+  final int? speakSpeed;
+  final String? voiceName;
   String? baseUrl;
   final AnalyzeRule? analyzer;
   final dynamic source; // BaseSource equivalent
@@ -44,6 +48,9 @@ class AnalyzeUrl {
     this.mUrl, {
     this.key,
     this.page,
+    this.speakText,
+    this.speakSpeed,
+    this.voiceName,
     this.baseUrl,
     this.analyzer,
     this.source,
@@ -261,6 +268,15 @@ class AnalyzeUrl {
     var result = str;
     if (key != null) result = result.replaceAll('{{key}}', key!);
     if (page != null) result = result.replaceAll('{{page}}', page.toString());
+    if (speakText != null) {
+      result = result.replaceAll('{{speakText}}', Uri.encodeComponent(speakText!));
+    }
+    if (speakSpeed != null) {
+      result = result.replaceAll('{{speakSpeed}}', speakSpeed.toString());
+    }
+    if (voiceName != null) {
+      result = result.replaceAll('{{voiceName}}', voiceName!);
+    }
     return result;
   }
 
@@ -288,41 +304,58 @@ class AnalyzeUrl {
   }
 
   Future<Uint8List?> getByteArray() async {
-    final dio = HttpClient().client;
-
-    await _setCookie();
-
-    try {
-      final requestUrl = encodedQuery != null ? "$url?$encodedQuery" : url;
-      final requestData = encodedForm ?? body;
-
-      final options = Options(
-        method: method,
-        headers: headerMap.cast<String, dynamic>(),
-        responseType: ResponseType.bytes,
-        followRedirects: true,
-      );
-
-      Response response;
-      if (method == 'POST') {
-        response = await dio.request(
-          requestUrl,
-          data: requestData,
-          options: options,
-        );
-      } else {
-        response = await dio.request(requestUrl, options: options);
-      }
-
-      if (response.realUri.toString() != requestUrl) {
-        setRedirectUrl(response.realUri.toString());
-      }
-
-      final List<int> responseBytes = response.data as List<int>;
-      return Uint8List.fromList(responseBytes);
-    } catch (e) {
+    // 1. 處理 data: 協議 (高度還原 Android)
+    if (url.startsWith('data:')) {
+      try {
+        final commaIndex = url.indexOf(',');
+        if (commaIndex != -1) {
+          final data = url.substring(commaIndex + 1);
+          return base64Decode(data);
+        }
+      } catch (_) {}
       return null;
     }
+
+    final dio = HttpClient().client;
+    final limiter = ConcurrentRateLimiter(source is BaseSource ? source : null);
+
+    return await limiter.withLimit(() async {
+      await _setCookie();
+
+      try {
+        final requestUrl = encodedQuery != null ? "$url?$encodedQuery" : url;
+        final requestData = encodedForm ?? body;
+
+        final options = Options(
+          method: method,
+          headers: headerMap.cast<String, dynamic>(),
+          responseType: ResponseType.bytes,
+          followRedirects: true,
+          sendTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 30),
+        );
+
+        Response response;
+        if (method == 'POST') {
+          response = await dio.request(
+            requestUrl,
+            data: requestData,
+            options: options,
+          );
+        } else {
+          response = await dio.request(requestUrl, options: options);
+        }
+
+        if (response.realUri.toString() != requestUrl) {
+          setRedirectUrl(response.realUri.toString());
+        }
+
+        final List<int> responseBytes = response.data as List<int>;
+        return Uint8List.fromList(responseBytes);
+      } catch (e) {
+        return null;
+      }
+    });
   }
 
   /// Execute the HTTP request and return response body

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'settings_provider.dart';
+import 'http_tts_manager_page.dart';
 
 class AloudSettingsPage extends StatelessWidget {
   const AloudSettingsPage({super.key});
@@ -13,6 +14,39 @@ class AloudSettingsPage extends StatelessWidget {
         builder: (context, settings, child) {
           return ListView(
             children: [
+              _buildSectionTitle('朗讀參數'),
+              ListTile(
+                title: const Text('語速'),
+                subtitle: Slider(
+                  value: settings.speechRate,
+                  min: 0.1,
+                  max: 1.0,
+                  onChanged: (v) => settings.setSpeechRate(v),
+                ),
+                trailing: Text(settings.speechRate.toStringAsFixed(1)),
+              ),
+              ListTile(
+                title: const Text('音調'),
+                subtitle: Slider(
+                  value: settings.speechPitch,
+                  min: 0.5,
+                  max: 2.0,
+                  onChanged: (v) => settings.setSpeechPitch(v),
+                ),
+                trailing: Text(settings.speechPitch.toStringAsFixed(1)),
+              ),
+              ListTile(
+                title: const Text('音量'),
+                subtitle: Slider(
+                  value: settings.speechVolume,
+                  min: 0.0,
+                  max: 1.0,
+                  onChanged: (v) => settings.setSpeechVolume(v),
+                ),
+                trailing: Text(settings.speechVolume.toStringAsFixed(1)),
+              ),
+
+              _buildSectionTitle('進階控制'),
               SwitchListTile(
                 title: const Text('忽略音訊焦點'),
                 subtitle: const Text('被其他應用程式搶佔音訊時不暫停朗讀'),
@@ -55,11 +89,18 @@ class AloudSettingsPage extends StatelessWidget {
                 value: settings.streamReadAloudAudio,
                 onChanged: (v) => settings.setStreamReadAloudAudio(v),
               ),
+              
+              _buildSectionTitle('引擎管理'),
               ListTile(
                 title: const Text('發音引擎'),
-                subtitle: const Text('TTS'),
+                subtitle: const Text('自定義 HTTP TTS 或 系統 TTS'),
                 leading: const Icon(Icons.record_voice_over),
-                onTap: () => _showComingSoon(context),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const HttpTtsManagerPage()),
+                  );
+                },
               ),
               ListTile(
                 title: const Text('系統 TTS 設定'),
@@ -74,9 +115,19 @@ class AloudSettingsPage extends StatelessWidget {
     );
   }
 
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Text(
+        title,
+        style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 13),
+      ),
+    );
+  }
+
   void _showComingSoon(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('功能開發中 (Work in Progress)')),
+      const SnackBar(content: Text('此功能需調用 iOS 系統設定')),
     );
   }
 }

@@ -1,5 +1,4 @@
-library;
-
+import 'dart:convert';
 import 'base_source.dart';
 
 /// BookSource - 書源模型
@@ -9,430 +8,299 @@ import 'base_source.dart';
 class BookSource implements BaseSource {
   String bookSourceUrl; // 書源 URL (唯一識別)
   String bookSourceName; // 書源名稱
-  int bookSourceType; // 0: 文字, 1: 音頻, 2: 圖片/漫畫, 3: 檔案
   String? bookSourceGroup; // 書源分組
-  String? bookSourceComment; // 書源說明
-
-  @override
-  String? loginUrl; // 登入 URL
-
-  @override
-  String? loginUi; // 登入 UI JSON
-
-  String? loginCheckJs; // 登入檢測 JS
-  String? bookUrlPattern; // 書籍 URL 正則
-
-  @override
-  String? header; // 自訂 Header JSON
-
-  String? variableComment; // 變數說明
-  String? variable; // 暫存變數
-  int customOrder; // 自訂排序
-  int weight; // 權重
+  int bookSourceType; // 類型 (0: 文本, 1: 音訊, 2: 圖片, 3: 文件)
+  String? bookUrlPattern; // 詳情頁 URL 正則
+  int customOrder; // 手動排序
   bool enabled; // 是否啟用
-  bool enabledExplore; // 是否啟用發現
-
+  bool enabledExplore; // 啟用發現
   @override
-  bool? enabledCookieJar; // 是否啟用 CookieJar
-
+  String? jsLib; // JS 庫
+  @override
+  bool enabledCookieJar; // 啟用 CookieJar
+  @override
+  String? concurrentRate; // 併發率
+  @override
+  String? header; // 請求頭
+  @override
+  String? loginUrl; // 登入地址
+  @override
+  String? loginUi; // 登入 UI
+  String? loginCheckJs; // 登入檢查 JS
+  String? coverDecodeJs; // 封面解密 JS
+  String? bookSourceComment; // 註釋
+  String? variableComment; // 變量說明
   int lastUpdateTime; // 最後更新時間
-  int respondTime; // 回應時間
-
-  @override
-  String? jsLib; // JS 共享庫
-
-  int concurrentRateInt; // 併發速率
-
-  @override
-  String? get concurrentRate => concurrentRateInt.toString();
-
-  // === 搜尋規則 ===
-  SearchRule? ruleSearch;
-  // === 發現規則 ===
-  ExploreRule? ruleExplore;
-  // === 書籍資訊規則 ===
-  BookInfoRule? ruleBookInfo;
-  // === 目錄規則 ===
-  TocRule? ruleToc;
-  // === 正文規則 ===
-  ContentRule? ruleContent;
-  // === 發現 URL ===
-  String? exploreUrl;
-  // === 搜尋 URL ===
-  String? searchUrl;
+  int respondTime; // 響應時間
+  int weight; // 權重
+  String? exploreUrl; // 發現 URL
+  String? exploreScreen; // 發現篩選規則
+  ExploreRule? ruleExplore; // 發現規則
+  String? searchUrl; // 搜尋 URL
+  SearchRule? ruleSearch; // 搜尋規則
+  BookInfoRule? ruleBookInfo; // 書籍訊息規則
+  TocRule? ruleToc; // 目錄規則
+  ContentRule? ruleContent; // 正文規則
+  ReviewRule? ruleReview; // 段評規則
 
   BookSource({
-    required this.bookSourceUrl,
-    required this.bookSourceName,
-    this.bookSourceType = 0,
+    this.bookSourceUrl = "",
+    this.bookSourceName = "",
     this.bookSourceGroup,
-    this.bookSourceComment,
+    this.bookSourceType = 0,
+    this.bookUrlPattern,
+    this.customOrder = 0,
+    this.enabled = true,
+    this.enabledExplore = true,
+    this.jsLib,
+    this.enabledCookieJar = true,
+    this.concurrentRate,
+    this.header,
     this.loginUrl,
     this.loginUi,
     this.loginCheckJs,
-    this.bookUrlPattern,
-    this.header,
+    this.coverDecodeJs,
+    this.bookSourceComment,
     this.variableComment,
-    this.variable,
-    this.customOrder = 0,
-    this.weight = 0,
-    this.enabled = true,
-    this.enabledExplore = true,
-    this.enabledCookieJar = false,
     this.lastUpdateTime = 0,
     this.respondTime = 180000,
-    this.jsLib,
-    this.concurrentRateInt = 0,
-    this.ruleSearch,
+    this.weight = 0,
+    this.exploreUrl,
+    this.exploreScreen,
     this.ruleExplore,
+    this.searchUrl,
+    this.ruleSearch,
     this.ruleBookInfo,
     this.ruleToc,
     this.ruleContent,
-    this.exploreUrl,
-    this.searchUrl,
+    this.ruleReview,
   });
 
-  // Helper tools for parsing string-to-int/bool issues
-  static int _parseInt(dynamic value, int defaultValue) {
-    if (value == null) return defaultValue;
-    if (value is int) return value;
-    if (value is String) return int.tryParse(value) ?? defaultValue;
-    if (value is double) return value.toInt();
-    return defaultValue;
+  @override
+  String getTag() => bookSourceName;
+  @override
+  String getKey() => bookSourceUrl;
+
+  // 分組操作邏輯 (高度還原 Android)
+  void addGroup(String groups) {
+    var currentGroups = bookSourceGroup?.split(RegExp(r'[,，\s]+')).where((s) => s.isNotEmpty).toSet() ?? {};
+    currentGroups.addAll(groups.split(RegExp(r'[,，\s]+')).where((s) => s.isNotEmpty));
+    bookSourceGroup = currentGroups.join(',');
   }
 
-  static bool _parseBool(dynamic value, bool defaultValue) {
-    if (value == null) return defaultValue;
-    if (value is bool) return value;
-    if (value is int) return value == 1;
-    if (value is String) return value.toLowerCase() == 'true' || value == '1';
-    return defaultValue;
+  void removeGroup(String groups) {
+    var currentGroups = bookSourceGroup?.split(RegExp(r'[,，\s]+')).where((s) => s.isNotEmpty).toSet() ?? {};
+    currentGroups.removeAll(groups.split(RegExp(r'[,，\s]+')).where((s) => s.isNotEmpty));
+    bookSourceGroup = currentGroups.isEmpty ? null : currentGroups.join(',');
+  }
+
+  String getCheckKeyword(String defaultValue) {
+    return (ruleSearch?.checkKeyWord != null && ruleSearch!.checkKeyWord!.isNotEmpty) 
+        ? ruleSearch!.checkKeyWord! 
+        : defaultValue;
   }
 
   factory BookSource.fromJson(Map<String, dynamic> json) {
     return BookSource(
-      bookSourceUrl: json['bookSourceUrl'] ?? '',
-      bookSourceName: json['bookSourceName'] ?? '',
-      bookSourceType: _parseInt(json['bookSourceType'], 0),
+      bookSourceUrl: json['bookSourceUrl'] ?? "",
+      bookSourceName: json['bookSourceName'] ?? "",
       bookSourceGroup: json['bookSourceGroup'],
-      bookSourceComment: json['bookSourceComment'],
+      bookSourceType: json['bookSourceType'] ?? 0,
+      bookUrlPattern: json['bookUrlPattern'],
+      customOrder: json['customOrder'] ?? 0,
+      enabled: json['enabled'] == 1 || json['enabled'] == true,
+      enabledExplore: json['enabledExplore'] == 1 || json['enabledExplore'] == true,
+      jsLib: json['jsLib'],
+      enabledCookieJar: json['enabledCookieJar'] == 1 || json['enabledCookieJar'] == true,
+      concurrentRate: json['concurrentRate']?.toString(),
+      header: json['header'],
       loginUrl: json['loginUrl'],
       loginUi: json['loginUi'],
       loginCheckJs: json['loginCheckJs'],
-      bookUrlPattern: json['bookUrlPattern'],
-      header: json['header'],
+      coverDecodeJs: json['coverDecodeJs'],
+      bookSourceComment: json['bookSourceComment'],
       variableComment: json['variableComment'],
-      variable: json['variable'],
-      customOrder: _parseInt(json['customOrder'], 0),
-      weight: _parseInt(json['weight'], 0),
-      enabled: _parseBool(json['enabled'], true),
-      enabledExplore: _parseBool(json['enabledExplore'], true),
-      enabledCookieJar: _parseBool(json['enabledCookieJar'], false),
-      lastUpdateTime: _parseInt(json['lastUpdateTime'], 0),
-      respondTime: _parseInt(json['respondTime'], 180000),
-      jsLib: json['jsLib'],
-      concurrentRateInt: _parseInt(json['concurrentRate'], 0),
-      ruleSearch:
-          json['ruleSearch'] != null
-              ? SearchRule.fromJson(json['ruleSearch'])
-              : null,
-      ruleExplore:
-          json['ruleExplore'] != null
-              ? ExploreRule.fromJson(json['ruleExplore'])
-              : null,
-      ruleBookInfo:
-          json['ruleBookInfo'] != null
-              ? BookInfoRule.fromJson(json['ruleBookInfo'])
-              : null,
-      ruleToc:
-          json['ruleToc'] != null ? TocRule.fromJson(json['ruleToc']) : null,
-      ruleContent:
-          json['ruleContent'] != null
-              ? ContentRule.fromJson(json['ruleContent'])
-              : null,
+      lastUpdateTime: json['lastUpdateTime'] ?? 0,
+      respondTime: json['respondTime'] ?? 180000,
+      weight: json['weight'] ?? 0,
       exploreUrl: json['exploreUrl'],
+      exploreScreen: json['exploreScreen'],
+      ruleExplore: json['ruleExplore'] != null ? ExploreRule.fromJson(_parseRule(json['ruleExplore'])) : null,
       searchUrl: json['searchUrl'],
+      ruleSearch: json['ruleSearch'] != null ? SearchRule.fromJson(_parseRule(json['ruleSearch'])) : null,
+      ruleBookInfo: json['ruleBookInfo'] != null ? BookInfoRule.fromJson(_parseRule(json['ruleBookInfo'])) : null,
+      ruleToc: json['ruleToc'] != null ? TocRule.fromJson(_parseRule(json['ruleToc'])) : null,
+      ruleContent: json['ruleContent'] != null ? ContentRule.fromJson(_parseRule(json['ruleContent'])) : null,
+      ruleReview: json['ruleReview'] != null ? ReviewRule.fromJson(_parseRule(json['ruleReview'])) : null,
     );
+  }
+
+  static dynamic _parseRule(dynamic rule) {
+    if (rule is String && rule.isNotEmpty) {
+      try { return jsonDecode(rule); } catch (_) { return {}; }
+    }
+    return rule ?? {};
   }
 
   Map<String, dynamic> toJson() {
     return {
       'bookSourceUrl': bookSourceUrl,
       'bookSourceName': bookSourceName,
-      'bookSourceType': bookSourceType,
       'bookSourceGroup': bookSourceGroup,
-      'bookSourceComment': bookSourceComment,
+      'bookSourceType': bookSourceType,
+      'bookUrlPattern': bookUrlPattern,
+      'customOrder': customOrder,
+      'enabled': enabled ? 1 : 0,
+      'enabledExplore': enabledExplore ? 1 : 0,
+      'jsLib': jsLib,
+      'enabledCookieJar': enabledCookieJar ? 1 : 0,
+      'concurrentRate': concurrentRate,
+      'header': header,
       'loginUrl': loginUrl,
       'loginUi': loginUi,
       'loginCheckJs': loginCheckJs,
-      'bookUrlPattern': bookUrlPattern,
-      'header': header,
+      'coverDecodeJs': coverDecodeJs,
+      'bookSourceComment': bookSourceComment,
       'variableComment': variableComment,
-      'variable': variable,
-      'customOrder': customOrder,
-      'weight': weight,
-      'enabled': enabled,
-      'enabledExplore': enabledExplore,
-      'enabledCookieJar': enabledCookieJar,
       'lastUpdateTime': lastUpdateTime,
       'respondTime': respondTime,
-      'jsLib': jsLib,
-      'concurrentRate': concurrentRateInt,
-      'ruleSearch': ruleSearch?.toJson(),
+      'weight': weight,
+      'exploreUrl': exploreUrl,
+      'exploreScreen': exploreScreen,
       'ruleExplore': ruleExplore?.toJson(),
+      'searchUrl': searchUrl,
+      'ruleSearch': ruleSearch?.toJson(),
       'ruleBookInfo': ruleBookInfo?.toJson(),
       'ruleToc': ruleToc?.toJson(),
       'ruleContent': ruleContent?.toJson(),
-      'exploreUrl': exploreUrl,
-      'searchUrl': searchUrl,
+      'ruleReview': ruleReview?.toJson(),
     };
   }
-
-  @override
-  String getTag() => bookSourceName;
-
-  @override
-  String getKey() => bookSourceUrl;
 }
 
-/// 搜尋規則
-/// 對應 Android: data/entities/rule/SearchRule.kt
+// --- Rule Classes ---
+
 class SearchRule {
   String? bookList;
   String? name;
   String? author;
-  String? intro;
   String? kind;
-  String? lastChapter;
-  String? updateTime;
-  String? bookUrl;
-  String? coverUrl;
   String? wordCount;
+  String? lastChapter;
+  String? coverUrl;
+  String? intro;
+  String? bookUrl;
   String? checkKeyWord;
 
   SearchRule({
-    this.bookList,
-    this.name,
-    this.author,
-    this.intro,
-    this.kind,
-    this.lastChapter,
-    this.updateTime,
-    this.bookUrl,
-    this.coverUrl,
-    this.wordCount,
-    this.checkKeyWord,
+    this.bookList, this.name, this.author, this.kind, this.wordCount,
+    this.lastChapter, this.coverUrl, this.intro, this.bookUrl, this.checkKeyWord
   });
 
-  factory SearchRule.fromJson(Map<String, dynamic> json) {
-    return SearchRule(
-      bookList: json['bookList'],
-      name: json['name'],
-      author: json['author'],
-      intro: json['intro'],
-      kind: json['kind'],
-      lastChapter: json['lastChapter'],
-      updateTime: json['updateTime'],
-      bookUrl: json['bookUrl'],
-      coverUrl: json['coverUrl'],
-      wordCount: json['wordCount'],
-      checkKeyWord: json['checkKeyWord'],
-    );
-  }
+  factory SearchRule.fromJson(Map<String, dynamic> json) => SearchRule(
+    bookList: json['bookList'], name: json['name'], author: json['author'],
+    kind: json['kind'], wordCount: json['wordCount'], lastChapter: json['lastChapter'],
+    coverUrl: json['coverUrl'], intro: json['intro'], bookUrl: json['bookUrl'],
+    checkKeyWord: json['checkKeyWord'],
+  );
 
   Map<String, dynamic> toJson() => {
-    'bookList': bookList,
-    'name': name,
-    'author': author,
-    'intro': intro,
-    'kind': kind,
-    'lastChapter': lastChapter,
-    'updateTime': updateTime,
-    'bookUrl': bookUrl,
-    'coverUrl': coverUrl,
-    'wordCount': wordCount,
-    'checkKeyWord': checkKeyWord,
+    'bookList': bookList, 'name': name, 'author': author, 'kind': kind,
+    'wordCount': wordCount, 'lastChapter': lastChapter, 'coverUrl': coverUrl,
+    'intro': intro, 'bookUrl': bookUrl, 'checkKeyWord': checkKeyWord,
   };
 }
 
-/// 發現規則
-/// 對應 Android: data/entities/rule/ExploreRule.kt
 class ExploreRule {
   String? bookList;
   String? name;
   String? author;
-  String? intro;
   String? kind;
-  String? lastChapter;
-  String? updateTime;
-  String? bookUrl;
-  String? coverUrl;
   String? wordCount;
+  String? lastChapter;
+  String? coverUrl;
+  String? intro;
+  String? bookUrl;
 
   ExploreRule({
-    this.bookList,
-    this.name,
-    this.author,
-    this.intro,
-    this.kind,
-    this.lastChapter,
-    this.updateTime,
-    this.bookUrl,
-    this.coverUrl,
-    this.wordCount,
+    this.bookList, this.name, this.author, this.kind, this.wordCount,
+    this.lastChapter, this.coverUrl, this.intro, this.bookUrl
   });
 
-  factory ExploreRule.fromJson(Map<String, dynamic> json) {
-    return ExploreRule(
-      bookList: json['bookList'],
-      name: json['name'],
-      author: json['author'],
-      intro: json['intro'],
-      kind: json['kind'],
-      lastChapter: json['lastChapter'],
-      updateTime: json['updateTime'],
-      bookUrl: json['bookUrl'],
-      coverUrl: json['coverUrl'],
-      wordCount: json['wordCount'],
-    );
-  }
+  factory ExploreRule.fromJson(Map<String, dynamic> json) => ExploreRule(
+    bookList: json['bookList'], name: json['name'], author: json['author'],
+    kind: json['kind'], wordCount: json['wordCount'], lastChapter: json['lastChapter'],
+    coverUrl: json['coverUrl'], intro: json['intro'], bookUrl: json['bookUrl'],
+  );
 
   Map<String, dynamic> toJson() => {
-    'bookList': bookList,
-    'name': name,
-    'author': author,
-    'intro': intro,
-    'kind': kind,
-    'lastChapter': lastChapter,
-    'updateTime': updateTime,
-    'bookUrl': bookUrl,
-    'coverUrl': coverUrl,
-    'wordCount': wordCount,
+    'bookList': bookList, 'name': name, 'author': author, 'kind': kind,
+    'wordCount': wordCount, 'lastChapter': lastChapter, 'coverUrl': coverUrl,
+    'intro': intro, 'bookUrl': bookUrl,
   };
 }
 
-/// 書籍資訊規則
-/// 對應 Android: data/entities/rule/BookInfoRule.kt
 class BookInfoRule {
-  String? init;
   String? name;
   String? author;
-  String? intro;
   String? kind;
-  String? lastChapter;
-  String? updateTime;
-  String? coverUrl;
-  String? tocUrl;
   String? wordCount;
-  String? canReName;
-  String? downloadUrls;
+  String? lastChapter;
+  String? coverUrl;
+  String? intro;
+  String? tocUrl;
+  bool? canReName;
 
   BookInfoRule({
-    this.init,
-    this.name,
-    this.author,
-    this.intro,
-    this.kind,
-    this.lastChapter,
-    this.updateTime,
-    this.coverUrl,
-    this.tocUrl,
-    this.wordCount,
-    this.canReName,
-    this.downloadUrls,
+    this.name, this.author, this.kind, this.wordCount, this.lastChapter,
+    this.coverUrl, this.intro, this.tocUrl, this.canReName
   });
 
-  factory BookInfoRule.fromJson(Map<String, dynamic> json) {
-    return BookInfoRule(
-      init: json['init'],
-      name: json['name'],
-      author: json['author'],
-      intro: json['intro'],
-      kind: json['kind'],
-      lastChapter: json['lastChapter'],
-      updateTime: json['updateTime'],
-      coverUrl: json['coverUrl'],
-      tocUrl: json['tocUrl'],
-      wordCount: json['wordCount'],
-      canReName: json['canReName'],
-      downloadUrls: json['downloadUrls'],
-    );
-  }
+  factory BookInfoRule.fromJson(Map<String, dynamic> json) => BookInfoRule(
+    name: json['name'], author: json['author'], kind: json['kind'],
+    wordCount: json['wordCount'], lastChapter: json['lastChapter'],
+    coverUrl: json['coverUrl'], intro: json['intro'], tocUrl: json['tocUrl'],
+    canReName: json['canReName'] == 1 || json['canReName'] == true,
+  );
 
   Map<String, dynamic> toJson() => {
-    'init': init,
-    'name': name,
-    'author': author,
-    'intro': intro,
-    'kind': kind,
-    'lastChapter': lastChapter,
-    'updateTime': updateTime,
-    'coverUrl': coverUrl,
-    'tocUrl': tocUrl,
-    'wordCount': wordCount,
-    'canReName': canReName,
-    'downloadUrls': downloadUrls,
+    'name': name, 'author': author, 'kind': kind, 'wordCount': wordCount,
+    'lastChapter': lastChapter, 'coverUrl': coverUrl, 'intro': intro,
+    'tocUrl': tocUrl, 'canReName': canReName,
   };
 }
 
-/// 目錄規則
-/// 對應 Android: data/entities/rule/TocRule.kt
 class TocRule {
-  String? preUpdateJs;
   String? chapterList;
   String? chapterName;
   String? chapterUrl;
-  String? formatJs;
   String? isVolume;
   String? isVip;
   String? isPay;
   String? updateTime;
   String? nextTocUrl;
+  String? preUpdateJs;
 
   TocRule({
-    this.preUpdateJs,
-    this.chapterList,
-    this.chapterName,
-    this.chapterUrl,
-    this.formatJs,
-    this.isVolume,
-    this.isVip,
-    this.isPay,
-    this.updateTime,
-    this.nextTocUrl,
+    this.chapterList, this.chapterName, this.chapterUrl, this.isVolume,
+    this.isVip, this.isPay, this.updateTime, this.nextTocUrl, this.preUpdateJs
   });
 
-  factory TocRule.fromJson(Map<String, dynamic> json) {
-    return TocRule(
-      preUpdateJs: json['preUpdateJs'],
-      chapterList: json['chapterList'],
-      chapterName: json['chapterName'],
-      chapterUrl: json['chapterUrl'],
-      formatJs: json['formatJs'],
-      isVolume: json['isVolume'],
-      isVip: json['isVip'],
-      isPay: json['isPay'],
-      updateTime: json['updateTime'],
-      nextTocUrl: json['nextTocUrl'],
-    );
-  }
+  factory TocRule.fromJson(Map<String, dynamic> json) => TocRule(
+    chapterList: json['chapterList'], chapterName: json['chapterName'],
+    chapterUrl: json['chapterUrl'], isVolume: json['isVolume'],
+    isVip: json['isVip'], isPay: json['isPay'], updateTime: json['updateTime'],
+    nextTocUrl: json['nextTocUrl'], preUpdateJs: json['preUpdateJs'],
+  );
 
   Map<String, dynamic> toJson() => {
+    'chapterList': chapterList, 'chapterName': chapterName,
+    'chapterUrl': chapterUrl, 'isVolume': isVolume, 'isVip': isVip,
+    'isPay': isPay, 'updateTime': updateTime, 'nextTocUrl': nextTocUrl,
     'preUpdateJs': preUpdateJs,
-    'chapterList': chapterList,
-    'chapterName': chapterName,
-    'chapterUrl': chapterUrl,
-    'formatJs': formatJs,
-    'isVolume': isVolume,
-    'isVip': isVip,
-    'isPay': isPay,
-    'updateTime': updateTime,
-    'nextTocUrl': nextTocUrl,
   };
 }
 
-/// 正文規則
-/// 對應 Android: data/entities/rule/ContentRule.kt
 class ContentRule {
   String? content;
   String? nextContentUrl;
@@ -444,37 +312,55 @@ class ContentRule {
   String? payAction;
 
   ContentRule({
-    this.content,
-    this.nextContentUrl,
-    this.webJs,
-    this.sourceRegex,
-    this.replaceRegex,
-    this.imageStyle,
-    this.imageDecode,
-    this.payAction,
+    this.content, this.nextContentUrl, this.webJs, this.sourceRegex,
+    this.replaceRegex, this.imageStyle, this.imageDecode, this.payAction
   });
 
-  factory ContentRule.fromJson(Map<String, dynamic> json) {
-    return ContentRule(
-      content: json['content'],
-      nextContentUrl: json['nextContentUrl'],
-      webJs: json['webJs'],
-      sourceRegex: json['sourceRegex'],
-      replaceRegex: json['replaceRegex'],
-      imageStyle: json['imageStyle'],
-      imageDecode: json['imageDecode'],
-      payAction: json['payAction'],
-    );
-  }
+  factory ContentRule.fromJson(Map<String, dynamic> json) => ContentRule(
+    content: json['content'], nextContentUrl: json['nextContentUrl'],
+    webJs: json['webJs'], sourceRegex: json['sourceRegex'],
+    replaceRegex: json['replaceRegex'], imageStyle: json['imageStyle'],
+    imageDecode: json['imageDecode'], payAction: json['payAction'],
+  );
 
   Map<String, dynamic> toJson() => {
-    'content': content,
-    'nextContentUrl': nextContentUrl,
-    'webJs': webJs,
-    'sourceRegex': sourceRegex,
-    'replaceRegex': replaceRegex,
-    'imageStyle': imageStyle,
-    'imageDecode': imageDecode,
-    'payAction': payAction,
+    'content': content, 'nextContentUrl': nextContentUrl, 'webJs': webJs,
+    'sourceRegex': sourceRegex, 'replaceRegex': replaceRegex,
+    'imageStyle': imageStyle, 'imageDecode': imageDecode, 'payAction': payAction,
+  };
+}
+
+class ReviewRule {
+  String? reviewUrl;
+  String? avatarRule;
+  String? contentRule;
+  String? postTimeRule;
+  String? reviewQuoteUrl;
+  String? voteUpUrl;
+  String? voteDownUrl;
+  String? postReviewUrl;
+  String? postQuoteUrl;
+  String? deleteUrl;
+
+  ReviewRule({
+    this.reviewUrl, this.avatarRule, this.contentRule, this.postTimeRule,
+    this.reviewQuoteUrl, this.voteUpUrl, this.voteDownUrl, this.postReviewUrl,
+    this.postQuoteUrl, this.deleteUrl
+  });
+
+  factory ReviewRule.fromJson(Map<String, dynamic> json) => ReviewRule(
+    reviewUrl: json['reviewUrl'], avatarRule: json['avatarRule'],
+    contentRule: json['contentRule'], postTimeRule: json['postTimeRule'],
+    reviewQuoteUrl: json['reviewQuoteUrl'], voteUpUrl: json['voteUpUrl'],
+    voteDownUrl: json['voteDownUrl'], postReviewUrl: json['postReviewUrl'],
+    postQuoteUrl: json['postQuoteUrl'], deleteUrl: json['deleteUrl'],
+  );
+
+  Map<String, dynamic> toJson() => {
+    'reviewUrl': reviewUrl, 'avatarRule': avatarRule, 'contentRule': contentRule,
+    'postTimeRule': postTimeRule, 'reviewQuoteUrl': reviewQuoteUrl,
+    'voteUpUrl': voteUpUrl, 'voteDownUrl': voteDownUrl,
+    'postReviewUrl': postReviewUrl, 'postQuoteUrl': postQuoteUrl,
+    'deleteUrl': deleteUrl,
   };
 }

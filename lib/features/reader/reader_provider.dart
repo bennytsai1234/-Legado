@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/database/dao/book_dao.dart';
@@ -16,13 +17,19 @@ import '../../core/database/dao/bookmark_dao.dart';
 import '../../core/database/app_database.dart';
 import '../../core/models/bookmark.dart';
 import '../../core/services/content_processor.dart';
+import '../../core/database/dao/http_tts_dao.dart';
+import '../../core/services/http_tts_service.dart';
+import '../../core/models/http_tts.dart';
 
+/// ReaderProvider - 閱讀器狀態管理
+/// 對應 Android: ui/book/read/ReadBookViewModel.kt
 class ReaderProvider extends ChangeNotifier {
   final BookDao _bookDao = BookDao();
   final ChapterDao _chapterDao = ChapterDao();
   final ReplaceRuleDao _replaceDao = ReplaceRuleDao();
   final BookSourceDao _sourceDao = BookSourceDao();
   final BookSourceService _service = BookSourceService();
+  final HttpTtsDao _httpTtsDao = HttpTtsDao();
 
   final Book book;
   BookSource? _source;
@@ -46,14 +53,33 @@ class ReaderProvider extends ChangeNotifier {
   String? _fontFamily;
 
   final TTSService tts = TTSService();
+  final HttpTtsService httpTts = HttpTtsService();
   final BookmarkDao _bookmarkDao = BookmarkDao();
 
   List<Bookmark> _bookmarks = [];
   int _pageTurnMode = 0; // 0: 平滑水平, 1: 無動畫(覆蓋), 2: 平滑垂直
 
+  // TTS 擴展
+  int _ttsMode = 0; // 0: 系統 TTS, 1: HTTP TTS
+  int? _selectedHttpTtsId;
+  List<HttpTTS> _httpTtsEngines = [];
+
+  // 自動翻頁擴展 (高度還原 Android AutoPager)
+  bool _isAutoPaging = false;
+  double _autoPageSpeed = 30.0; // 預設 30 秒一頁
+  double _autoPageProgress = 0.0; // 0.0 到 1.0
+  Timer? _autoPageTimer;
+
+  // 換源系統擴展 (高度還原 Android 單章換源)
+  final Map<int, BookSource> _chapterSourceOverrides = {};
+
   ReaderProvider({required this.book, int chapterIndex = 0}) {
     _currentChapterIndex = chapterIndex;
     _init();
+    // 朗讀翻頁連動 (高度還原 Android AudioPlayService)
+    tts.onComplete = () {
+      if (tts.isPlaying) nextPage();
+    };
   }
 
   // Getters
@@ -75,6 +101,14 @@ class ReaderProvider extends ChangeNotifier {
   int get pageTurnMode => _pageTurnMode;
   bool get chineseConvert => _chineseConvert;
   String? get fontFamily => _fontFamily;
+  
+  int get ttsMode => _ttsMode;
+  int? get selectedHttpTtsId => _selectedHttpTtsId;
+  List<HttpTTS> get httpTtsEngines => _httpTtsEngines;
+
+  bool get isAutoPaging => _isAutoPaging;
+  double get autoPageSpeed => _autoPageSpeed;
+  double get autoPageProgress => _autoPageProgress;
 
   bool get isBookmarked {
     return _bookmarks.any((b) =>
@@ -87,6 +121,7 @@ class ReaderProvider extends ChangeNotifier {
     await _loadBookmarks();
     await _loadChapters();
     await _loadSource();
+    await _loadHttpTtsEngines();
     await loadChapter(_currentChapterIndex);
   }
 
@@ -99,6 +134,31 @@ class ReaderProvider extends ChangeNotifier {
     _pageTurnMode = prefs.getInt('reader_page_turn_mode') ?? 0;
     _chineseConvert = prefs.getBool('reader_chinese_convert') ?? false;
     _fontFamily = prefs.getString('reader_font_family');
+    
+    _ttsMode = prefs.getInt('reader_tts_mode') ?? 0;
+    _selectedHttpTtsId = prefs.getInt('reader_selected_http_tts_id');
+    _autoPageSpeed = prefs.getDouble('reader_auto_page_speed') ?? 30.0;
+    notifyListeners();
+  }
+
+  Future<void> _loadHttpTtsEngines() async {
+    _httpTtsEngines = await _httpTtsDao.getAll();
+    notifyListeners();
+  }
+
+  Future<void> setTtsMode(int mode) async {
+    _ttsMode = mode;
+    saveSetting('tts_mode', mode);
+  }
+
+  Future<void> setSelectedHttpTts(int? id) async {
+    _selectedHttpTtsId = id;
+    if (id != null) {
+      saveSetting('selected_http_tts_id', id);
+    } else {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('reader_selected_http_tts_id');
+    }
     notifyListeners();
   }
 
@@ -116,10 +176,60 @@ class ReaderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // --- 自動翻頁控制 ---
+  void setAutoPageSpeed(double speed) {
+    _autoPageSpeed = speed.clamp(5.0, 300.0);
+    saveSetting('auto_page_speed', _autoPageSpeed);
+    if (_isAutoPaging) startAutoPage();
+  }
+
+  void toggleAutoPage() {
+    if (_isAutoPaging) stopAutoPage(); else startAutoPage();
+  }
+
+  void startAutoPage() {
+    _isAutoPaging = true;
+    _autoPageTimer?.cancel();
+    _autoPageTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
+      if (!_isAutoPaging) { timer.cancel(); return; }
+      final delta = 0.016 / _autoPageSpeed;
+      _autoPageProgress += delta;
+      if (_autoPageProgress >= 1.0) {
+        _autoPageProgress = 0.0;
+        nextPage();
+      }
+      notifyListeners();
+    });
+    notifyListeners();
+  }
+
+  void stopAutoPage() {
+    _isAutoPaging = false;
+    _autoPageProgress = 0.0;
+    _autoPageTimer?.cancel();
+    _autoPageTimer = null;
+    notifyListeners();
+  }
+
+  void nextPage() {
+    if (_currentPageIndex < _pages.length - 1) {
+      onPageChanged(_currentPageIndex + 1);
+    } else {
+      nextChapter();
+    }
+  }
+
+  // --- 單章換源 ---
+  void changeChapterSource(int index, BookSource newSource) {
+    _chapterSourceOverrides[index] = newSource;
+    if (_currentChapterIndex == index) {
+      loadChapter(index);
+    }
+  }
+
   Future<void> _loadChapters() async {
     _chapters = await _chapterDao.getChapters(book.bookUrl);
     if (_chapters.isEmpty) {
-      // 如果本地沒目錄，嘗試從網路抓取 (這通常在詳情頁已經做過)
       final source = await _sourceDao.getAll();
       _source = source.cast<BookSource?>().firstWhere(
         (s) => s?.bookSourceUrl == book.origin,
@@ -150,129 +260,79 @@ class ReaderProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // 1. 嘗試從快取讀取
       String? cachedContent = await _chapterDao.getContent(book.bookUrl, index);
-      debugPrint("Reader: Loading chapter $index for ${book.name}, cached: ${cachedContent != null}, len: ${cachedContent?.length ?? 0}");
-      
       String rawContent = "";
-      if (cachedContent != null && cachedContent.isNotEmpty) {
+      
+      // 優先檢查單章換源
+      if (_chapterSourceOverrides.containsKey(index)) {
+        final overrideSource = _chapterSourceOverrides[index]!;
+        rawContent = await _service.getContent(overrideSource, book, _chapters[index]);
+      } else if (cachedContent != null && cachedContent.isNotEmpty) {
         rawContent = cachedContent;
       } else {
-        // 2. 從網路抓取
         if (_source == null) await _loadSource();
-        debugPrint("Reader: Source is ${_source?.bookSourceName}, book origin is ${book.origin}");
-        
         if (_source != null) {
-          rawContent = await _service.getContent(
-            _source!,
-            book,
-            _chapters[index],
-          );
+          rawContent = await _service.getContent(_source!, book, _chapters[index]);
           await _chapterDao.saveContent(book.bookUrl, index, rawContent);
-        } else if (book.origin == "local") {
-          rawContent = "錯誤：本地書籍內容缺失，請嘗試重新匯入。";
-          debugPrint("Reader: Local book content missing in DB for ${book.bookUrl}");
         } else {
-          rawContent = "錯誤：找不到書源";
+          rawContent = book.origin == "local" ? "錯誤：本地書籍內容缺失" : "錯誤：找不到書源";
         }
       }
 
-      // 3. 處理內容 (替換規則 + 繁簡轉換)
       final enabledRules = await _replaceDao.getEnabled();
       _content = ContentProcessor.processContent(
-        book,
-        _chapters[index],
-        rawContent,
-        chineseConvert: _chineseConvert,
-        rules: enabledRules,
+        book, _chapters[index], rawContent,
+        chineseConvert: _chineseConvert, rules: enabledRules,
       );
 
-      // 4. 更新書籍進度
-      await _bookDao.updateProgress(
-        book.bookUrl,
-        index,
-        0, // reset to page 0 on new chapter
-        _chapters[index].title,
-      );
+      await _bookDao.updateProgress(book.bookUrl, index, 0, _chapters[index].title);
     } catch (e) {
       _content = "加載章節失敗: $e";
     } finally {
-      if (_viewSize != null) {
-        _doPaginate();
-      } else {
-        _isLoading = false;
-        notifyListeners();
-      }
-
-      // 非同步預載下一章
+      if (_viewSize != null) _doPaginate(); else { _isLoading = false; notifyListeners(); }
       _preloadNextChapter(index + 1);
     }
   }
 
   Future<void> _preloadNextChapter(int nextIndex) async {
     if (nextIndex >= _chapters.length || _source == null) return;
-
     try {
-      String? cachedContent = await _chapterDao.getContent(
-        book.bookUrl,
-        nextIndex,
-      );
-      if (cachedContent == null || cachedContent.isEmpty) {
-        final rawContent = await _service.getContent(
-          _source!,
-          book,
-          _chapters[nextIndex],
-        );
-        await _chapterDao.saveContent(book.bookUrl, nextIndex, rawContent);
+      String? cached = await _chapterDao.getContent(book.bookUrl, nextIndex);
+      if (cached == null || cached.isEmpty) {
+        final raw = await _service.getContent(_source!, book, _chapters[nextIndex]);
+        await _chapterDao.saveContent(book.bookUrl, nextIndex, raw);
       }
-    } catch (e) {
-      // 忽略預載錯誤
-    }
+    } catch (_) {}
   }
 
   void updateViewSize(Size size) {
-    if (_viewSize != size) {
-      _viewSize = size;
-      _doPaginate();
-    }
+    if (_viewSize != size) { _viewSize = size; _doPaginate(); }
   }
 
   void onPageChanged(int index) {
     _currentPageIndex = index;
+    _autoPageProgress = 0.0;
     notifyListeners();
   }
 
   void _doPaginate() {
-    if (_viewSize == null || _chapters.isEmpty || currentChapter == null) {
-      return;
-    }
-
+    if (_viewSize == null || _chapters.isEmpty || currentChapter == null) return;
     _isLoading = true;
     notifyListeners();
 
-    // Use Future.microtask or compute if it freezes, but text layout with binary search is fast enough normally in Dart
     final titleStyle = TextStyle(
-      fontSize: _fontSize + 4,
-      fontWeight: FontWeight.bold,
-      color: currentTheme.textColor,
-      fontFamily: _fontFamily,
+      fontSize: _fontSize + 4, fontWeight: FontWeight.bold,
+      color: currentTheme.textColor, fontFamily: _fontFamily,
     );
-
     final contentStyle = TextStyle(
-      fontSize: _fontSize,
-      height: _lineHeight,
-      color: currentTheme.textColor,
-      fontFamily: _fontFamily,
+      fontSize: _fontSize, height: _lineHeight,
+      color: currentTheme.textColor, fontFamily: _fontFamily,
     );
 
     _pages = ChapterProvider.paginate(
-      content: _content,
-      chapter: currentChapter!,
-      chapterIndex: _currentChapterIndex,
-      chapterSize: _chapters.length,
-      viewSize: _viewSize!,
-      titleStyle: titleStyle,
-      contentStyle: contentStyle,
+      content: _content, chapter: currentChapter!,
+      chapterIndex: _currentChapterIndex, chapterSize: _chapters.length,
+      viewSize: _viewSize!, titleStyle: titleStyle, contentStyle: contentStyle,
     );
 
     _currentPageIndex = 0;
@@ -300,7 +360,6 @@ class ReaderProvider extends ChangeNotifier {
   void setTheme(int index) {
     _themeIndex = index % AppTheme.readingThemes.length;
     saveSetting('theme_index', _themeIndex);
-    // Don't need to re-layout for theme change, just repaint, but colors are read dynamically so notify is enough.
   }
 
   void setBrightness(double value) {
@@ -316,7 +375,7 @@ class ReaderProvider extends ChangeNotifier {
   void setChineseConvert(bool value) {
     _chineseConvert = value;
     saveSetting('chinese_convert', _chineseConvert);
-    loadChapter(_currentChapterIndex); // Reload to apply conversion
+    loadChapter(_currentChapterIndex);
   }
 
   void setFontFamily(String? family) {
@@ -345,13 +404,10 @@ class ReaderProvider extends ChangeNotifier {
       }
       final newBm = Bookmark(
         time: DateTime.now().millisecondsSinceEpoch,
-        bookName: book.name,
-        bookAuthor: book.author ?? "Unknown",
-        chapterIndex: _currentChapterIndex,
-        chapterPos: _currentPageIndex,
+        bookName: book.name, bookAuthor: book.author ?? "Unknown",
+        chapterIndex: _currentChapterIndex, chapterPos: _currentPageIndex,
         chapterName: currentChapter?.title ?? "Unknown Chapter",
-        bookUrl: book.bookUrl,
-        content: snippet,
+        bookUrl: book.bookUrl, content: snippet,
       );
       await _bookmarkDao.insert(newBm);
     }
@@ -361,53 +417,30 @@ class ReaderProvider extends ChangeNotifier {
   Future<void> nextChapter() => loadChapter(_currentChapterIndex + 1);
   Future<void> prevChapter() => loadChapter(_currentChapterIndex - 1);
 
-  /// 搜尋已快取章節的正文內容
-  Future<List<Map<String, dynamic>>> searchContent(String keyword) async {
-    final List<Map<String, dynamic>> results = [];
-    final db = await AppDatabase.database;
-    
-    // 獲取這本書所有已快取的內容
-    final List<Map<String, dynamic>> maps = await db.query(
-      'chapter_contents',
-      where: 'bookUrl = ?',
-      whereArgs: [book.bookUrl],
-    );
-
-    for (final map in maps) {
-      final String content = map['content'] as String;
-      final int chapterIndex = map['chapterIndex'] as int;
-      
-      if (content.contains(keyword)) {
-        // 提取包含關鍵字的片段 (前後 20 個字)
-        int index = content.indexOf(keyword);
-        int start = (index - 20).clamp(0, content.length);
-        int end = (index + keyword.length + 20).clamp(0, content.length);
-        String snippet = content.substring(start, end).replaceAll('\n', ' ');
-        
-        results.add({
-          'chapterIndex': chapterIndex,
-          'chapterTitle': _chapters[chapterIndex].title,
-          'snippet': '...$snippet...',
-        });
-      }
-    }
-    return results;
-  }
-
   // === TTS Methods ===
-  void toggleTts() {
-    if (tts.isPlaying) {
-      tts.stop();
+  void toggleTts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rate = prefs.getDouble('speech_rate') ?? 0.5;
+    final pitch = prefs.getDouble('speech_pitch') ?? 1.0;
+    final volume = prefs.getDouble('speech_volume') ?? 1.0;
+
+    if (_ttsMode == 0) {
+      if (tts.isPlaying) tts.stop(); else {
+        await tts.setRate(rate); await tts.setPitch(pitch); await tts.setVolume(volume);
+        if (_pages.isNotEmpty && _currentPageIndex < _pages.length) {
+          final currentText = _pages.skip(_currentPageIndex).map((p) => p.lines.map((l) => l.text).join()).join('\n');
+          tts.speak(currentText.isNotEmpty ? currentText : _content);
+        } else tts.speak(_content);
+      }
     } else {
-      // Read from current page text
-      if (_pages.isNotEmpty && _currentPageIndex < _pages.length) {
-        final currentText = _pages
-            .skip(_currentPageIndex)
-            .map((p) => p.lines.map((l) => l.text).join())
-            .join('\n');
-        tts.speak(currentText.isNotEmpty ? currentText : _content);
-      } else {
-        tts.speak(_content);
+      if (httpTts.isPlaying) httpTts.stop(); else {
+        if (_selectedHttpTtsId == null && _httpTtsEngines.isNotEmpty) _selectedHttpTtsId = _httpTtsEngines.first.id;
+        final config = _httpTtsEngines.cast<HttpTTS?>().firstWhere((e) => e?.id == _selectedHttpTtsId, orElse: () => null);
+        if (config != null) {
+          final List<String> paragraphs = _content.split('\n').where((s) => s.trim().isNotEmpty).toList();
+          int speedInt = (rate * 10).toInt(); 
+          await httpTts.speakList(config, paragraphs, speed: speedInt);
+        }
       }
     }
   }
@@ -415,6 +448,8 @@ class ReaderProvider extends ChangeNotifier {
   @override
   void dispose() {
     tts.stop();
+    httpTts.stop();
+    _autoPageTimer?.cancel();
     super.dispose();
   }
 }

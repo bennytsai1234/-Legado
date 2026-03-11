@@ -19,7 +19,11 @@ import 'package:fast_gbk/fast_gbk.dart';
 
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
+import 'package:archive/archive.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import '../../services/backstage_webview.dart';
+import '../../services/source_verification_service.dart';
 import 'query_ttf.dart';
 
 /// JsExtensions - JS 橋接擴展
@@ -286,11 +290,143 @@ class JsExtensions {
       }
     });
 
+    // 實作 java.startBrowserAwait (高度還原 Android)
+    runtime.onMessage('startBrowserAwait', (dynamic args) async {
+      try {
+        final url = args[0].toString();
+        final title = args.length > 1 ? args[1].toString() : "驗證";
+        
+        final result = await SourceVerificationService().getVerificationResult(
+          sourceKey: source?.getKey() ?? "unknown",
+          url: url,
+          title: title,
+          useBrowser: true,
+        );
+        
+        return {'body': result, 'url': url, 'code': 200};
+      } catch (e) {
+        return {'body': e.toString(), 'url': args[0].toString(), 'code': 500};
+      }
+    });
+
+    // 實作 java.getVerificationCode
+    runtime.onMessage('getVerificationCode', (dynamic args) async {
+      try {
+        final imageUrl = args.toString();
+        return await SourceVerificationService().getVerificationResult(
+          sourceKey: source?.getKey() ?? "unknown",
+          url: imageUrl,
+          title: "請輸入驗證碼",
+          useBrowser: false,
+        );
+      } catch (e) {
+        return "";
+      }
+    });
+
+    // 實作 java.unArchiveFile (高度還原 Android)
+    runtime.onMessage('unArchiveFile', (dynamic args) async {
+      try {
+        final relPath = args.toString();
+        final file = File(p.join((await getApplicationDocumentsDirectory()).path, relPath));
+        if (!await file.exists()) return "";
+
+        final bytes = await file.readAsBytes();
+        final archive = ZipDecoder().decodeBytes(bytes);
+        
+        final tempDir = await getTemporaryDirectory();
+        final outPath = p.join(tempDir.path, "ArchiveTemp", md5.convert(utf8.encode(file.path)).toString().substring(0, 16));
+        
+        for (final entry in archive) {
+          if (entry.isFile) {
+            final data = entry.content as List<int>;
+            File(p.join(outPath, entry.name))
+              ..createSync(recursive: true)
+              ..writeAsBytesSync(data);
+          }
+        }
+        return p.relative(outPath, from: tempDir.path);
+      } catch (_) {
+        return "";
+      }
+    });
+
+    // 實作 java.getZipByteArrayContent
+    runtime.onMessage('getZipByteArrayContent', (dynamic args) async {
+      try {
+        final url = args[0].toString();
+        final innerPath = args[1].toString();
+        
+        Uint8List? bytes;
+        if (url.startsWith('http')) {
+          final analyzeUrl = AnalyzeUrl(url, source: source);
+          bytes = await analyzeUrl.getByteArray();
+        } else {
+          bytes = Uint8List.fromList(hex.decode(url));
+        }
+        
+        if (bytes == null) return null;
+        final archive = ZipDecoder().decodeBytes(bytes);
+        final file = archive.findFile(innerPath);
+        return file?.content as List<int>?;
+      } catch (_) {
+        return null;
+      }
+    });
+
+    // 實作 java.getTxtInFolder
+    runtime.onMessage('getTxtInFolder', (dynamic args) async {
+      try {
+        final relPath = args.toString();
+        final tempDir = await getTemporaryDirectory();
+        final folder = Directory(p.join(tempDir.path, relPath));
+        if (!await folder.exists()) return "";
+
+        final buffer = StringBuffer();
+        final files = folder.listSync().whereType<File>().toList();
+        for (var f in files) {
+          final content = await f.readAsString();
+          buffer.writeln(content);
+        }
+        return buffer.toString();
+      } catch (_) {
+        return "";
+      }
+    });
+
     runtime.onMessage('t2s', (dynamic args) => ChineseUtils.t2s(args.toString()));
     runtime.onMessage('s2t', (dynamic args) => ChineseUtils.s2t(args.toString()));
 
+    // 實作 java.toNumChapter (高度還原 Android)
     runtime.onMessage('_toNumChapter', (dynamic args) {
-      return _toNumChapter(args.toString());
+      final s = args.toString();
+      final regex = RegExp(r'(.*?)([〇零一二三四五六七八九十百千萬億壹貳叁肆伍陸柒捌玖拾佰仟]+)(.*)');
+      final match = regex.firstMatch(s);
+      if (match != null) {
+        final intStr = _chineseNumToInt(match.group(2)!);
+        return "${match.group(1)}$intStr${match.group(3)}";
+      }
+      return s;
+    });
+
+    // 實作 java.timeFormatUTC
+    runtime.onMessage('timeFormatUTC', (dynamic args) {
+      try {
+        final time = args[0] as int;
+        final format = args[1].toString();
+        final offsetMs = args[2] as int;
+        final date = DateTime.fromMillisecondsSinceEpoch(time, isUtc: true).add(Duration(milliseconds: offsetMs));
+        return DateFormat(format).format(date);
+      } catch (_) { return ""; }
+    });
+
+    // 實作 java.openUrl
+    runtime.onMessage('openUrl', (dynamic args) async {
+      try {
+        final url = args is List ? args[0].toString() : args.toString();
+        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+        return true;
+      } catch (_) { return false; }
     });
 
     runtime.onMessage('queryTTF', (dynamic args) async {
@@ -326,12 +462,20 @@ class JsExtensions {
       return null;
     });
 
+    static final Map<String, String> _fontReplaceCache = {};
+
     runtime.onMessage('replaceFont', (dynamic args) {
       try {
         final text = args[0]?.toString() ?? "";
         final errorKey = args[1]?.toString();
         final correctKey = args[2]?.toString();
         
+        // 增加緩存 key，包含文本與字體 ID
+        final cacheKey = "${errorKey}_${correctKey}_${text.hashCode}";
+        if (_fontReplaceCache.containsKey(cacheKey)) {
+          return _fontReplaceCache[cacheKey];
+        }
+
         final errorTTF = errorKey != null ? _ttfCache[errorKey] : null;
         final correctTTF = correctKey != null ? _ttfCache[correctKey] : null;
 
@@ -358,9 +502,14 @@ class JsExtensions {
             result.writeCharCode(codePoint);
           }
         }
-        return result.toString();
+        
+        final finalResult = result.toString();
+        if (_fontReplaceCache.length > 500) _fontReplaceCache.clear();
+        _fontReplaceCache[cacheKey] = finalResult;
+        
+        return finalResult;
       } catch (e) {
-        debugPrint('replaceFont error: \$e');
+        debugPrint('replaceFont error: $e');
         return args[0]?.toString() ?? "";
       }
     });
@@ -436,6 +585,21 @@ class JsExtensions {
           var cId = correctTTF ? correctTTF._ttfId : null;
           return sendMessage('replaceFont', JSON.stringify([text, eId, cId]));
         },
+        startBrowserAwait: function(url, title) {
+          return sendMessage('startBrowserAwait', JSON.stringify([url, title]));
+        },
+        getVerificationCode: function(imageUrl) {
+          return sendMessage('getVerificationCode', JSON.stringify(imageUrl));
+        },
+        unArchiveFile: function(zipPath) {
+          return sendMessage('unArchiveFile', JSON.stringify(zipPath));
+        },
+        getZipByteArrayContent: function(url, path) {
+          return sendMessage('getZipByteArrayContent', JSON.stringify([url, path]));
+        },
+        getTxtInFolder: function(path) {
+          return sendMessage('getTxtInFolder', JSON.stringify(path));
+        },
         webView: function(html, url, js) {
           return sendMessage('webView', JSON.stringify([html, url, js]));
         }
@@ -510,6 +674,54 @@ class JsExtensions {
       return content;
     } catch (e) {
       return "";
+    }
+  }
+
+  /// 中文數字轉整數 (深度還原 Android chineseNumToInt)
+  int _chineseNumToInt(String chNum) {
+    final chnMap = {
+      '零': 0, '〇': 0, '一': 1, '二': 2, '两': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10,
+      '壹': 1, '貳': 2, '叁': 3, '肆': 4, '伍': 5, '陸': 6, '柒': 7, '捌': 8, '玖': 9, '拾': 10,
+      '百': 100, '佰': 100, '千': 1000, '仟': 1000, '萬': 10000, '億': 100000000,
+    };
+
+    if (chNum.length > 1 && RegExp(r'^[〇零一二三四五六七八九壹貳叁肆伍陸柒捌玖]+$').hasMatch(chNum)) {
+      String res = "";
+      for (var i = 0; i < chNum.length; i++) {
+        res += (chnMap[chNum[i]] ?? 0).toString();
+      }
+      return int.tryParse(res) ?? -1;
+    }
+
+    int result = 0;
+    int tmp = 0;
+    int billion = 0;
+
+    try {
+      for (var i = 0; i < chNum.length; i++) {
+        final val = chnMap[chNum[i]] ?? 0;
+        if (val == 100000000) {
+          result += tmp;
+          result *= val;
+          billion = billion * 100000000 + result;
+          result = 0; tmp = 0;
+        } else if (val == 10000) {
+          result += tmp;
+          result *= val;
+          tmp = 0;
+        } else if (val >= 10) {
+          if (tmp == 0) tmp = 1;
+          result += val * tmp;
+          tmp = 0;
+        } else {
+          tmp = (i >= 2 && i == chNum.length - 1 && (chnMap[chNum[i - 1]] ?? 0) > 10)
+              ? val * (chnMap[chNum[i - 1]] ?? 0) ~/ 10
+              : tmp * 10 + val;
+        }
+      }
+      return result + tmp + billion;
+    } catch (_) {
+      return -1;
     }
   }
 

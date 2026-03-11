@@ -18,7 +18,8 @@ class BookmarkDao {
         chapterPos INTEGER NOT NULL,
         chapterName TEXT NOT NULL,
         bookUrl TEXT NOT NULL,
-        content TEXT NOT NULL,
+        bookText TEXT,
+        content TEXT,
         time INTEGER NOT NULL
       )
     ''';

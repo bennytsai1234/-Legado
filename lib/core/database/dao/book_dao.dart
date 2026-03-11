@@ -1,37 +1,46 @@
+import 'dart:async';
 import 'package:sqflite/sqflite.dart';
 import '../../models/book.dart';
 import '../app_database.dart';
 
 /// BookDao - 書籍資料存取對象
+/// 對應 Android: data/dao/BookDao.kt
 class BookDao {
   static const String tableName = 'books';
+  static final StreamController<void> _changeController = StreamController<void>.broadcast();
 
   Future<Database> get _db async => await AppDatabase.database;
 
-  /// 插入或更新書籍
-  Future<void> insertOrUpdate(Book book) async {
-    final db = await _db;
-    final map = book.toJson();
-    _serialize(map);
-
-    await db.insert(
-      tableName,
-      map,
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+  void _notify() {
+    _changeController.add(null);
   }
 
-  /// 獲取書架上的書籍，支援分組與排序
-  Future<List<Book>> getBookshelf({int groupId = -1, String orderBy = '"order" ASC, latestChapterTime DESC'}) async {
+  /// 監聽數據變化 (高度還原 Android Room Flow)
+  Stream<List<Book>> watchBookshelf({int groupId = -1}) {
+    return _changeController.stream.asyncMap((_) => getBookshelf(groupId: groupId));
+  }
+
+  /// 獲取書架上的書籍，支援分組與過濾 (高度還原 Android flowByGroup)
+  Future<List<Book>> getBookshelf({int groupId = -1, String orderBy = 'durChapterTime DESC'}) async {
     final db = await _db;
     
-    String whereClause = 'isInBookshelf = ?';
-    List<dynamic> whereArgs = [1];
+    // 預設排除不在書架上的書籍 (type & notShelf == 0)
+    String whereClause = '(type & ?) = 0';
+    List<dynamic> whereArgs = [BookType.notShelf];
 
     if (groupId > 0) {
-      // 在 SQLite 中進行位元運算，group 雖然是 TEXT，但可自動或手動 CAST 為 INTEGER 處理
-      whereClause += ' AND (CAST(ifnull("group", "0") AS INTEGER) & ?) > 0';
+      // 具體分組過濾
+      whereClause += ' AND ("group" & ?) > 0';
       whereArgs.add(groupId);
+    } else if (groupId == -2) { // 模擬 flowAudio
+      whereClause += ' AND (type & ?) > 0';
+      whereArgs.add(BookType.audio);
+    } else if (groupId == -3) { // 模擬 flowLocal
+      whereClause += ' AND (type & ?) > 0';
+      whereArgs.add(BookType.local);
+    } else if (groupId == -4) { // 模擬 flowUpdateError
+      whereClause += ' AND (type & ?) > 0';
+      whereArgs.add(BookType.updateError);
     }
 
     final List<Map<String, dynamic>> maps = await db.query(
@@ -42,10 +51,19 @@ class BookDao {
     );
 
     return List.generate(maps.length, (i) {
-      final map = Map<String, dynamic>.from(maps[i]);
-      _deserialize(map);
-      return Book.fromJson(map);
+      return Book.fromJson(maps[i]);
     });
+  }
+
+  /// 插入或更新書籍
+  Future<void> insertOrUpdate(Book book) async {
+    final db = await _db;
+    await db.insert(
+      tableName,
+      book.toJson(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    _notify();
   }
 
   /// 獲取所有書籍 (備份用)
@@ -53,9 +71,7 @@ class BookDao {
     final db = await _db;
     final List<Map<String, dynamic>> maps = await db.query(tableName);
     return List.generate(maps.length, (i) {
-      final map = Map<String, dynamic>.from(maps[i]);
-      _deserialize(map);
-      return Book.fromJson(map);
+      return Book.fromJson(maps[i]);
     });
   }
 
@@ -69,12 +85,10 @@ class BookDao {
     );
 
     if (maps.isEmpty) return null;
-    final map = Map<String, dynamic>.from(maps.first);
-    _deserialize(map);
-    return Book.fromJson(map);
+    return Book.fromJson(maps.first);
   }
 
-  /// 更新閱讀進度
+  /// 更新閱讀進度 (高度還原 Android upProgress)
   Future<void> updateProgress(
     String bookUrl,
     int index,
@@ -88,37 +102,47 @@ class BookDao {
         'durChapterIndex': index,
         'durChapterPos': pos,
         'durChapterTitle': title,
-        'durChapterTime': DateTime.now().millisecondsSinceEpoch.toString(),
+        'durChapterTime': DateTime.now().millisecondsSinceEpoch,
       },
       where: 'bookUrl = ?',
       whereArgs: [bookUrl],
     );
+    _notify();
   }
 
-  /// 更新書架狀態
-  Future<void> updateInBookshelf(String bookUrl, bool isInBookshelf) async {
+  /// 更新分組 (高度還原 Android upGroup)
+  Future<void> updateGroup(int oldGroupId, int newGroupId) async {
     final db = await _db;
     await db.update(
       tableName,
-      {'isInBookshelf': isInBookshelf ? 1 : 0},
-      where: 'bookUrl = ?',
-      whereArgs: [bookUrl],
+      {'group': newGroupId},
+      where: '"group" = ?',
+      whereArgs: [oldGroupId],
     );
+    _notify();
+  }
+
+  /// 移除特定分組位元 (高度還原 Android removeGroup)
+  Future<void> removeGroupBit(int groupId) async {
+    final db = await _db;
+    await db.rawUpdate(
+      'UPDATE $tableName SET "group" = "group" - ? WHERE ("group" & ?) > 0',
+      [groupId, groupId],
+    );
+    _notify();
+  }
+
+  /// 刪除不在書架上的書籍 (高度還原 Android deleteNotShelfBook)
+  Future<void> deleteNotShelfBook() async {
+    final db = await _db;
+    await db.delete(tableName, where: '(type & ?) > 0', whereArgs: [BookType.notShelf]);
+    _notify();
   }
 
   /// 刪除書籍
   Future<void> delete(String bookUrl) async {
     final db = await _db;
     await db.delete(tableName, where: 'bookUrl = ?', whereArgs: [bookUrl]);
-  }
-
-  void _serialize(Map<String, dynamic> map) {
-    map['canUpdate'] = (map['canUpdate'] == true) ? 1 : 0;
-    map['isInBookshelf'] = (map['isInBookshelf'] == true) ? 1 : 0;
-  }
-
-  void _deserialize(Map<String, dynamic> map) {
-    map['canUpdate'] = map['canUpdate'] == 1;
-    map['isInBookshelf'] = map['isInBookshelf'] == 1;
+    _notify();
   }
 }

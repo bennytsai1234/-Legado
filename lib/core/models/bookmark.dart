@@ -1,4 +1,4 @@
-/// Bookmark - 書籤模型
+/// Bookmark - 書籤與筆記模型
 /// 對應 Android: data/entities/Bookmark.kt
 class Bookmark {
   int? id;
@@ -9,7 +9,8 @@ class Bookmark {
   int chapterPos;
   String chapterName;
   String bookUrl;
-  String content;
+  String bookText; // 選取的原文內容 (筆記主體)
+  String content; // 使用者的評論內容
 
   Bookmark({
     this.id,
@@ -20,6 +21,7 @@ class Bookmark {
     this.chapterPos = 0,
     this.chapterName = "",
     this.bookUrl = "",
+    this.bookText = "",
     this.content = "",
   });
 
@@ -33,6 +35,7 @@ class Bookmark {
       'chapterPos': chapterPos,
       'chapterName': chapterName,
       'bookUrl': bookUrl,
+      'bookText': bookText,
       'content': content,
     };
   }
@@ -47,6 +50,7 @@ class Bookmark {
       chapterPos: json['chapterPos'] ?? 0,
       chapterName: json['chapterName'] ?? "",
       bookUrl: json['bookUrl'] ?? "",
+      bookText: json['bookText'] ?? "",
       content: json['content'] ?? "",
     );
   }
