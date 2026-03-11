@@ -11,8 +11,9 @@ class TxtTocRuleDao {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         rule TEXT NOT NULL,
-        customOrder INTEGER DEFAULT 0,
-        enabled INTEGER DEFAULT 1
+        example TEXT,
+        serialNumber INTEGER DEFAULT -1,
+        enable INTEGER DEFAULT 1
       )
     ''';
   }
@@ -32,8 +33,8 @@ class TxtTocRuleDao {
     final db = await _db;
     final maps = await db.query(
       tableName,
-      where: 'enabled = 1',
-      orderBy: 'customOrder ASC',
+      where: 'enable = 1',
+      orderBy: 'serialNumber ASC',
     );
     return maps.map((m) => TxtTocRule.fromJson(m)).toList();
   }

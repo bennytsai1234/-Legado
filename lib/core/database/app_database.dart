@@ -22,7 +22,7 @@ import 'dao/keyboard_assist_dao.dart';
 
 class AppDatabase {
   static const String _dbName = 'legado_reader.db';
-  static const int _dbVersion = 1;
+  static const int _dbVersion = 2;
   static Database? _database;
 
   static Future<Database> get database async {
@@ -184,6 +184,9 @@ class AppDatabase {
     for (int i = oldVersion + 1; i <= newVersion; i++) {
       switch (i) {
         case 2:
+          // Recreate txt_toc_rules table to fix missing columns (example, serialNumber, enable)
+          await db.execute('DROP TABLE IF EXISTS txt_toc_rules');
+          await db.execute(TxtTocRuleDao.createTableQuery());
           break;
       }
     }

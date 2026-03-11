@@ -24,7 +24,7 @@ class TxtTocRule {
       'rule': rule,
       'example': example,
       'serialNumber': serialNumber,
-      'enable': enable,
+      'enable': enable ? 1 : 0,
     };
   }
 
@@ -35,7 +35,7 @@ class TxtTocRule {
       rule: json['rule'] ?? "",
       example: json['example'],
       serialNumber: json['serialNumber'] ?? -1,
-      enable: json['enable'] ?? true,
+      enable: json['enable'] == 1 || json['enable'] == true, // Handle both int and bool cases
     );
   }
 }
