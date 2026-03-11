@@ -5,11 +5,9 @@ import 'package:flutter/services.dart';
 import '../../core/database/dao/book_source_dao.dart';
 import '../../core/models/book_source.dart';
 import '../../core/services/check_source_service.dart';
-import '../../core/services/book_source_service.dart';
 
 class SourceManagerProvider extends ChangeNotifier {
   final BookSourceDao _dao = BookSourceDao();
-  final BookSourceService _service = BookSourceService();
   final CheckSourceService _checkService = CheckSourceService();
   
   List<BookSource> _sources = [];

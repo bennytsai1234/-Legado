@@ -5,6 +5,7 @@ import 'book_detail_provider.dart';
 import '../../core/models/search_book.dart';
 import '../reader/reader_page.dart';
 import '../cache_manager/cache_manager_page.dart';
+import '../../core/services/export_book_service.dart';
 
 class BookDetailPage extends StatelessWidget {
   final SearchBook searchBook;
@@ -47,6 +48,19 @@ class BookDetailPage extends StatelessWidget {
                   ),
                   color: provider.isInBookshelf ? Colors.red : null,
                   onPressed: provider.toggleBookshelf,
+                ),
+                PopupMenuButton<String>(
+                  onSelected: (val) {
+                    if (val == 'export') {
+                      ExportBookService().exportToTxt(book);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'export',
+                      child: Text('匯出全書 (TXT)'),
+                    ),
+                  ],
                 ),
               ],
             ),

@@ -158,9 +158,9 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
     if (checkResult != null) {
       statusStr = checkResult.summary;
       statusColor = checkResult.result == CheckResult.success ? Colors.green : Colors.red;
-    } else if (source.respondTime != null && source.respondTime! > 0) {
+    } else if (source.respondTime > 0) {
       statusStr = "${source.respondTime}ms";
-      statusColor = source.respondTime! < 1000 ? Colors.green : Colors.orange;
+      statusColor = source.respondTime < 1000 ? Colors.green : Colors.orange;
     } else if (source.respondTime == -1) {
       statusStr = "失效";
       statusColor = Colors.red;
@@ -254,10 +254,10 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           TextButton.icon(
-            icon: const Icon(Icons.fact_check),
+            icon: const Icon(Icons.playlist_add_check),
             label: const Text('校驗'),
             onPressed: provider.selectedUrls.isEmpty ? null : () async {
-              await provider.validateSelected();
+              await provider.checkVisibleSources();
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('校驗完成')));
               }
