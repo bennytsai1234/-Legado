@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'settings_provider.dart';
 import '../replace_rule/replace_rule_page.dart';
@@ -10,6 +9,7 @@ import 'theme_settings_page.dart';
 import 'other_settings_page.dart';
 import 'aloud_settings_page.dart';
 import 'reading_settings_page.dart';
+import 'backup_settings_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -82,7 +82,12 @@ class SettingsPage extends StatelessWidget {
                 title: const Text('備份與恢復'),
                 subtitle: const Text('WebDAV 同步及本地資料庫還原'),
                 leading: const Icon(Icons.backup_outlined),
-                onTap: () => _showWebDavConfig(context, settings),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const BackupSettingsPage()),
+                  );
+                },
               ),
               // 8. 主題設定
               ListTile(
@@ -229,96 +234,6 @@ class SettingsPage extends StatelessWidget {
         Navigator.pop(context);
       },
     );
-  }
-
-  void _showWebDavConfig(BuildContext context, SettingsProvider settings) {
-    final urlController = TextEditingController(text: settings.webdavUrl);
-    final userController = TextEditingController(text: settings.webdavUser);
-    final passController = TextEditingController(text: settings.webdavPassword);
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('備份與恢復 (WebDAV)'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: urlController, decoration: const InputDecoration(labelText: '伺服器位址')),
-              TextField(controller: userController, decoration: const InputDecoration(labelText: '帳號')),
-              TextField(controller: passController, decoration: const InputDecoration(labelText: '密碼'), obscureText: true),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => _restoreDatabase(context, settings),
-                child: const Text('從本地資料庫檔還原'),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton(
-                onPressed: () async {
-                  final dbPath = await settings.backupDatabase();
-                  if (!context.mounted) return;
-                  if (dbPath != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('備份成功: \$dbPath')));
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('備份失敗')));
-                  }
-                },
-                child: const Text('導出本地資料庫備份'),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton(
-                onPressed: () async {
-                   final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('確認清除'),
-                      content: const Text('這將刪除所有書籍的本地快取內容，確定嗎？'),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
-                        TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('清除')),
-                      ],
-                    ),
-                  );
-                  if (confirmed == true) {
-                    await settings.clearCache();
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('快取已清除')));
-                  }
-                },
-                child: const Text('手動清除閱讀快取'),
-              )
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
-          ElevatedButton(
-            onPressed: () async {
-              await settings.updateWebDav(
-                url: urlController.text,
-                user: userController.text,
-                password: passController.text,
-              );
-              if (!context.mounted) return;
-              Navigator.pop(context);
-            },
-            child: const Text('儲存 WebDAV'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _restoreDatabase(BuildContext context, SettingsProvider settings) async {
-    final result = await FilePicker.platform.pickFiles();
-    if (result != null && result.files.single.path != null) {
-      final success = await settings.restoreDatabase(result.files.single.path!);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(success ? '還原成功，請重啟 App' : '還原失敗')),
-        );
-      }
-    }
   }
 
   void _showAboutDialog(BuildContext context) {

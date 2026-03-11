@@ -219,6 +219,17 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setShowReadTitleAddition(bool v) async { showReadTitleAddition = v; notifyListeners(); }
   Future<void> setReadBarStyleFollowPage(bool v) async { readBarStyleFollowPage = v; notifyListeners(); }
 
+  // Backup & WebDAV Settings Properties
+  bool syncBookProgress = true;
+  bool syncBookProgressPlus = false;
+  bool onlyLatestBackup = true;
+  bool autoCheckNewBackup = true;
+
+  Future<void> setSyncBookProgress(bool v) async { syncBookProgress = v; notifyListeners(); }
+  Future<void> setSyncBookProgressPlus(bool v) async { syncBookProgressPlus = v; notifyListeners(); }
+  Future<void> setOnlyLatestBackup(bool v) async { onlyLatestBackup = v; notifyListeners(); }
+  Future<void> setAutoCheckNewBackup(bool v) async { autoCheckNewBackup = v; notifyListeners(); }
+
   /// 資料庫備份
   Future<String?> backupDatabase() async {
     try {
