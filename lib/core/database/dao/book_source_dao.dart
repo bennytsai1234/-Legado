@@ -98,6 +98,22 @@ class BookSourceDao {
     );
   }
 
+  /// 調整所有書源的排序序號，確保連續性 (對應 Android SourceHelp.adjustSortNumber)
+  Future<void> adjustSortNumbers() async {
+    final sources = await getAll();
+    final db = await _db;
+    await db.transaction((txn) async {
+      for (int i = 0; i < sources.length; i++) {
+        await txn.update(
+          tableName,
+          {'customOrder': i},
+          where: 'bookSourceUrl = ?',
+          whereArgs: [sources[i].bookSourceUrl],
+        );
+      }
+    });
+  }
+
   /// 刪除書源
   Future<void> delete(String url) async {
     final db = await _db;

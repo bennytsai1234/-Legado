@@ -13,10 +13,24 @@ import 'features/settings/settings_provider.dart';
 import 'features/rss/rss_source_page.dart';
 import 'features/rss/rss_source_provider.dart';
 import 'core/services/default_data.dart';
+import 'core/services/tts_service.dart';
+import 'package:flutter/foundation.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 全域錯誤捕獲 (對應 Android CrashHandler)
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint("Flutter Error: ${details.exception}");
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint("Platform Error: $error");
+    return true;
+  };
+
   await DefaultData.init();
+  
   runApp(
     MultiProvider(
       providers: [
@@ -59,7 +73,7 @@ class MainPage extends StatefulWidget {
   State<MainPage> createState() => _MainPageState();
 }
 
-class _MainPageState extends State<MainPage> {
+class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   int _currentIndex = 0;
 
   final List<Widget> _pages = const [
@@ -69,6 +83,26 @@ class _MainPageState extends State<MainPage> {
     RssSourcePage(),
     SettingsPage(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      // App 進入背景或退出，停止 TTS (對應 Android LifecycleHelp)
+      TTSService().stop();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

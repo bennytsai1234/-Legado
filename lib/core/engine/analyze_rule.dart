@@ -359,13 +359,27 @@ class AnalyzeRule {
   }
 
   dynamic evalJS(String jsStr, dynamic result) {
-    _jsEngine ??= JsEngine();
+    _jsEngine ??= JsEngine(source: source);
+
+    dynamic sourceMap;
+    try {
+      sourceMap = source?.toJson();
+    } catch (_) {
+      sourceMap = source;
+    }
+
+    dynamic chapterMap;
+    try {
+      chapterMap = _chapter?.toJson();
+    } catch (_) {
+      chapterMap = _chapter;
+    }
 
     final context = {
       'result': result,
       'baseUrl': _baseUrl,
-      'java': this,
-      'chapter': _chapter,
+      'source': sourceMap,
+      'chapter': chapterMap,
       'nextChapterUrl': _nextChapterUrl,
     };
 

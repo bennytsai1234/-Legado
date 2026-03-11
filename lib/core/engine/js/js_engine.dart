@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_js/flutter_js.dart';
+import 'package:flutter/foundation.dart';
+import 'js_extensions.dart' hide debugPrint;
 
 /// JsEngine - JavaScript 執行引擎
 /// 對應 Android: Rhino JS Engine (modules/rhino)
@@ -8,13 +10,17 @@ import 'package:flutter_js/flutter_js.dart';
 class JsEngine {
   JavascriptRuntime? _runtime;
   bool _isAvailable = false;
+  JsExtensions? _extensions;
 
-  JsEngine() {
+  JsEngine({dynamic source}) {
     try {
       _runtime = getJavascriptRuntime();
       _isAvailable = true;
+      _extensions = JsExtensions(_runtime!, source: source);
+      _extensions!.inject();
     } catch (e) {
       // Library not available in some test environments
+      debugPrint("JS Engine init error: $e");
       _isAvailable = false;
     }
   }
@@ -32,9 +38,18 @@ class JsEngine {
     final runtime = _runtime!;
     if (context != null) {
       context.forEach((key, value) {
-        // Use evaluate to set variables
-        final valJson = jsonEncode(value);
-        runtime.evaluate('var $key = $valJson;');
+        if (value != null) {
+          try {
+            final valJson = jsonEncode(value);
+            runtime.evaluate('var $key = $valJson;');
+          } catch (e) {
+            // If it can't be encoded, skip or inject as string
+            final safeStr = value.toString().replaceAll("'", "\\'").replaceAll('\n', '\\n');
+            runtime.evaluate("var $key = '$safeStr';");
+          }
+        } else {
+          runtime.evaluate('var $key = null;');
+        }
       });
     }
 
