@@ -6,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'settings_provider.dart';
 import '../replace_rule/replace_rule_page.dart';
 import '../source_manager/source_manager_page.dart';
+import 'theme_settings_page.dart';
+import 'other_settings_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -85,14 +87,24 @@ class SettingsPage extends StatelessWidget {
                 title: const Text('主題設定'),
                 subtitle: const Text('自訂背景顏色、文字顏色與 UI 風格'),
                 leading: const Icon(Icons.color_lens_outlined),
-                onTap: () => _showComingSoon(context),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ThemeSettingsPage()),
+                  );
+                },
               ),
               // 9. 其他設定
               ListTile(
                 title: const Text('其他設定'),
                 subtitle: const Text('快取、網路逾時、預設字體與進階選項'),
                 leading: const Icon(Icons.settings_suggest_outlined),
-                onTap: () => _showComingSoon(context),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const OtherSettingsPage()),
+                  );
+                },
               ),
 
               _buildSectionTitle('其他'),

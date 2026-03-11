@@ -74,6 +74,89 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Theme Config Properties
+  bool _transparentStatusBar = true;
+  bool _immNavigationBar = true;
+  Color _dayPrimaryColor = Colors.brown;
+  Color _dayAccentColor = Colors.red;
+  Color _dayBackgroundColor = Colors.grey.shade100;
+  Color _dayBottomBackgroundColor = Colors.grey.shade200;
+  Color _nightPrimaryColor = Colors.blueGrey.shade600;
+  Color _nightAccentColor = Colors.deepOrange.shade800;
+  Color _nightBackgroundColor = Colors.grey.shade900;
+  Color _nightBottomBackgroundColor = Colors.grey.shade800;
+
+  bool get transparentStatusBar => _transparentStatusBar;
+  bool get immNavigationBar => _immNavigationBar;
+  Color get dayPrimaryColor => _dayPrimaryColor;
+  Color get dayAccentColor => _dayAccentColor;
+  Color get dayBackgroundColor => _dayBackgroundColor;
+  Color get dayBottomBackgroundColor => _dayBottomBackgroundColor;
+  Color get nightPrimaryColor => _nightPrimaryColor;
+  Color get nightAccentColor => _nightAccentColor;
+  Color get nightBackgroundColor => _nightBackgroundColor;
+  Color get nightBottomBackgroundColor => _nightBottomBackgroundColor;
+
+  Future<void> setTransparentStatusBar(bool value) async {
+    _transparentStatusBar = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('transparent_status_bar', value);
+    notifyListeners();
+  }
+
+  Future<void> setImmNavigationBar(bool value) async {
+    _immNavigationBar = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('imm_navigation_bar', value);
+    notifyListeners();
+  }
+
+  Future<void> setDayPrimaryColor(Color color) async { _dayPrimaryColor = color; notifyListeners(); }
+  Future<void> setDayAccentColor(Color color) async { _dayAccentColor = color; notifyListeners(); }
+  Future<void> setDayBackgroundColor(Color color) async { _dayBackgroundColor = color; notifyListeners(); }
+  Future<void> setDayBottomBackgroundColor(Color color) async { _dayBottomBackgroundColor = color; notifyListeners(); }
+  Future<void> setNightPrimaryColor(Color color) async { _nightPrimaryColor = color; notifyListeners(); }
+  Future<void> setNightAccentColor(Color color) async { _nightAccentColor = color; notifyListeners(); }
+  Future<void> setNightBackgroundColor(Color color) async { _nightBackgroundColor = color; notifyListeners(); }
+  Future<void> setNightBottomBackgroundColor(Color color) async { _nightBottomBackgroundColor = color; notifyListeners(); }
+
+  // Other Settings Properties
+  bool autoRefresh = false;
+  bool defaultToRead = false;
+  bool showDiscovery = true;
+  bool showRss = true;
+  bool webServiceWakeLock = false;
+  bool enableCronet = false;
+  bool antiAlias = false;
+  bool replaceEnableDefault = true;
+  bool mediaButtonOnExit = true;
+  bool readAloudByMediaButton = false;
+  bool ignoreAudioFocus = false;
+  bool autoClearExpired = true;
+  bool showAddToShelfAlert = true;
+  bool showMangaUi = true;
+  bool processText = true;
+  bool recordLog = false;
+  bool recordHeapDump = false;
+
+  Future<void> setAutoRefresh(bool v) async { autoRefresh = v; notifyListeners(); }
+  Future<void> setDefaultToRead(bool v) async { defaultToRead = v; notifyListeners(); }
+  Future<void> setShowDiscovery(bool v) async { showDiscovery = v; notifyListeners(); }
+  Future<void> setShowRss(bool v) async { showRss = v; notifyListeners(); }
+  Future<void> setWebServiceWakeLock(bool v) async { webServiceWakeLock = v; notifyListeners(); }
+  Future<void> setEnableCronet(bool v) async { enableCronet = v; notifyListeners(); }
+  Future<void> setAntiAlias(bool v) async { antiAlias = v; notifyListeners(); }
+  Future<void> setReplaceEnableDefault(bool v) async { replaceEnableDefault = v; notifyListeners(); }
+  Future<void> setMediaButtonOnExit(bool v) async { mediaButtonOnExit = v; notifyListeners(); }
+  Future<void> setReadAloudByMediaButton(bool v) async { readAloudByMediaButton = v; notifyListeners(); }
+  Future<void> setIgnoreAudioFocus(bool v) async { ignoreAudioFocus = v; notifyListeners(); }
+  Future<void> setAutoClearExpired(bool v) async { autoClearExpired = v; notifyListeners(); }
+  Future<void> setShowAddToShelfAlert(bool v) async { showAddToShelfAlert = v; notifyListeners(); }
+  Future<void> setShowMangaUi(bool v) async { showMangaUi = v; notifyListeners(); }
+  Future<void> setProcessText(bool v) async { processText = v; notifyListeners(); }
+  Future<void> setRecordLog(bool v) async { recordLog = v; notifyListeners(); }
+  Future<void> setRecordHeapDump(bool v) async { recordHeapDump = v; notifyListeners(); }
+
   /// 資料庫備份
   Future<String?> backupDatabase() async {
     try {
