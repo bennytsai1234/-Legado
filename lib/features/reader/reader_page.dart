@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import 'reader_provider.dart';
 import '../../core/models/book.dart';
 import '../../core/models/chapter.dart';
+import '../../core/services/dictionary_service.dart';
 import '../../shared/theme/app_theme.dart';
+import '../settings/font_manager_page.dart';
 import 'engine/page_view_widget.dart';
 
 class ReaderPage extends StatefulWidget {
@@ -20,6 +22,7 @@ class ReaderPage extends StatefulWidget {
 class _ReaderPageState extends State<ReaderPage> {
   late PageController _pageController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  String _selectedText = "";
 
   @override
   void initState() {
@@ -149,18 +152,40 @@ class _ReaderPageState extends State<ReaderPage> {
 
     return Stack(
       children: [
-        PageView.builder(
-          controller: _pageController,
-          scrollDirection: isVertical ? Axis.vertical : Axis.horizontal,
-          itemCount: provider.pages.length,
-          onPageChanged: provider.onPageChanged,
-          itemBuilder: (context, index) {
-            return PageViewWidget(
-              page: provider.pages[index],
-              contentStyle: contentStyle,
-              titleStyle: titleStyle,
+        SelectionArea(
+          onSelectionChanged: (content) {
+            _selectedText = content?.plainText ?? "";
+          },
+          contextMenuBuilder: (context, selectableRegionState) {
+            return AdaptiveTextSelectionToolbar.buttonItems(
+              anchors: selectableRegionState.contextMenuAnchors,
+              buttonItems: [
+                ...selectableRegionState.contextMenuButtonItems,
+                if (_selectedText.isNotEmpty &&
+                    num.tryParse(_selectedText) == null)
+                  ContextMenuButtonItem(
+                    label: '查詞',
+                    onPressed: () {
+                      selectableRegionState.hideToolbar();
+                      DictionaryService().lookup(_selectedText);
+                    },
+                  ),
+              ],
             );
           },
+          child: PageView.builder(
+            controller: _pageController,
+            scrollDirection: isVertical ? Axis.vertical : Axis.horizontal,
+            itemCount: provider.pages.length,
+            onPageChanged: provider.onPageChanged,
+            itemBuilder: (context, index) {
+              return PageViewWidget(
+                page: provider.pages[index],
+                contentStyle: contentStyle,
+                titleStyle: titleStyle,
+              );
+            },
+          ),
         ),
         if (provider.brightness < 1.0)
           IgnorePointer(
@@ -458,6 +483,27 @@ class _ReaderPageState extends State<ReaderPage> {
                         );
                       },
                     ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("閱讀字體", style: TextStyle(color: Colors.white)),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const FontManagerPage()),
+                          );
+                        },
+                        child: Text(
+                          provider.fontFamily ?? "系統預設",
+                          style: const TextStyle(color: Colors.blue),
+                        ),
+                      ),
+                    ],
                   ),
                   const Text("翻頁方式", style: TextStyle(color: Colors.white)),
                   Row(

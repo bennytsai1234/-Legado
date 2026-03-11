@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'source_manager_provider.dart';
 import 'source_editor_page.dart';
 import 'source_login_page.dart';
+import 'qr_scan_page.dart';
 import '../../core/models/book_source.dart';
 import '../../core/services/check_source_service.dart';
 
@@ -64,6 +65,8 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
                           _showImportDialog(context, isUrl: true);
                         } else if (value == 'clipboard') {
                           _importFromClipboard(context);
+                        } else if (value == 'qr') {
+                          _scanQrCode(context, provider);
                         } else if (value == 'new') {
                           Navigator.push(
                             context,
@@ -77,6 +80,7 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
                         const PopupMenuItem(value: 'url', child: Text('網路匯入')),
                         const PopupMenuItem(
                             value: 'clipboard', child: Text('剪貼簿匯入')),
+                        const PopupMenuItem(value: 'qr', child: Text('掃碼匯入')),
                         const PopupMenuItem(value: 'new', child: Text('新建書源')),
                       ],
                       icon: const Icon(Icons.add),
@@ -334,6 +338,26 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _scanQrCode(BuildContext context, SourceManagerProvider provider) async {
+    final String? result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const QrScanPage()),
+    );
+
+    if (result != null && result.isNotEmpty && context.mounted) {
+      int count = 0;
+      if (result.startsWith('http')) {
+        count = await provider.importFromUrl(result);
+      } else {
+        count = await provider.importFromText(result);
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(count > 0 ? '成功匯入 $count 個書源' : '未找到有效書源')),
+      );
+    }
   }
 
   Future<void> _importFromClipboard(BuildContext context) async {

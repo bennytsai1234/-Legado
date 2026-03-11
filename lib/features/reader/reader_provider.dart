@@ -43,6 +43,7 @@ class ReaderProvider extends ChangeNotifier {
   int _themeIndex = 0;
   double _brightness = 1.0;
   bool _chineseConvert = false;
+  String? _fontFamily;
 
   final TTSService tts = TTSService();
   final BookmarkDao _bookmarkDao = BookmarkDao();
@@ -73,6 +74,7 @@ class ReaderProvider extends ChangeNotifier {
   double get brightness => _brightness;
   int get pageTurnMode => _pageTurnMode;
   bool get chineseConvert => _chineseConvert;
+  String? get fontFamily => _fontFamily;
 
   bool get isBookmarked {
     return _bookmarks.any((b) =>
@@ -96,6 +98,7 @@ class ReaderProvider extends ChangeNotifier {
     _brightness = prefs.getDouble('reader_brightness') ?? 1.0;
     _pageTurnMode = prefs.getInt('reader_page_turn_mode') ?? 0;
     _chineseConvert = prefs.getBool('reader_chinese_convert') ?? false;
+    _fontFamily = prefs.getString('reader_font_family');
     notifyListeners();
   }
 
@@ -109,6 +112,7 @@ class ReaderProvider extends ChangeNotifier {
     if (value is double) await prefs.setDouble('reader_$key', value);
     if (value is int) await prefs.setInt('reader_$key', value);
     if (value is bool) await prefs.setBool('reader_$key', value);
+    if (value is String) await prefs.setString('reader_$key', value);
     notifyListeners();
   }
 
@@ -244,12 +248,14 @@ class ReaderProvider extends ChangeNotifier {
       fontSize: _fontSize + 4,
       fontWeight: FontWeight.bold,
       color: currentTheme.textColor,
+      fontFamily: _fontFamily,
     );
 
     final contentStyle = TextStyle(
       fontSize: _fontSize,
       height: _lineHeight,
       color: currentTheme.textColor,
+      fontFamily: _fontFamily,
     );
 
     _pages = ChapterProvider.paginate(
@@ -304,6 +310,16 @@ class ReaderProvider extends ChangeNotifier {
     _chineseConvert = value;
     saveSetting('chinese_convert', _chineseConvert);
     loadChapter(_currentChapterIndex); // Reload to apply conversion
+  }
+
+  void setFontFamily(String? family) {
+    _fontFamily = family;
+    if (family == null) {
+      SharedPreferences.getInstance().then((p) => p.remove('reader_font_family'));
+    } else {
+      saveSetting('font_family', family);
+    }
+    _doPaginate();
   }
 
   Future<void> toggleBookmark() async {
