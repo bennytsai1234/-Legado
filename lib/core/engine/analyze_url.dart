@@ -203,12 +203,12 @@ class AnalyzeUrl {
       url = urlNoOption;
     }
 
-    // 3. Analyze Query and Fields
     if (method == "GET") {
       final pos = url.indexOf('?');
       if (pos != -1) {
         analyzeQuery(url.substring(pos + 1));
-        url = url.substring(0, pos);
+        url = "${url.substring(0, pos)}?$encodedQuery";
+        encodedQuery = null;
       }
     } else if (method == "POST") {
       if (body != null && body is String) {
@@ -276,6 +276,8 @@ class AnalyzeUrl {
           ...CookieStore().cookieToMap(cookie),
           ...CookieStore().cookieToMap(headerCookie),
         });
+        headerMap['Cookie'] = merged;
+      } else {
         headerMap['Cookie'] = cookie;
       }
     }

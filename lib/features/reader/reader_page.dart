@@ -162,7 +162,7 @@ class _ReaderPageState extends State<ReaderPage> {
         if (provider.brightness < 1.0)
           IgnorePointer(
             child: Container(
-              color: Colors.black.withOpacity(1.0 - provider.brightness),
+              color: Colors.black.withValues(alpha: 1.0 - provider.brightness),
             ),
           ),
       ]

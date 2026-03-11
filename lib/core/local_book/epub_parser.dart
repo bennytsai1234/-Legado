@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:epubx/epubx.dart';
 import 'package:flutter/foundation.dart';
 
@@ -17,8 +16,8 @@ class EpubParser {
       final bytes = await file.readAsBytes();
       _epubBook = await EpubReader.readBook(bytes);
     } catch (e) {
-      debugPrint("EpubParser load error: \$e");
-      throw Exception("Failed to load EPUB file: \$e");
+      debugPrint("EpubParser load error: $e");
+      throw Exception("Failed to load EPUB file: $e");
     }
   }
 
@@ -70,7 +69,7 @@ class EpubParser {
         }
       }
     } catch (e) {
-      debugPrint("EpubParser getCover error: \$e");
+      debugPrint("EpubParser getCover error: $e");
     }
     return null;
   }
@@ -86,7 +85,7 @@ class EpubParser {
         // 為了層級顯示可以在前面加空格
         final prefix = List.filled(level * 2, ' ').join();
         chapters.add({
-          'title': "\$prefix\$title",
+          'title': "$prefix$title",
           'href': chapter.ContentFileName ?? "",
         });
 

@@ -22,7 +22,7 @@ class ChapterProvider {
     final double visibleWidth = viewSize.width - paddingLeft - paddingRight;
     final double visibleHeight = viewSize.height - paddingTop - paddingBottom;
 
-    if (visibleWidth <= 0 || visibleHeight <= 0)
+    if (visibleWidth <= 0 || visibleHeight <= 0) {
       return [
         TextPage(
           index: 0,
@@ -33,6 +33,7 @@ class ChapterProvider {
           chapterSize: chapterSize,
         ),
       ];
+    }
 
     final paragraphs = content.split('\n');
     List<TextLine> currentLines = [];

@@ -3,8 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'bookshelf_provider.dart';
 import '../search/search_page.dart';
-import '../book_detail/book_detail_page.dart';
-import '../../core/models/search_book.dart';
 import '../../core/models/book_group.dart';
 import '../reader/reader_page.dart';
 

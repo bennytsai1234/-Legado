@@ -188,8 +188,9 @@ class JsExtensions {
         final tempDir = await getTemporaryDirectory();
         final savePath = p.join(tempDir.path, "downloads", key);
         final file = File(savePath);
-        if (!await file.parent.exists())
+        if (!await file.parent.exists()) {
           await file.parent.create(recursive: true);
+        }
         await dio.download(url, savePath);
         return savePath;
       } catch (e) {

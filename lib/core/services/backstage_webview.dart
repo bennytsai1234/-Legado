@@ -15,11 +15,9 @@ class BackstageWebView {
   final Map<String, String>? headerMap;
   final int delayTime;
   
-  WebViewController? _controller;
   Timer? _timer;
   
   static Widget? _hiddenWebViewWidget;
-  static bool _isInit = false;
   
   BackstageWebView({
     this.url,
@@ -60,7 +58,6 @@ class BackstageWebView {
     }
 
     final WebViewController controller = WebViewController.fromPlatformCreationParams(params);
-    _controller = controller;
 
     controller
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -114,7 +111,7 @@ class BackstageWebView {
             if (isCompleted) return;
             try {
               final result = await controller.runJavaScriptReturningResult(jsToRun);
-              if (result != null && result.toString().isNotEmpty && result.toString() != "null") {
+              if (result.toString().isNotEmpty && result.toString() != "null") {
                 String content = result.toString();
                 // Remove surrounding quotes if it's a JSON string
                 if (content.startsWith('"') && content.endsWith('"')) {

@@ -325,7 +325,7 @@ class JsEncodeUtils {
 
 /// 補償 PointyCastle 3.9.1 移除的單層 DESEngine 實作
 class DESEngine extends DesBase implements pc.BlockCipher {
-  static const int _BLOCK_SIZE = 8;
+  static const int _blockSize = 8;
   List<int>? workingKey;
   bool forEncryption = false;
 
@@ -333,7 +333,7 @@ class DESEngine extends DesBase implements pc.BlockCipher {
   String get algorithmName => 'DES';
 
   @override
-  int get blockSize => _BLOCK_SIZE;
+  int get blockSize => _blockSize;
 
   @override
   void init(bool forEncryption, covariant pc.CipherParameters? params) {
@@ -356,7 +356,7 @@ class DESEngine extends DesBase implements pc.BlockCipher {
 
   @override
   Uint8List process(Uint8List data) {
-    var out = Uint8List(_BLOCK_SIZE);
+    var out = Uint8List(_blockSize);
     var len = processBlock(data, 0, out, 0);
     return out.sublist(0, len);
   }
@@ -365,7 +365,7 @@ class DESEngine extends DesBase implements pc.BlockCipher {
   int processBlock(Uint8List inp, int inpOff, Uint8List out, int outOff) {
     if (workingKey == null) throw StateError('DES engine not initialised');
     desFunc(workingKey!, inp, inpOff, out, outOff);
-    return _BLOCK_SIZE;
+    return _blockSize;
   }
 
   @override

@@ -121,15 +121,21 @@ class BookSourceDao {
 
   // 輔助方法：將 Model 的 Map 轉換為 DB 存儲格式 (String)
   void _serializeRules(Map<String, dynamic> map) {
-    if (map['ruleSearch'] != null)
+    if (map['ruleSearch'] != null) {
       map['ruleSearch'] = jsonEncode(map['ruleSearch']);
-    if (map['ruleExplore'] != null)
+    }
+    if (map['ruleExplore'] != null) {
       map['ruleExplore'] = jsonEncode(map['ruleExplore']);
-    if (map['ruleBookInfo'] != null)
+    }
+    if (map['ruleBookInfo'] != null) {
       map['ruleBookInfo'] = jsonEncode(map['ruleBookInfo']);
-    if (map['ruleToc'] != null) map['ruleToc'] = jsonEncode(map['ruleToc']);
-    if (map['ruleContent'] != null)
+    }
+    if (map['ruleToc'] != null) {
+      map['ruleToc'] = jsonEncode(map['ruleToc']);
+    }
+    if (map['ruleContent'] != null) {
       map['ruleContent'] = jsonEncode(map['ruleContent']);
+    }
 
     // SQLite 不支援 bool，轉換為 0/1
     map['enabled'] = (map['enabled'] == true) ? 1 : 0;
