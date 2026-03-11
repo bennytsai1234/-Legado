@@ -46,7 +46,7 @@ dependencies:
   cached_network_image: ^3.4.1
 
   # === Local File Support ===
-  file_picker: ^8.1.7
+  file_picker: ^10.3.10
 
   # === URL Launcher ===
   url_launcher: ^6.3.1
@@ -69,9 +69,10 @@ dependencies:
   opencc: ^1.1.0
   flutter_tts: ^4.2.5
   webdav_client: ^1.2.2
-  archive: ^4.0.9
+  archive: 3.1.6
   webview_flutter_wkwebview: ^3.23.0
   webview_flutter_android: ^4.10.1
+  epubx: ^4.0.0
 
 dev_dependencies:
   flutter_test:
