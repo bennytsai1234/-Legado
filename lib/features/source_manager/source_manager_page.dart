@@ -5,6 +5,7 @@ import 'source_manager_provider.dart';
 import 'source_editor_page.dart';
 import 'source_login_page.dart';
 import '../../core/models/book_source.dart';
+import '../../core/services/check_source_service.dart';
 
 class SourceManagerPage extends StatefulWidget {
   const SourceManagerPage({super.key});
@@ -49,6 +50,13 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
                       icon: const Icon(Icons.refresh),
                       tooltip: '刷新列表',
                       onPressed: provider.loadSources,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.playlist_add_check),
+                      tooltip: '校驗可見書源',
+                      onPressed: provider.isChecking
+                          ? null
+                          : provider.checkVisibleSources,
                     ),
                     PopupMenuButton<String>(
                       onSelected: (value) {
@@ -143,14 +151,19 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
     bool isSelected = provider.selectedUrls.contains(source.bookSourceUrl);
     
     // 判斷狀態
-    String statusStr = "正常";
+    final checkResult = provider.checkResults[source.bookSourceUrl];
+    String statusStr = "未校驗";
     Color statusColor = Colors.grey;
-    if (source.respondTime < 0) {
+
+    if (checkResult != null) {
+      statusStr = checkResult.summary;
+      statusColor = checkResult.result == CheckResult.success ? Colors.green : Colors.red;
+    } else if (source.respondTime != null && source.respondTime! > 0) {
+      statusStr = "${source.respondTime}ms";
+      statusColor = source.respondTime! < 1000 ? Colors.green : Colors.orange;
+    } else if (source.respondTime == -1) {
       statusStr = "失效";
       statusColor = Colors.red;
-    } else if (source.respondTime > 0) {
-      statusStr = "${source.respondTime}ms";
-      statusColor = source.respondTime < 1000 ? Colors.green : Colors.orange;
     }
 
     final tile = ListTile(

@@ -4,11 +4,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../../core/database/dao/book_source_dao.dart';
 import '../../core/models/book_source.dart';
+import '../../core/services/check_source_service.dart';
 import '../../core/services/book_source_service.dart';
 
 class SourceManagerProvider extends ChangeNotifier {
   final BookSourceDao _dao = BookSourceDao();
   final BookSourceService _service = BookSourceService();
+  final CheckSourceService _checkService = CheckSourceService();
   
   List<BookSource> _sources = [];
   List<String> _groups = [];
@@ -17,6 +19,10 @@ class SourceManagerProvider extends ChangeNotifier {
 
   bool _isBatchMode = false;
   Set<String> _selectedUrls = {};
+
+  // 校驗結果
+  final Map<String, CheckSourceResult> _checkResults = {};
+  bool _isChecking = false;
 
   List<BookSource> get sources {
     if (_selectedGroup == '全部') return _sources;
@@ -30,6 +36,8 @@ class SourceManagerProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isBatchMode => _isBatchMode;
   Set<String> get selectedUrls => _selectedUrls;
+  Map<String, CheckSourceResult> get checkResults => _checkResults;
+  bool get isChecking => _isChecking;
 
   SourceManagerProvider() {
     loadSources();
@@ -116,40 +124,37 @@ class SourceManagerProvider extends ChangeNotifier {
     notifyListeners();
   }
   
-  Future<void> validateSelected() async {
-    if (_selectedUrls.isEmpty) return;
+  // --- 校驗功能 ---
 
-    final urlsToValidate = _selectedUrls.toList();
-    _isBatchMode = false;
-    _selectedUrls.clear();
-    _isLoading = true;
+  Future<void> checkVisibleSources() async {
+    if (_isChecking) return;
+    _isChecking = true;
+    _checkResults.clear();
     notifyListeners();
 
-    final futures = <Future>[];
-    for (final url in urlsToValidate) {
-      final s = _sources.firstWhere((element) => element.bookSourceUrl == url);
-      futures.add(_validateSource(s));
+    final currentVisible = sources;
+    final List<Future<void>> tasks = [];
+    for (final source in currentVisible) {
+      tasks.add(_checkSingleSource(source));
     }
-    
-    await Future.wait(futures);
-    await loadSources();
+
+    await Future.wait(tasks);
+    _isChecking = false;
+    notifyListeners();
   }
 
-  Future<void> _validateSource(BookSource s) async {
-    final startTime = DateTime.now().millisecondsSinceEpoch;
-    try {
-      final res = await _service.searchBooks(s, "系統", page: 1, filter: null);
-      if (res.isNotEmpty) {
-        final cost = DateTime.now().millisecondsSinceEpoch - startTime;
-        s.respondTime = cost;
-      } else {
-        s.respondTime = -1; // 查無資料也視為失效較為嚴格，或可算失敗
-      }
-    } catch (e) {
-      s.respondTime = -1;
+  Future<void> _checkSingleSource(BookSource source) async {
+    final result = await _checkService.checkSource(source);
+    _checkResults[source.bookSourceUrl] = result;
+    
+    // 更新書源的回應時間
+    if (result.result == CheckResult.success) {
+      source.respondTime = result.milliseconds;
+    } else {
+      source.respondTime = -1;
     }
-    s.lastUpdateTime = DateTime.now().millisecondsSinceEpoch;
-    await _dao.insertOrUpdate(s);
+    await _dao.insertOrUpdate(source);
+    notifyListeners();
   }
 
   /// 從文本匯入 (JSON 格式)
