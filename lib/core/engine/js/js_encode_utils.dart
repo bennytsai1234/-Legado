@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart';
 import 'package:convert/convert.dart';
+import 'package:pointycastle/block/des_base.dart';
+import 'package:pointycastle/block/desede_engine.dart';
 import 'package:fast_gbk/fast_gbk.dart';
 import 'package:pointycastle/export.dart' as pc;
 
@@ -146,10 +148,10 @@ class JsEncodeUtils {
   ) {
     pc.BlockCipher engine;
     if (algorithmName == 'DES') {
-      engine = pc.BlockCipher('DES');
+      engine = DESEngine();
     } else {
       // DESEDE or TRIPLEDES
-      engine = pc.BlockCipher('DESede');
+      engine = DESedeEngine();
     }
 
     pc.BlockCipher cipher;
@@ -262,13 +264,13 @@ class JsEncodeUtils {
     final dataBytes = utf8.encode(data);
     Hmac hmac;
     switch (algorithm.toUpperCase()) {
-      case 'HmacMD5':
+      case 'HMACMD5':
         hmac = Hmac(md5, keyBytes);
         break;
-      case 'HmacSHA1':
+      case 'HMACSHA1':
         hmac = Hmac(sha1, keyBytes);
         break;
-      case 'HmacSHA256':
+      case 'HMACSHA256':
         hmac = Hmac(sha256, keyBytes);
         break;
       default:
@@ -282,13 +284,13 @@ class JsEncodeUtils {
     final dataBytes = utf8.encode(data);
     Hmac hmac;
     switch (algorithm.toUpperCase()) {
-      case 'HmacMD5':
+      case 'HMACMD5':
         hmac = Hmac(md5, keyBytes);
         break;
-      case 'HmacSHA1':
+      case 'HMACSHA1':
         hmac = Hmac(sha1, keyBytes);
         break;
-      case 'HmacSHA256':
+      case 'HMACSHA256':
         hmac = Hmac(sha256, keyBytes);
         break;
       default:
@@ -319,4 +321,53 @@ class JsEncodeUtils {
     final result = hasher.convert(utf8.encode(data));
     return hexFormat ? result.toString() : base64.encode(result.bytes);
   }
+}
+
+/// 補償 PointyCastle 3.9.1 移除的單層 DESEngine 實作
+class DESEngine extends DesBase implements pc.BlockCipher {
+  static const int _BLOCK_SIZE = 8;
+  List<int>? workingKey;
+  bool forEncryption = false;
+
+  @override
+  String get algorithmName => 'DES';
+
+  @override
+  int get blockSize => _BLOCK_SIZE;
+
+  @override
+  void init(bool forEncryption, covariant pc.CipherParameters? params) {
+    if (params is pc.KeyParameter) {
+      this.forEncryption = forEncryption;
+      var key = params.key;
+      if (key.length != 8) {
+        throw ArgumentError('DES key size must be 8 bytes.');
+      }
+      workingKey = generateWorkingKey(forEncryption, key);
+    } else if (params is pc.ParametersWithIV) {
+      this.forEncryption = forEncryption;
+      var key = (params.parameters as pc.KeyParameter).key;
+      if (key.length != 8) {
+        throw ArgumentError('DES key size must be 8 bytes.');
+      }
+      workingKey = generateWorkingKey(forEncryption, key);
+    }
+  }
+
+  @override
+  Uint8List process(Uint8List data) {
+    var out = Uint8List(_BLOCK_SIZE);
+    var len = processBlock(data, 0, out, 0);
+    return out.sublist(0, len);
+  }
+
+  @override
+  int processBlock(Uint8List inp, int inpOff, Uint8List out, int outOff) {
+    if (workingKey == null) throw StateError('DES engine not initialised');
+    desFunc(workingKey!, inp, inpOff, out, outOff);
+    return _BLOCK_SIZE;
+  }
+
+  @override
+  void reset() {}
 }

@@ -66,10 +66,10 @@ dependencies:
   # === Intl (date formatting, etc.) ===
   intl: ^0.19.0
   fast_gbk: ^1.0.0
-  opencc: ^1.1.0
+  # opencc: ^1.1.0
   flutter_tts: ^4.2.5
   webdav_client: ^1.2.2
-  archive: 3.1.6
+  archive: ^3.4.0
   webview_flutter_wkwebview: ^3.23.0
   webview_flutter_android: ^4.10.1
   epubx: ^4.0.0

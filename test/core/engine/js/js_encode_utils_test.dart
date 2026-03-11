@@ -25,7 +25,7 @@ void main() {
       );
       
       final decrypted = JsEncodeUtils.symmetricCrypto(
-        'decrypt', 'AES/CBC/PKCS7Padding', key, iv, encrypted
+        'decrypt', 'AES/CBC/PKCS7Padding', key, iv, encrypted, outputFormat: 'string'
       );
       
       expect(decrypted, data);
@@ -33,6 +33,42 @@ void main() {
 
     test('Digest algorithms', () {
       expect(JsEncodeUtils.digest('test', 'SHA-1'), 'a94a8fe5ccb19ba61c4c0873d391e987982fbbd3');
+    });
+
+    test('DES Encryption/Decryption (ECB)', () {
+      const key = '12345678'; // 8 bytes for DES
+      const data = 'Secret Message';
+      
+      final encrypted = JsEncodeUtils.symmetricCrypto(
+        'encrypt', 'DES/ECB/PKCS7Padding', key, null, data
+      );
+      
+      final decrypted = JsEncodeUtils.symmetricCrypto(
+        'decrypt', 'DES/ECB/PKCS7Padding', key, null, encrypted, outputFormat: "string"
+      );
+      
+      expect(decrypted, data);
+    });
+
+    test('3DES Encryption/Decryption (CBC)', () {
+      const key = '123456789012345612345678'; // 24 bytes for 3DES
+      const iv = '12345678';  // 8 bytes for 3DES CBC
+      const data = 'Secret Message';
+      
+      final encrypted = JsEncodeUtils.symmetricCrypto(
+        'encrypt', 'DESede/CBC/PKCS7Padding', key, iv, data
+      );
+      
+      final decrypted = JsEncodeUtils.symmetricCrypto(
+        'decrypt', 'DESede/CBC/PKCS7Padding', key, iv, encrypted, outputFormat: "string"
+      );
+      
+      expect(decrypted, data);
+    });
+
+    test('HMAC generation', () {
+      final hmac = JsEncodeUtils.hmacHex('hello', 'HmacMD5', 'key');
+      expect(hmac.isNotEmpty, true);
     });
   });
 }
