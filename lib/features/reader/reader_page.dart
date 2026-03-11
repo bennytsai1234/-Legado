@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'reader_provider.dart';
 import '../../core/models/book.dart';
+import '../../core/models/chapter.dart';
 import '../../shared/theme/app_theme.dart';
 import 'engine/page_view_widget.dart';
 
@@ -18,6 +19,7 @@ class ReaderPage extends StatefulWidget {
 
 class _ReaderPageState extends State<ReaderPage> {
   late PageController _pageController;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -48,7 +50,9 @@ class _ReaderPageState extends State<ReaderPage> {
           final theme = provider.currentTheme;
 
           return Scaffold(
+            key: _scaffoldKey,
             backgroundColor: theme.backgroundColor,
+            drawer: _buildChaptersDrawer(context, provider),
             body: Stack(
               children: [
                 // 點擊區域：中央喚出控制項，兩側翻頁
@@ -251,7 +255,8 @@ class _ReaderPageState extends State<ReaderPage> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildIconButton(Icons.list, "目錄", () {
-                  // TODO: 顯示目錄側滑欄
+                  provider.toggleControls();
+                  _scaffoldKey.currentState?.openDrawer();
                 }),
                 _buildIconButton(Icons.settings, "設定", () {
                   _showSettingsPanel(context, provider);
@@ -276,6 +281,17 @@ class _ReaderPageState extends State<ReaderPage> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildChaptersDrawer(BuildContext context, ReaderProvider provider) {
+    return _ChaptersDrawer(
+      chapters: provider.chapters,
+      currentChapterIndex: provider.currentChapterIndex,
+      theme: provider.currentTheme,
+      onChapterTap: (index) {
+        provider.loadChapter(index);
+      },
     );
   }
 
@@ -404,6 +420,164 @@ class _ReaderPageState extends State<ReaderPage> {
           },
         );
       },
+    );
+  }
+}
+
+class _ChaptersDrawer extends StatefulWidget {
+  final List<BookChapter> chapters;
+  final int currentChapterIndex;
+  final ReadingTheme theme;
+  final Function(int) onChapterTap;
+
+  const _ChaptersDrawer({
+    required this.chapters,
+    required this.currentChapterIndex,
+    required this.theme,
+    required this.onChapterTap,
+  });
+
+  @override
+  State<_ChaptersDrawer> createState() => _ChaptersDrawerState();
+}
+
+class _ChaptersDrawerState extends State<_ChaptersDrawer> {
+  late TextEditingController _searchController;
+  List<int> _filteredIndices = [];
+  late ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+    _filteredIndices = List.generate(widget.chapters.length, (i) => i);
+    _scrollController = ScrollController(
+      initialScrollOffset:
+          (widget.currentChapterIndex * 50.0).clamp(0, double.infinity),
+    );
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _filterChapters(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredIndices = List.generate(widget.chapters.length, (i) => i);
+      } else {
+        _filteredIndices = [];
+        for (int i = 0; i < widget.chapters.length; i++) {
+          if (widget.chapters[i].title
+              .toLowerCase()
+              .contains(query.toLowerCase())) {
+            _filteredIndices.add(i);
+          }
+        }
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      backgroundColor: widget.theme.backgroundColor,
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 10,
+              left: 16,
+              right: 16,
+              bottom: 10,
+            ),
+            color: widget.theme.backgroundColor,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "目錄",
+                      style: TextStyle(
+                        color: widget.theme.textColor,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      "${widget.chapters.length} 章",
+                      style: TextStyle(
+                        color: widget.theme.textColor.withValues(alpha: 0.7),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _searchController,
+                  style: TextStyle(color: widget.theme.textColor),
+                  decoration: InputDecoration(
+                    hintText: "搜尋章節...",
+                    hintStyle: TextStyle(
+                      color: widget.theme.textColor.withValues(alpha: 0.5),
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: widget.theme.textColor.withValues(alpha: 0.5),
+                    ),
+                    filled: true,
+                    fillColor: widget.theme.textColor.withValues(alpha: 0.1),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                  ),
+                  onChanged: _filterChapters,
+                ),
+              ],
+            ),
+          ),
+          Divider(
+            height: 1,
+            color: widget.theme.textColor.withValues(alpha: 0.1),
+          ),
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: EdgeInsets.zero,
+              itemCount: _filteredIndices.length,
+              itemBuilder: (context, index) {
+                final realIndex = _filteredIndices[index];
+                final chapter = widget.chapters[realIndex];
+                final isCurrent = widget.currentChapterIndex == realIndex;
+
+                return ListTile(
+                  dense: true,
+                  title: Text(
+                    chapter.title,
+                    style: TextStyle(
+                      color: isCurrent ? Colors.blue : widget.theme.textColor,
+                      fontWeight:
+                          isCurrent ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                  onTap: () {
+                    widget.onChapterTap(realIndex);
+                    Navigator.pop(context);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
