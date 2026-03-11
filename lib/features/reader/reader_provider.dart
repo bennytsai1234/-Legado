@@ -12,6 +12,8 @@ import '../../core/services/tts_service.dart';
 import '../../shared/theme/app_theme.dart';
 import 'engine/text_page.dart';
 import 'engine/chapter_provider.dart';
+import '../../core/database/dao/bookmark_dao.dart';
+import '../../core/models/bookmark.dart';
 
 class ReaderProvider extends ChangeNotifier {
   final BookDao _bookDao = BookDao();
@@ -40,6 +42,10 @@ class ReaderProvider extends ChangeNotifier {
   double _brightness = 1.0;
 
   final TTSService tts = TTSService();
+  final BookmarkDao _bookmarkDao = BookmarkDao();
+
+  List<Bookmark> _bookmarks = [];
+  int _pageTurnMode = 0; // 0: 平滑水平, 1: 無動畫(覆蓋), 2: 平滑垂直
 
   ReaderProvider({required this.book, int chapterIndex = 0}) {
     _currentChapterIndex = chapterIndex;
@@ -62,9 +68,17 @@ class ReaderProvider extends ChangeNotifier {
   int get themeIndex => _themeIndex;
   ReadingTheme get currentTheme => AppTheme.readingThemes[_themeIndex];
   double get brightness => _brightness;
+  int get pageTurnMode => _pageTurnMode;
+
+  bool get isBookmarked {
+    return _bookmarks.any((b) =>
+        b.chapterIndex == _currentChapterIndex &&
+        b.chapterPos == _currentPageIndex);
+  }
 
   Future<void> _init() async {
     await _loadSettings();
+    await _loadBookmarks();
     await _loadChapters();
     await _loadSource();
     await loadChapter(_currentChapterIndex);
@@ -76,6 +90,12 @@ class ReaderProvider extends ChangeNotifier {
     _lineHeight = prefs.getDouble('reader_line_height') ?? 1.5;
     _themeIndex = prefs.getInt('reader_theme_index') ?? 0;
     _brightness = prefs.getDouble('reader_brightness') ?? 1.0;
+    _pageTurnMode = prefs.getInt('reader_page_turn_mode') ?? 0;
+    notifyListeners();
+  }
+
+  Future<void> _loadBookmarks() async {
+    _bookmarks = await _bookmarkDao.getByBook(book.name, book.author ?? "");
     notifyListeners();
   }
 
@@ -272,6 +292,40 @@ class ReaderProvider extends ChangeNotifier {
   void setBrightness(double value) {
     _brightness = value.clamp(0.0, 1.0);
     saveSetting('brightness', _brightness);
+  }
+
+  void setPageTurnMode(int mode) {
+    _pageTurnMode = mode;
+    saveSetting('page_turn_mode', _pageTurnMode);
+  }
+
+  Future<void> toggleBookmark() async {
+    final existing = _bookmarks.cast<Bookmark?>().firstWhere(
+      (b) => b?.chapterIndex == _currentChapterIndex && b?.chapterPos == _currentPageIndex,
+      orElse: () => null,
+    );
+
+    if (existing != null) {
+      await _bookmarkDao.delete(existing);
+    } else {
+      String snippet = "空白書籤";
+      if (_pages.isNotEmpty && _currentPageIndex < _pages.length) {
+        snippet = _pages[_currentPageIndex].lines.map((l) => l.text).join().replaceAll("\n", " ");
+        if (snippet.length > 50) snippet = "${snippet.substring(0, 50)}...";
+      }
+      final newBm = Bookmark(
+        time: DateTime.now().millisecondsSinceEpoch,
+        bookName: book.name,
+        bookAuthor: book.author ?? "Unknown",
+        chapterIndex: _currentChapterIndex,
+        chapterPos: _currentPageIndex,
+        chapterName: currentChapter?.title ?? "Unknown Chapter",
+        bookUrl: book.bookUrl,
+        content: snippet,
+      );
+      await _bookmarkDao.insert(newBm);
+    }
+    await _loadBookmarks();
   }
 
   Future<void> nextChapter() => loadChapter(_currentChapterIndex + 1);

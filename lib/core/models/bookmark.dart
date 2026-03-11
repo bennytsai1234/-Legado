@@ -8,7 +8,7 @@ class Bookmark {
   int chapterIndex;
   int chapterPos;
   String chapterName;
-  String bookText;
+  String bookUrl;
   String content;
 
   Bookmark({
@@ -19,7 +19,7 @@ class Bookmark {
     this.chapterIndex = 0,
     this.chapterPos = 0,
     this.chapterName = "",
-    this.bookText = "",
+    this.bookUrl = "",
     this.content = "",
   });
 
@@ -32,7 +32,7 @@ class Bookmark {
       'chapterIndex': chapterIndex,
       'chapterPos': chapterPos,
       'chapterName': chapterName,
-      'bookText': bookText,
+      'bookUrl': bookUrl,
       'content': content,
     };
   }
@@ -46,7 +46,7 @@ class Bookmark {
       chapterIndex: json['chapterIndex'] ?? 0,
       chapterPos: json['chapterPos'] ?? 0,
       chapterName: json['chapterName'] ?? "",
-      bookText: json['bookText'] ?? "",
+      bookUrl: json['bookUrl'] ?? "",
       content: json['content'] ?? "",
     );
   }

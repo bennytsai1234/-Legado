@@ -60,20 +60,28 @@ class _ReaderPageState extends State<ReaderPage> {
                       provider.toggleControls();
                     } else if (x <= width * 0.3) {
                       if (provider.currentPageIndex > 0) {
-                        _pageController.previousPage(
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeInOut,
-                        );
+                        if (provider.pageTurnMode == 1) {
+                          _pageController.jumpToPage(provider.currentPageIndex - 1);
+                        } else {
+                          _pageController.previousPage(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeInOut,
+                          );
+                        }
                       } else {
                         provider.prevChapter();
                       }
                     } else {
                       if (provider.currentPageIndex <
                           provider.pages.length - 1) {
-                        _pageController.nextPage(
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeInOut,
-                        );
+                        if (provider.pageTurnMode == 1) {
+                          _pageController.jumpToPage(provider.currentPageIndex + 1);
+                        } else {
+                          _pageController.nextPage(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeInOut,
+                          );
+                        }
                       } else {
                         provider.nextChapter();
                       }
@@ -134,17 +142,30 @@ class _ReaderPageState extends State<ReaderPage> {
       color: theme.textColor,
     );
 
-    return PageView.builder(
-      controller: _pageController,
-      itemCount: provider.pages.length,
-      onPageChanged: provider.onPageChanged,
-      itemBuilder: (context, index) {
-        return PageViewWidget(
-          page: provider.pages[index],
-          contentStyle: contentStyle,
-          titleStyle: titleStyle,
-        );
-      },
+    final isVertical = provider.pageTurnMode == 2;
+
+    return Stack(
+      children: [
+        PageView.builder(
+          controller: _pageController,
+          scrollDirection: isVertical ? Axis.vertical : Axis.horizontal,
+          itemCount: provider.pages.length,
+          onPageChanged: provider.onPageChanged,
+          itemBuilder: (context, index) {
+            return PageViewWidget(
+              page: provider.pages[index],
+              contentStyle: contentStyle,
+              titleStyle: titleStyle,
+            );
+          },
+        ),
+        if (provider.brightness < 1.0)
+          IgnorePointer(
+            child: Container(
+              color: Colors.black.withOpacity(1.0 - provider.brightness),
+            ),
+          ),
+      ]
     );
   }
 
@@ -176,6 +197,15 @@ class _ReaderPageState extends State<ReaderPage> {
               ),
             ],
           ),
+          actions: [
+            IconButton(
+              icon: Icon(
+                provider.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                color: Colors.white,
+              ),
+              onPressed: provider.toggleBookmark,
+            ),
+          ],
         ),
       ),
     );
@@ -338,6 +368,35 @@ class _ReaderPageState extends State<ReaderPage> {
                         );
                       },
                     ),
+                  ),
+                  const Text("翻頁方式", style: TextStyle(color: Colors.white)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ChoiceChip(
+                        label: const Text('水平平滑'),
+                        selected: provider.pageTurnMode == 0,
+                        onSelected: (v) { if (v) provider.setPageTurnMode(0); },
+                      ),
+                      ChoiceChip(
+                        label: const Text('直接覆蓋'),
+                        selected: provider.pageTurnMode == 1,
+                        onSelected: (v) { if (v) provider.setPageTurnMode(1); },
+                      ),
+                      ChoiceChip(
+                        label: const Text('垂直平滑'),
+                        selected: provider.pageTurnMode == 2,
+                        onSelected: (v) { if (v) provider.setPageTurnMode(2); },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  const Text("亮度調節", style: TextStyle(color: Colors.white)),
+                  Slider(
+                    value: provider.brightness,
+                    min: 0.1,
+                    max: 1.0,
+                    onChanged: (v) => provider.setBrightness(v),
                   ),
                 ],
               ),
