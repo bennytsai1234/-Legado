@@ -22,7 +22,7 @@ import 'dao/keyboard_assist_dao.dart';
 
 class AppDatabase {
   static const String _dbName = 'legado_reader.db';
-  static const int _dbVersion = 3;
+  static const int _dbVersion = 4;
   static Database? _database;
 
   static Future<Database> get database async {
@@ -123,6 +123,8 @@ class AppDatabase {
         resourceUrl TEXT,
         tag TEXT,
         variable TEXT,
+        startFragmentId TEXT,
+        endFragmentId TEXT,
         PRIMARY KEY (bookUrl, "index")
       )
     ''');
@@ -195,6 +197,10 @@ class AppDatabase {
           await db.execute('ALTER TABLE books ADD COLUMN tocUrl TEXT DEFAULT ""');
           await db.execute('ALTER TABLE books ADD COLUMN infoHtml TEXT');
           await db.execute('ALTER TABLE books ADD COLUMN tocHtml TEXT');
+          break;
+        case 4:
+          try { await db.execute('ALTER TABLE chapters ADD COLUMN startFragmentId TEXT'); } catch (_) {}
+          try { await db.execute('ALTER TABLE chapters ADD COLUMN endFragmentId TEXT'); } catch (_) {}
           break;
       }
     }

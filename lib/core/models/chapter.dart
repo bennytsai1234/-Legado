@@ -43,9 +43,16 @@ class BookChapter {
       resourceUrl: json['resourceUrl'],
       tag: json['tag'],
       variable: json['variable'],
-      startFragmentId: json['startFragmentId'] ?? 0,
-      endFragmentId: json['endFragmentId'] ?? 0,
+      startFragmentId: _asInt(json['startFragmentId']),
+      endFragmentId: _asInt(json['endFragmentId']),
     );
+  }
+
+  static int _asInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 
   Map<String, dynamic> toJson() => {

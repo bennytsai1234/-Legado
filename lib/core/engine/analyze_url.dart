@@ -52,6 +52,10 @@ class AnalyzeUrl {
     if (initialHeaders != null) {
       headerMap.addAll(initialHeaders);
     }
+    // Ensure baseUrl has scheme
+    if (baseUrl != null && !baseUrl!.startsWith('http')) {
+      baseUrl = 'http://$baseUrl';
+    }
     _initUrl();
   }
 

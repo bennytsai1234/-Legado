@@ -107,18 +107,26 @@ class BookGroupDao {
 
   Future<void> insert(BookGroup bookGroup) async {
     final db = await AppDatabase.database;
+    final map = bookGroup.toJson();
+    map['enableRefresh'] = (map['enableRefresh'] == true) ? 1 : 0;
+    map['show'] = (map['show'] == true) ? 1 : 0;
+    
     await db.insert(
       tableName,
-      bookGroup.toJson(),
+      map,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
   Future<void> update(BookGroup bookGroup) async {
     final db = await AppDatabase.database;
+    final map = bookGroup.toJson();
+    map['enableRefresh'] = (map['enableRefresh'] == true) ? 1 : 0;
+    map['show'] = (map['show'] == true) ? 1 : 0;
+
     await db.update(
       tableName,
-      bookGroup.toJson(),
+      map,
       where: 'groupId = ?',
       whereArgs: [bookGroup.groupId],
     );

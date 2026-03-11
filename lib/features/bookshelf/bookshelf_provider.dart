@@ -217,7 +217,14 @@ class BookshelfProvider extends ChangeNotifier {
 
         late Book book;
         final List<BookChapter> bookChapters = [];
+        final List<Map<String, dynamic>> bookContents = [];
         final ChapterDao chapterDao = ChapterDao();
+
+        // 預設群組：如果是特定群組，就分到該組，否則不設
+        String? groupValue;
+        if (_currentGroupId > 0) {
+          groupValue = _currentGroupId.toString();
+        }
 
         if (ext == 'epub') {
           final parser = EpubParser(file);
@@ -231,20 +238,26 @@ class BookshelfProvider extends ChangeNotifier {
             originName: "本地書籍",
             isInBookshelf: true,
             coverUrl: file.path,
+            group: groupValue,
           );
 
           final chapters = parser.getChapters();
           for (int i = 0; i < chapters.length; i++) {
+            final chapterUrl = chapters[i]['href'] ?? "";
             bookChapters.add(
               BookChapter(
-                url: chapters[i]['href'] ?? "",
+                url: chapterUrl,
                 title: chapters[i]['title'] ?? "Unnamed Chapter",
                 bookUrl: bookUrl,
                 index: i,
               ),
             );
-            final content = parser.getChapterContent(chapters[i]['href'] ?? "");
-            await chapterDao.saveContent(bookUrl, i, content);
+            final content = parser.getChapterContent(chapterUrl);
+            bookContents.add({
+              'bookUrl': bookUrl,
+              'chapterIndex': i,
+              'content': content,
+            });
           }
           book.totalChapterNum = chapters.length;
         } else if (ext == 'txt') {
@@ -260,6 +273,7 @@ class BookshelfProvider extends ChangeNotifier {
             origin: "local",
             originName: "本地書籍",
             isInBookshelf: true,
+            group: groupValue,
           );
 
           final chapters = parser.splitChapters();
@@ -272,11 +286,11 @@ class BookshelfProvider extends ChangeNotifier {
                 index: i,
               ),
             );
-            await chapterDao.saveContent(
-              bookUrl,
-              i,
-              chapters[i]['content'] ?? "",
-            );
+            bookContents.add({
+              'bookUrl': bookUrl,
+              'chapterIndex': i,
+              'content': chapters[i]['content'] ?? "",
+            });
           }
           book.totalChapterNum = chapters.length;
         } else {
@@ -285,9 +299,10 @@ class BookshelfProvider extends ChangeNotifier {
           return;
         }
 
-        // 把新導入的書，預設分組視需要而定，目前保持 null （預設全部書架）
+        // 把新導入的書保存
         await _bookDao.insertOrUpdate(book);
         await chapterDao.insertChapters(bookChapters);
+        await chapterDao.insertContents(bookContents);
 
         await loadBooks();
       }

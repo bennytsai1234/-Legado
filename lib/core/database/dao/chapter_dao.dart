@@ -13,18 +13,37 @@ class ChapterDao {
   Future<void> insertChapters(List<BookChapter> chapters) async {
     final db = await _db;
     await db.transaction((txn) async {
+      final batch = txn.batch();
       for (final chapter in chapters) {
         final map = chapter.toJson();
         map['isVolume'] = (map['isVolume'] == true) ? 1 : 0;
         map['isVip'] = (map['isVip'] == true) ? 1 : 0;
         map['isPay'] = (map['isPay'] == true) ? 1 : 0;
-
-        await txn.insert(
+        
+        // Sqflite 建議在 batch 中使用 insert 而不是 txn.insert
+        batch.insert(
           chaptersTable,
           map,
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
       }
+      await batch.commit(noResult: true);
+    });
+  }
+
+  /// 批量保存章節正文
+  Future<void> insertContents(List<Map<String, dynamic>> contents) async {
+    final db = await _db;
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final content in contents) {
+        batch.insert(
+          contentsTable,
+          content,
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+      await batch.commit(noResult: true);
     });
   }
 

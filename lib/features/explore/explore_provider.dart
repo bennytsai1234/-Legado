@@ -35,11 +35,14 @@ class ExploreProvider extends ChangeNotifier {
     _sources = await _sourceDao.getEnabled();
     _exploreMap = {};
 
+    debugPrint("Explore: Found \${_sources.length} enabled sources.");
+
     for (final source in _sources) {
       if (source.enabledExplore &&
           source.exploreUrl != null &&
           source.exploreUrl!.isNotEmpty) {
         final items = _parseExploreUrl(source);
+        debugPrint("Explore: Source '\${source.bookSourceName}' parsed \${items.length} items.");
         if (items.isNotEmpty) {
           _exploreMap[source.bookSourceName] = items;
         }

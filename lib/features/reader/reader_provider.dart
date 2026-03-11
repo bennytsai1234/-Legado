@@ -152,12 +152,16 @@ class ReaderProvider extends ChangeNotifier {
     try {
       // 1. 嘗試從快取讀取
       String? cachedContent = await _chapterDao.getContent(book.bookUrl, index);
+      debugPrint("Reader: Loading chapter $index for ${book.name}, cached: ${cachedContent != null}, len: ${cachedContent?.length ?? 0}");
+      
       String rawContent = "";
       if (cachedContent != null && cachedContent.isNotEmpty) {
         rawContent = cachedContent;
       } else {
         // 2. 從網路抓取
         if (_source == null) await _loadSource();
+        debugPrint("Reader: Source is ${_source?.bookSourceName}, book origin is ${book.origin}");
+        
         if (_source != null) {
           rawContent = await _service.getContent(
             _source!,
@@ -165,6 +169,9 @@ class ReaderProvider extends ChangeNotifier {
             _chapters[index],
           );
           await _chapterDao.saveContent(book.bookUrl, index, rawContent);
+        } else if (book.origin == "local") {
+          rawContent = "錯誤：本地書籍內容缺失，請嘗試重新匯入。";
+          debugPrint("Reader: Local book content missing in DB for ${book.bookUrl}");
         } else {
           rawContent = "錯誤：找不到書源";
         }

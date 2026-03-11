@@ -18,6 +18,7 @@ class AnalyzeRule {
   String? _baseUrl;
   dynamic _chapter;
   String? _nextChapterUrl;
+  int _page = 1;
 
   AnalyzeByXPath? _analyzeByXPath;
   AnalyzeByCss? _analyzeByJSoup;
@@ -37,6 +38,11 @@ class AnalyzeRule {
 
   AnalyzeRule setNextChapterUrl(String? nextChapterUrl) {
     _nextChapterUrl = nextChapterUrl;
+    return this;
+  }
+
+  AnalyzeRule setPage(int page) {
+    _page = page;
     return this;
   }
 
@@ -381,6 +387,7 @@ class AnalyzeRule {
       'source': sourceMap,
       'chapter': chapterMap,
       'nextChapterUrl': _nextChapterUrl,
+      'page': _page,
     };
 
     return _jsEngine!.evaluate(jsStr, context: context);

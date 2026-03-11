@@ -22,7 +22,7 @@ class BookSourceService {
 
     final limiter = ConcurrentRateLimiter(source);
     return await limiter.withLimit(() async {
-      final analyzeRule = AnalyzeRule(source: source);
+      final analyzeRule = AnalyzeRule(source: source)..setPage(page);
       final analyzeUrl = AnalyzeUrl(
         searchUrl,
         key: keyword,
@@ -87,7 +87,7 @@ class BookSourceService {
   }) async {
     final limiter = ConcurrentRateLimiter(source);
     return await limiter.withLimit(() async {
-      final analyzeRule = AnalyzeRule(source: source);
+      final analyzeRule = AnalyzeRule(source: source)..setPage(page);
       final analyzeUrl = AnalyzeUrl(
         url,
         page: page,
