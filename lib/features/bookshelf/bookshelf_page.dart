@@ -5,6 +5,7 @@ import 'bookshelf_provider.dart';
 import '../search/search_page.dart';
 import '../book_detail/book_detail_page.dart';
 import '../../core/models/search_book.dart';
+import '../../core/models/book_group.dart';
 import '../reader/reader_page.dart';
 
 class BookshelfPage extends StatelessWidget {
@@ -12,60 +13,126 @@ class BookshelfPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('我的書架'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.file_upload),
-            tooltip: '匯入本地書籍',
-            onPressed: () {
-              context.read<BookshelfProvider>().importLocalBook();
-            },
+    return Consumer<BookshelfProvider>(
+      builder: (context, provider, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(provider.isBatchMode 
+              ? '已選擇 ${provider.selectedBookUrls.length} 本' 
+              : '我的書架'),
+            actions: provider.isBatchMode
+                ? [
+                    IconButton(
+                      icon: const Icon(Icons.select_all),
+                      tooltip: '全選',
+                      onPressed: provider.selectAll,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      tooltip: '取消',
+                      onPressed: provider.toggleBatchMode,
+                    ),
+                  ]
+                : [
+                    PopupMenuButton<int>(
+                      icon: const Icon(Icons.sort),
+                      onSelected: provider.setSortType,
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(value: 0, child: Text('自訂排序')),
+                        const PopupMenuItem(value: 1, child: Text('最近更新')),
+                        const PopupMenuItem(value: 2, child: Text('最近閱讀')),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.file_upload),
+                      tooltip: '匯入本地書籍',
+                      onPressed: provider.importLocalBook,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.search),
+                      tooltip: '搜尋',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const SearchPage()),
+                        );
+                      },
+                    ),
+                  ],
           ),
-          IconButton(
-            icon: const Icon(Icons.search),
-            tooltip: '搜尋',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SearchPage()),
-              );
-            },
+          body: Column(
+            children: [
+              if (!provider.isBatchMode) _buildGroupTabs(context, provider),
+              Expanded(
+                child: _buildBody(context, provider),
+              ),
+            ],
+          ),
+          bottomNavigationBar: provider.isBatchMode ? _buildBatchBottomBar(context, provider) : null,
+        );
+      },
+    );
+  }
+
+  Widget _buildGroupTabs(BuildContext context, BookshelfProvider provider) {
+    return SizedBox(
+      height: 50,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: [
+          _buildGroupChip(context, provider, BookGroup.idAll, '全部'),
+          ...provider.groups.map((g) => _buildGroupChip(context, provider, g.groupId, g.groupName)),
+          ActionChip(
+            label: const Icon(Icons.add, size: 18),
+            onPressed: () => _showAddGroupDialog(context, provider),
           ),
         ],
       ),
-      body: Consumer<BookshelfProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading && provider.books.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (provider.books.isEmpty) {
-            return _buildEmptyView(context);
-          }
-          return RefreshIndicator(
-            onRefresh: provider.refreshBookshelf,
-            child: GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                childAspectRatio: 0.65,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-              ),
-              itemCount: provider.books.length,
-              itemBuilder: (context, index) {
-                final book = provider.books[index];
-                return _buildBookItem(context, provider, book);
-              },
-            ),
-          );
+    );
+  }
+
+  Widget _buildGroupChip(BuildContext context, BookshelfProvider provider, int id, String name) {
+    final isSelected = provider.currentGroupId == id;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Text(name),
+        selected: isSelected,
+        onSelected: (selected) {
+          if (selected) provider.setGroup(id);
         },
       ),
     );
   }
 
-  Widget _buildEmptyView(BuildContext context) {
+  Widget _buildBody(BuildContext context, BookshelfProvider provider) {
+    if (provider.isLoading && provider.books.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (provider.books.isEmpty) {
+      return _buildEmptyView(context, provider);
+    }
+    return RefreshIndicator(
+      onRefresh: provider.refreshBookshelf,
+      child: GridView.builder(
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          childAspectRatio: 0.65,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+        ),
+        itemCount: provider.books.length,
+        itemBuilder: (context, index) {
+          final book = provider.books[index];
+          return _buildBookItem(context, provider, book);
+        },
+      ),
+    );
+  }
+
+  Widget _buildEmptyView(BuildContext context, BookshelfProvider provider) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -85,9 +152,7 @@ class BookshelfPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           OutlinedButton(
-            onPressed: () {
-              context.read<BookshelfProvider>().importLocalBook();
-            },
+            onPressed: provider.importLocalBook,
             child: const Text('匯入本地書籍'),
           ),
         ],
@@ -100,18 +165,28 @@ class BookshelfPage extends StatelessWidget {
     BookshelfProvider provider,
     dynamic book,
   ) {
+    bool isSelected = provider.selectedBookUrls.contains(book.bookUrl);
+
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (context) =>
-                    ReaderPage(book: book, chapterIndex: book.durChapterIndex),
-          ),
-        );
+        if (provider.isBatchMode) {
+          provider.toggleSelect(book.bookUrl);
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  ReaderPage(book: book, chapterIndex: book.durChapterIndex),
+            ),
+          );
+        }
       },
-      onLongPress: () => _showBookMenu(context, provider, book),
+      onLongPress: () {
+        if (!provider.isBatchMode) {
+          provider.toggleBatchMode();
+          provider.toggleSelect(book.bookUrl);
+        }
+      },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -120,19 +195,16 @@ class BookshelfPage extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
-                  child:
-                      book.coverUrl != null && book.coverUrl!.isNotEmpty
-                          ? CachedNetworkImage(
-                            imageUrl: book.coverUrl!,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            errorWidget:
-                                (context, url, error) =>
-                                    _buildCoverPlaceholder(),
-                          )
-                          : _buildCoverPlaceholder(),
+                  child: book.coverUrl != null && book.coverUrl!.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: book.coverUrl!,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          errorWidget: (context, url, error) => _buildCoverPlaceholder(),
+                        )
+                      : _buildCoverPlaceholder(),
                 ),
-                if (book.lastCheckCount > 0)
+                if (book.lastCheckCount > 0 && !provider.isBatchMode)
                   Positioned(
                     top: 0,
                     right: 0,
@@ -145,6 +217,15 @@ class BookshelfPage extends StatelessWidget {
                       ),
                     ),
                   ),
+                if (provider.isBatchMode)
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: Icon(
+                      isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                      color: isSelected ? Colors.blue : Colors.white70,
+                    ),
+                  )
               ],
             ),
           ),
@@ -168,54 +249,80 @@ class BookshelfPage extends StatelessWidget {
     );
   }
 
-  void _showBookMenu(
-    BuildContext context,
-    BookshelfProvider provider,
-    dynamic book,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.info_outline),
-                title: const Text('書籍詳情'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) => BookDetailPage(
-                            searchBook: SearchBook(
-                              bookUrl: book.bookUrl,
-                              name: book.name,
-                              author: book.author,
-                              coverUrl: book.coverUrl,
-                              intro: book.intro,
-                              origin: book.origin,
-                              originName: book.originName,
-                            ),
-                          ),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.delete_outline, color: Colors.red),
-                title: const Text('移出書架', style: TextStyle(color: Colors.red)),
-                onTap: () {
-                  provider.removeBook(book);
-                  Navigator.pop(context);
-                },
-              ),
-            ],
+  Widget _buildBatchBottomBar(BuildContext context, BookshelfProvider provider) {
+    return BottomAppBar(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          TextButton.icon(
+            icon: const Icon(Icons.drive_file_move),
+            label: const Text('移動'),
+            onPressed: provider.selectedBookUrls.isEmpty ? null : () {
+              _showMoveGroupDialog(context, provider);
+            },
           ),
-        );
-      },
+          TextButton.icon(
+            icon: const Icon(Icons.delete, color: Colors.red),
+            label: const Text('刪除', style: TextStyle(color: Colors.red)),
+            onPressed: provider.selectedBookUrls.isEmpty ? null : () {
+              provider.deleteSelected();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddGroupDialog(BuildContext context, BookshelfProvider provider) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('新增分組'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(hintText: '輸入分組名稱'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                provider.createGroup(controller.text);
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('確定'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showMoveGroupDialog(BuildContext context, BookshelfProvider provider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('選擇分組'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView(
+            shrinkWrap: true,
+            children: provider.groups.map((group) {
+              return ListTile(
+                title: Text(group.groupName),
+                onTap: () {
+                  provider.moveSelectedToGroup(group.groupId);
+                  Navigator.pop(context);
+                },
+              );
+            }).toList(),
+          ),
+        ),
+      ),
     );
   }
 }

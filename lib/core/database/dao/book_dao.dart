@@ -21,14 +21,24 @@ class BookDao {
     );
   }
 
-  /// 獲取所有書架上的書籍
-  Future<List<Book>> getBookshelf() async {
+  /// 獲取書架上的書籍，支援分組與排序
+  Future<List<Book>> getBookshelf({int groupId = -1, String orderBy = '"order" ASC, latestChapterTime DESC'}) async {
     final db = await _db;
+    
+    String whereClause = 'isInBookshelf = ?';
+    List<dynamic> whereArgs = [1];
+
+    if (groupId > 0) {
+      // 在 SQLite 中進行位元運算，group 雖然是 TEXT，但可自動或手動 CAST 為 INTEGER 處理
+      whereClause += ' AND (CAST(ifnull("group", "0") AS INTEGER) & ?) > 0';
+      whereArgs.add(groupId);
+    }
+
     final List<Map<String, dynamic>> maps = await db.query(
       tableName,
-      where: 'isInBookshelf = ?',
-      whereArgs: [1],
-      orderBy: '"order" ASC, latestChapterTime DESC',
+      where: whereClause,
+      whereArgs: whereArgs,
+      orderBy: orderBy,
     );
 
     return List.generate(maps.length, (i) {

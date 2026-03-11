@@ -10,27 +10,76 @@ import '../../core/database/dao/book_source_dao.dart';
 import '../../core/services/book_source_service.dart';
 import '../../core/local_book/epub_parser.dart';
 import '../../core/local_book/txt_parser.dart';
+import '../../core/models/book_group.dart';
+import '../../core/database/dao/book_group_dao.dart';
 
 class BookshelfProvider extends ChangeNotifier {
   final BookDao _bookDao = BookDao();
   final BookSourceDao _sourceDao = BookSourceDao();
+  final BookGroupDao _groupDao = BookGroupDao();
   final BookSourceService _service = BookSourceService();
 
   List<Book> _books = [];
   bool _isLoading = false;
 
+  List<BookGroup> _groups = [];
+  int _currentGroupId = BookGroup.idAll;
+  int _sortType = 0; // 0: order, 1: latestChapterTime, 2: readTime
+
+  bool _isBatchMode = false;
+  Set<String> _selectedBookUrls = {};
+
   List<Book> get books => _books;
   bool get isLoading => _isLoading;
 
+  List<BookGroup> get groups => _groups;
+  int get currentGroupId => _currentGroupId;
+  int get sortType => _sortType;
+
+  bool get isBatchMode => _isBatchMode;
+  Set<String> get selectedBookUrls => _selectedBookUrls;
+
   BookshelfProvider() {
+    loadGroups();
     loadBooks();
+  }
+
+  Future<void> loadGroups() async {
+    _groups = await _groupDao.getAll();
+    notifyListeners();
+  }
+
+  void setGroup(int groupId) {
+    if (_currentGroupId != groupId) {
+      _currentGroupId = groupId;
+      loadBooks();
+    }
+  }
+
+  void setSortType(int type) {
+    if (_sortType != type) {
+      _sortType = type;
+      loadBooks();
+    }
+  }
+
+  String get _currentOrderBy {
+    switch (_sortType) {
+      case 1:
+        return 'latestChapterTime DESC';
+      case 2:
+        return 'durChapterTime DESC';
+      default:
+        return '"order" ASC, latestChapterTime DESC';
+    }
   }
 
   Future<void> loadBooks() async {
     _isLoading = true;
     notifyListeners();
 
-    _books = await _bookDao.getBookshelf();
+    _books = await _bookDao.getBookshelf(
+        groupId: _currentGroupId, orderBy: _currentOrderBy);
 
     _isLoading = false;
     notifyListeners();
@@ -57,7 +106,8 @@ class BookshelfProvider extends ChangeNotifier {
     }
 
     await Future.wait(tasks);
-    _books = await _bookDao.getBookshelf();
+    _books = await _bookDao.getBookshelf(
+        groupId: _currentGroupId, orderBy: _currentOrderBy);
 
     _isLoading = false;
     notifyListeners();
@@ -83,6 +133,63 @@ class BookshelfProvider extends ChangeNotifier {
     await loadBooks();
   }
 
+  // --- 批量管理功能 ---
+  void toggleBatchMode() {
+    _isBatchMode = !_isBatchMode;
+    if (!_isBatchMode) {
+      _selectedBookUrls.clear();
+    }
+    notifyListeners();
+  }
+
+  void toggleSelect(String bookUrl) {
+    if (_selectedBookUrls.contains(bookUrl)) {
+      _selectedBookUrls.remove(bookUrl);
+    } else {
+      _selectedBookUrls.add(bookUrl);
+    }
+    notifyListeners();
+  }
+
+  void selectAll() {
+    if (_selectedBookUrls.length == _books.length) {
+      _selectedBookUrls.clear();
+    } else {
+      _selectedBookUrls = _books.map((b) => b.bookUrl).toSet();
+    }
+    notifyListeners();
+  }
+
+  Future<void> deleteSelected() async {
+    for (var url in _selectedBookUrls) {
+      await _bookDao.updateInBookshelf(url, false);
+    }
+    _isBatchMode = false;
+    _selectedBookUrls.clear();
+    await loadBooks();
+  }
+
+  Future<void> moveSelectedToGroup(int groupId) async {
+    for (var url in _selectedBookUrls) {
+      final book = await _bookDao.getByUrl(url);
+      if (book != null) {
+        book.group = groupId.toString();
+        await _bookDao.insertOrUpdate(book);
+      }
+    }
+    _isBatchMode = false;
+    _selectedBookUrls.clear();
+    await loadBooks();
+  }
+
+  /// 建立全新群組
+  Future<void> createGroup(String name) async {
+    final groupId = await _groupDao.getUnusedId();
+    final group = BookGroup(groupId: groupId, groupName: name);
+    await _groupDao.insert(group);
+    await loadGroups();
+  }
+
   /// 匯入本地書籍
   Future<void> importLocalBook() async {
     try {
@@ -98,7 +205,7 @@ class BookshelfProvider extends ChangeNotifier {
         final file = File(result.files.single.path!);
         final ext = result.files.single.extension?.toLowerCase() ?? '';
 
-        final bookUrl = "local://\${file.path}";
+        final bookUrl = "local://${file.path}";
 
         // 檢查是否已匯入
         final existingBook = await _bookDao.getByUrl(bookUrl);
@@ -123,7 +230,7 @@ class BookshelfProvider extends ChangeNotifier {
             origin: "local",
             originName: "本地書籍",
             isInBookshelf: true,
-            coverUrl: file.path, // 特殊標記以利後續讀取封面
+            coverUrl: file.path,
           );
 
           final chapters = parser.getChapters();
@@ -159,7 +266,7 @@ class BookshelfProvider extends ChangeNotifier {
           for (int i = 0; i < chapters.length; i++) {
             bookChapters.add(
               BookChapter(
-                url: "local_index_\$i",
+                url: "local_index_$i",
                 title: chapters[i]['title'] ?? "Unnamed Chapter",
                 bookUrl: bookUrl,
                 index: i,
@@ -178,17 +285,16 @@ class BookshelfProvider extends ChangeNotifier {
           return;
         }
 
+        // 把新導入的書，預設分組視需要而定，目前保持 null （預設全部書架）
         await _bookDao.insertOrUpdate(book);
         await chapterDao.insertChapters(bookChapters);
 
         await loadBooks();
       }
     } catch (e) {
-      debugPrint("Import Error: \$e");
+      debugPrint("Import Error: $e");
       _isLoading = false;
       notifyListeners();
     }
   }
-
-  // TODO: 分組管理
 }
