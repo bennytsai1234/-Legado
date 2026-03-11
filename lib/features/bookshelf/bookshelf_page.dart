@@ -17,7 +17,15 @@ class BookshelfPage extends StatelessWidget {
         title: const Text('我的書架'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.file_upload),
+            tooltip: '匯入本地書籍',
+            onPressed: () {
+              context.read<BookshelfProvider>().importLocalBook();
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.search),
+            tooltip: '搜尋',
             onPressed: () {
               Navigator.push(
                 context,
@@ -74,6 +82,13 @@ class BookshelfPage extends StatelessWidget {
               );
             },
             child: const Text('去搜尋'),
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton(
+            onPressed: () {
+              context.read<BookshelfProvider>().importLocalBook();
+            },
+            child: const Text('匯入本地書籍'),
           ),
         ],
       ),
