@@ -4,6 +4,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'book_detail_provider.dart';
 import '../../core/models/search_book.dart';
 import '../reader/reader_page.dart';
+import '../reader/manga_reader_page.dart';
+import '../reader/audio_player_page.dart';
 import '../cache_manager/cache_manager_page.dart';
 import '../../core/services/export_book_service.dart';
 
@@ -11,6 +13,21 @@ class BookDetailPage extends StatelessWidget {
   final SearchBook searchBook;
 
   const BookDetailPage({super.key, required this.searchBook});
+
+  void _navigateToReader(BuildContext context, dynamic book, int index) {
+    Widget page;
+    if (book.type == 1) {
+      page = AudioPlayerPage(book: book, chapterIndex: index);
+    } else if (book.type == 2) {
+      page = MangaReaderPage(book: book, chapterIndex: index);
+    } else {
+      page = ReaderPage(book: book, chapterIndex: index);
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => page),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -99,16 +116,7 @@ class BookDetailPage extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder:
-                                        (context) => ReaderPage(
-                                          book: book,
-                                          chapterIndex: index,
-                                        ),
-                                  ),
-                                );
+                                _navigateToReader(context, book, index);
                               },
                             );
                           }, childCount: provider.chapters.length),
@@ -229,13 +237,10 @@ class BookDetailPage extends StatelessWidget {
             Expanded(
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.push(
+                  _navigateToReader(
                     context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) =>
-                              ReaderPage(book: provider.book, chapterIndex: 0),
-                    ),
+                    provider.book,
+                    provider.book.durChapterIndex,
                   );
                 },
                 child: const Text('開始閱讀'),
