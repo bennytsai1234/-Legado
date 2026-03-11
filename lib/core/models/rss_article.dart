@@ -1,15 +1,10 @@
-import 'dart:convert';
-import 'base_rss_article.dart';
-
 /// RssArticle - RSS 文章模型
 /// 對應 Android: data/entities/RssArticle.kt
-class RssArticle extends BaseRssArticle {
-  @override
+class RssArticle {
   String origin;
   String sort;
   String title;
   int order;
-  @override
   String link;
   String? pubDate;
   String? description;
@@ -17,29 +12,22 @@ class RssArticle extends BaseRssArticle {
   String? image;
   String group;
   bool read;
-  @override
   String? variable;
 
-  @override
-  final Map<String, String> variableMap;
-
   RssArticle({
-    this.origin = "",
+    required this.origin,
     this.sort = "",
     this.title = "",
     this.order = 0,
-    this.link = "",
+    required this.link,
     this.pubDate,
     this.description,
     this.content,
     this.image,
-    this.group = "默认分组",
+    this.group = "預設分組",
     this.read = false,
     this.variable,
-  }) : variableMap =
-           variable != null
-               ? Map<String, String>.from(jsonDecode(variable))
-               : {};
+  });
 
   Map<String, dynamic> toJson() {
     return {
@@ -53,7 +41,7 @@ class RssArticle extends BaseRssArticle {
       'content': content,
       'image': image,
       'group': group,
-      'read': read,
+      'read': read ? 1 : 0,
       'variable': variable,
     };
   }
@@ -69,8 +57,8 @@ class RssArticle extends BaseRssArticle {
       description: json['description'],
       content: json['content'],
       image: json['image'],
-      group: json['group'] ?? "默认分组",
-      read: json['read'] ?? false,
+      group: json['group'] ?? "預設分組",
+      read: json['read'] == 1 || json['read'] == true,
       variable: json['variable'],
     );
   }

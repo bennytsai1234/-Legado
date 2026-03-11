@@ -17,6 +17,8 @@ import 'dao/bookmark_dao.dart';
 import 'dao/cache_dao.dart';
 import 'dao/read_record_dao.dart';
 import 'dao/book_group_dao.dart';
+import 'dao/rss_source_dao.dart';
+import 'dao/rss_article_dao.dart';
 
 // TODO: Phase 1~2 實作
 // - [ ] 建立所有表結構
@@ -138,6 +140,8 @@ class AppDatabase {
     await db.execute(CacheDao.createTableQuery());
     await db.execute(ReadRecordDao.createTableQuery());
     await db.execute(BookGroupDao.createTableQuery());
+    await db.execute(RssSourceDao.createTableQuery());
+    await db.execute(RssArticleDao.createTableQuery());
 
     // Chapter content cache
     await db.execute('''

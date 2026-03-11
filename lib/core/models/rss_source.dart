@@ -1,8 +1,6 @@
-import 'base_source.dart';
-
-/// RssSource - RSS 訂閱源模型
+/// RssSource - RSS 來源模型
 /// 對應 Android: data/entities/RssSource.kt
-class RssSource implements BaseSource {
+class RssSource {
   String sourceUrl;
   String sourceName;
   String sourceIcon;
@@ -10,31 +8,18 @@ class RssSource implements BaseSource {
   String? sourceComment;
   bool enabled;
   String? variableComment;
-
-  @override
   String? jsLib;
-
-  @override
-  bool? enabledCookieJar;
-
-  @override
+  bool enabledCookieJar;
   String? concurrentRate;
-
-  @override
   String? header;
-
-  @override
   String? loginUrl;
-
-  @override
   String? loginUi;
-
   String? loginCheckJs;
   String? coverDecodeJs;
   String? sortUrl;
   bool singleUrl;
+  int articleStyle;
 
-  int articleStyle; // 0, 1, 2
   String? ruleArticles;
   String? ruleNextPage;
   String? ruleTitle;
@@ -45,16 +30,18 @@ class RssSource implements BaseSource {
   String? ruleContent;
   String? contentWhitelist;
   String? contentBlacklist;
+
   String? shouldOverrideUrlLoading;
   String? style;
   bool enableJs;
   bool loadWithBaseUrl;
   String? injectJs;
+
   int lastUpdateTime;
   int customOrder;
 
   RssSource({
-    this.sourceUrl = "",
+    required this.sourceUrl,
     this.sourceName = "",
     this.sourceIcon = "",
     this.sourceGroup,
@@ -91,12 +78,6 @@ class RssSource implements BaseSource {
     this.customOrder = 0,
   });
 
-  @override
-  String getTag() => sourceName;
-
-  @override
-  String getKey() => sourceUrl;
-
   Map<String, dynamic> toJson() {
     return {
       'sourceUrl': sourceUrl,
@@ -104,10 +85,10 @@ class RssSource implements BaseSource {
       'sourceIcon': sourceIcon,
       'sourceGroup': sourceGroup,
       'sourceComment': sourceComment,
-      'enabled': enabled,
+      'enabled': enabled ? 1 : 0,
       'variableComment': variableComment,
       'jsLib': jsLib,
-      'enabledCookieJar': enabledCookieJar,
+      'enabledCookieJar': enabledCookieJar ? 1 : 0,
       'concurrentRate': concurrentRate,
       'header': header,
       'loginUrl': loginUrl,
@@ -115,7 +96,7 @@ class RssSource implements BaseSource {
       'loginCheckJs': loginCheckJs,
       'coverDecodeJs': coverDecodeJs,
       'sortUrl': sortUrl,
-      'singleUrl': singleUrl,
+      'singleUrl': singleUrl ? 1 : 0,
       'articleStyle': articleStyle,
       'ruleArticles': ruleArticles,
       'ruleNextPage': ruleNextPage,
@@ -129,8 +110,8 @@ class RssSource implements BaseSource {
       'contentBlacklist': contentBlacklist,
       'shouldOverrideUrlLoading': shouldOverrideUrlLoading,
       'style': style,
-      'enableJs': enableJs,
-      'loadWithBaseUrl': loadWithBaseUrl,
+      'enableJs': enableJs ? 1 : 0,
+      'loadWithBaseUrl': loadWithBaseUrl ? 1 : 0,
       'injectJs': injectJs,
       'lastUpdateTime': lastUpdateTime,
       'customOrder': customOrder,
@@ -144,10 +125,10 @@ class RssSource implements BaseSource {
       sourceIcon: json['sourceIcon'] ?? "",
       sourceGroup: json['sourceGroup'],
       sourceComment: json['sourceComment'],
-      enabled: json['enabled'] ?? true,
+      enabled: json['enabled'] == 1 || json['enabled'] == true,
       variableComment: json['variableComment'],
       jsLib: json['jsLib'],
-      enabledCookieJar: json['enabledCookieJar'],
+      enabledCookieJar: json['enabledCookieJar'] == 1 || json['enabledCookieJar'] == true,
       concurrentRate: json['concurrentRate'],
       header: json['header'],
       loginUrl: json['loginUrl'],
@@ -155,7 +136,7 @@ class RssSource implements BaseSource {
       loginCheckJs: json['loginCheckJs'],
       coverDecodeJs: json['coverDecodeJs'],
       sortUrl: json['sortUrl'],
-      singleUrl: json['singleUrl'] ?? false,
+      singleUrl: json['singleUrl'] == 1 || json['singleUrl'] == true,
       articleStyle: json['articleStyle'] ?? 0,
       ruleArticles: json['ruleArticles'],
       ruleNextPage: json['ruleNextPage'],
@@ -169,88 +150,11 @@ class RssSource implements BaseSource {
       contentBlacklist: json['contentBlacklist'],
       shouldOverrideUrlLoading: json['shouldOverrideUrlLoading'],
       style: json['style'],
-      enableJs: json['enableJs'] ?? true,
-      loadWithBaseUrl: json['loadWithBaseUrl'] ?? true,
+      enableJs: json['enableJs'] == 1 || json['enableJs'] == true,
+      loadWithBaseUrl: json['loadWithBaseUrl'] == 1 || json['loadWithBaseUrl'] == true,
       injectJs: json['injectJs'],
       lastUpdateTime: json['lastUpdateTime'] ?? 0,
       customOrder: json['customOrder'] ?? 0,
-    );
-  }
-
-  RssSource copyWith({
-    String? sourceUrl,
-    String? sourceName,
-    String? sourceIcon,
-    String? sourceGroup,
-    String? sourceComment,
-    bool? enabled,
-    String? variableComment,
-    String? jsLib,
-    bool? enabledCookieJar,
-    String? concurrentRate,
-    String? header,
-    String? loginUrl,
-    String? loginUi,
-    String? loginCheckJs,
-    String? coverDecodeJs,
-    String? sortUrl,
-    bool? singleUrl,
-    int? articleStyle,
-    String? ruleArticles,
-    String? ruleNextPage,
-    String? ruleTitle,
-    String? rulePubDate,
-    String? ruleDescription,
-    String? ruleImage,
-    String? ruleLink,
-    String? ruleContent,
-    String? contentWhitelist,
-    String? contentBlacklist,
-    String? shouldOverrideUrlLoading,
-    String? style,
-    bool? enableJs,
-    bool? loadWithBaseUrl,
-    String? injectJs,
-    int? lastUpdateTime,
-    int? customOrder,
-  }) {
-    return RssSource(
-      sourceUrl: sourceUrl ?? this.sourceUrl,
-      sourceName: sourceName ?? this.sourceName,
-      sourceIcon: sourceIcon ?? this.sourceIcon,
-      sourceGroup: sourceGroup ?? this.sourceGroup,
-      sourceComment: sourceComment ?? this.sourceComment,
-      enabled: enabled ?? this.enabled,
-      variableComment: variableComment ?? this.variableComment,
-      jsLib: jsLib ?? this.jsLib,
-      enabledCookieJar: enabledCookieJar ?? this.enabledCookieJar,
-      concurrentRate: concurrentRate ?? this.concurrentRate,
-      header: header ?? this.header,
-      loginUrl: loginUrl ?? this.loginUrl,
-      loginUi: loginUi ?? this.loginUi,
-      loginCheckJs: loginCheckJs ?? this.loginCheckJs,
-      coverDecodeJs: coverDecodeJs ?? this.coverDecodeJs,
-      sortUrl: sortUrl ?? this.sortUrl,
-      singleUrl: singleUrl ?? this.singleUrl,
-      articleStyle: articleStyle ?? this.articleStyle,
-      ruleArticles: ruleArticles ?? this.ruleArticles,
-      ruleNextPage: ruleNextPage ?? this.ruleNextPage,
-      ruleTitle: ruleTitle ?? this.ruleTitle,
-      rulePubDate: rulePubDate ?? this.rulePubDate,
-      ruleDescription: ruleDescription ?? this.ruleDescription,
-      ruleImage: ruleImage ?? this.ruleImage,
-      ruleLink: ruleLink ?? this.ruleLink,
-      ruleContent: ruleContent ?? this.ruleContent,
-      contentWhitelist: contentWhitelist ?? this.contentWhitelist,
-      contentBlacklist: contentBlacklist ?? this.contentBlacklist,
-      shouldOverrideUrlLoading:
-          shouldOverrideUrlLoading ?? this.shouldOverrideUrlLoading,
-      style: style ?? this.style,
-      enableJs: enableJs ?? this.enableJs,
-      loadWithBaseUrl: loadWithBaseUrl ?? this.loadWithBaseUrl,
-      injectJs: injectJs ?? this.injectJs,
-      lastUpdateTime: lastUpdateTime ?? this.lastUpdateTime,
-      customOrder: customOrder ?? this.customOrder,
     );
   }
 }

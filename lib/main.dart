@@ -10,6 +10,8 @@ import 'features/source_manager/source_manager_provider.dart';
 import 'features/search/search_provider.dart';
 import 'features/settings/settings_page.dart';
 import 'features/settings/settings_provider.dart';
+import 'features/rss/rss_source_page.dart';
+import 'features/rss/rss_source_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,6 +22,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => SearchProvider()),
         ChangeNotifierProvider(create: (_) => BookshelfProvider()),
         ChangeNotifierProvider(create: (_) => ExploreProvider()),
+        ChangeNotifierProvider(create: (_) => RssSourceProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
       ],
       child: const LegadoReaderApp(),
@@ -61,6 +64,7 @@ class _MainPageState extends State<MainPage> {
     BookshelfPage(),
     ExplorePage(),
     SourceManagerPage(),
+    RssSourcePage(),
     SettingsPage(),
   ];
 
@@ -90,6 +94,11 @@ class _MainPageState extends State<MainPage> {
             icon: Icon(Icons.source_outlined),
             selectedIcon: Icon(Icons.source),
             label: '書源',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.rss_feed_outlined),
+            selectedIcon: Icon(Icons.rss_feed),
+            label: '訂閱',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
