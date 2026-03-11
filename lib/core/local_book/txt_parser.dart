@@ -31,7 +31,13 @@ class TxtParser {
         content = utf8.decode(bytes, allowMalformed: true);
       } else {
         _charset = 'GBK';
-        content = gbk.decode(bytes);
+        try {
+          content = gbk.decode(bytes);
+        } catch (_) {
+          // 萬一遇到未知編碼或解碼失敗，直接使用 utf8 容錯模式，避免完全無法讀取
+          _charset = 'UTF-8 (Malformed)';
+          content = utf8.decode(bytes, allowMalformed: true);
+        }
       }
     } catch (e) {
       debugPrint("TxtParser load error: \$e");
