@@ -506,8 +506,9 @@ class _ReaderPageState extends State<ReaderPage> {
                     ],
                   ),
                   const Text("翻頁方式", style: TextStyle(color: Colors.white)),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  Wrap(
+                    spacing: 8.0,
+                    alignment: WrapAlignment.spaceEvenly,
                     children: [
                       ChoiceChip(
                         label: const Text('水平平滑'),

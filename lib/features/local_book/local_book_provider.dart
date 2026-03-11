@@ -63,6 +63,7 @@ class LocalBookProvider extends ChangeNotifier {
     await _bookDao.insertOrUpdate(book);
 
     final List<BookChapter> chapters = [];
+    final List<Map<String, dynamic>> contents = [];
     for (int i = 0; i < chaptersData.length; i++) {
       final item = chaptersData[i];
       final chapter = BookChapter(
@@ -72,11 +73,16 @@ class LocalBookProvider extends ChangeNotifier {
         bookUrl: book.bookUrl,
       );
       chapters.add(chapter);
-      
-      // 直接存入正文快取
-      await _chapterDao.saveContent(book.bookUrl, i, item['content'] ?? "");
+      contents.add({
+        'bookUrl': book.bookUrl,
+        'chapterIndex': i,
+        'content': item['content'] ?? "",
+      });
     }
+    
+    // Batch insert metadata first, then contents
     await _chapterDao.insertChapters(chapters);
+    await _chapterDao.insertContents(contents);
   }
 
   Future<void> _importEpub(File file) async {
@@ -96,6 +102,7 @@ class LocalBookProvider extends ChangeNotifier {
     await _bookDao.insertOrUpdate(book);
 
     final List<BookChapter> chapters = [];
+    final List<Map<String, dynamic>> contents = [];
     for (int i = 0; i < chaptersData.length; i++) {
       final item = chaptersData[i];
       final href = item['href'] ?? "";
@@ -107,10 +114,15 @@ class LocalBookProvider extends ChangeNotifier {
       );
       chapters.add(chapter);
       
-      // 讀取並存入正文
       final content = parser.getChapterContent(href);
-      await _chapterDao.saveContent(book.bookUrl, i, content);
+      contents.add({
+        'bookUrl': book.bookUrl,
+        'chapterIndex': i,
+        'content': content,
+      });
     }
+    
     await _chapterDao.insertChapters(chapters);
+    await _chapterDao.insertContents(contents);
   }
 }
