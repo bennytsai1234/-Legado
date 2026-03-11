@@ -22,7 +22,7 @@ import 'dao/keyboard_assist_dao.dart';
 
 class AppDatabase {
   static const String _dbName = 'legado_reader.db';
-  static const int _dbVersion = 2;
+  static const int _dbVersion = 3;
   static Database? _database;
 
   static Future<Database> get database async {
@@ -95,6 +95,9 @@ class AppDatabase {
         durChapterPos INTEGER DEFAULT 0,
         durChapterTitle TEXT,
         durChapterTime TEXT,
+        tocUrl TEXT DEFAULT '',
+        infoHtml TEXT,
+        tocHtml TEXT,
         origin TEXT NOT NULL,
         originName TEXT,
         originOrder INTEGER DEFAULT 0,
@@ -187,6 +190,11 @@ class AppDatabase {
           // Recreate txt_toc_rules table to fix missing columns (example, serialNumber, enable)
           await db.execute('DROP TABLE IF EXISTS txt_toc_rules');
           await db.execute(TxtTocRuleDao.createTableQuery());
+          break;
+        case 3:
+          await db.execute('ALTER TABLE books ADD COLUMN tocUrl TEXT DEFAULT ""');
+          await db.execute('ALTER TABLE books ADD COLUMN infoHtml TEXT');
+          await db.execute('ALTER TABLE books ADD COLUMN tocHtml TEXT');
           break;
       }
     }

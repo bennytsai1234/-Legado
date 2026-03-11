@@ -92,11 +92,28 @@ class BookSource implements BaseSource {
     this.searchUrl,
   });
 
+  // Helper tools for parsing string-to-int/bool issues
+  static int _parseInt(dynamic value, int defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? defaultValue;
+    if (value is double) return value.toInt();
+    return defaultValue;
+  }
+
+  static bool _parseBool(dynamic value, bool defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    if (value is String) return value.toLowerCase() == 'true' || value == '1';
+    return defaultValue;
+  }
+
   factory BookSource.fromJson(Map<String, dynamic> json) {
     return BookSource(
       bookSourceUrl: json['bookSourceUrl'] ?? '',
       bookSourceName: json['bookSourceName'] ?? '',
-      bookSourceType: json['bookSourceType'] ?? 0,
+      bookSourceType: _parseInt(json['bookSourceType'], 0),
       bookSourceGroup: json['bookSourceGroup'],
       bookSourceComment: json['bookSourceComment'],
       loginUrl: json['loginUrl'],
@@ -106,15 +123,15 @@ class BookSource implements BaseSource {
       header: json['header'],
       variableComment: json['variableComment'],
       variable: json['variable'],
-      customOrder: json['customOrder'] ?? 0,
-      weight: json['weight'] ?? 0,
-      enabled: json['enabled'] ?? true,
-      enabledExplore: json['enabledExplore'] ?? true,
-      enabledCookieJar: json['enabledCookieJar'] ?? false,
-      lastUpdateTime: json['lastUpdateTime'] ?? 0,
-      respondTime: json['respondTime'] ?? 180000,
+      customOrder: _parseInt(json['customOrder'], 0),
+      weight: _parseInt(json['weight'], 0),
+      enabled: _parseBool(json['enabled'], true),
+      enabledExplore: _parseBool(json['enabledExplore'], true),
+      enabledCookieJar: _parseBool(json['enabledCookieJar'], false),
+      lastUpdateTime: _parseInt(json['lastUpdateTime'], 0),
+      respondTime: _parseInt(json['respondTime'], 180000),
       jsLib: json['jsLib'],
-      concurrentRateInt: json['concurrentRate'] ?? 0,
+      concurrentRateInt: _parseInt(json['concurrentRate'], 0),
       ruleSearch:
           json['ruleSearch'] != null
               ? SearchRule.fromJson(json['ruleSearch'])
