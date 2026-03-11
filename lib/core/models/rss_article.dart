@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 /// RssArticle - RSS 文章模型
 /// 對應 Android: data/entities/RssArticle.kt
 class RssArticle {
@@ -13,6 +15,24 @@ class RssArticle {
   String group;
   bool read;
   String? variable;
+
+  Map<String, String> get variableMap {
+    if (variable == null || variable!.isEmpty) return {};
+    try {
+      final map = jsonDecode(variable!) as Map<String, dynamic>;
+      return map.map((key, value) => MapEntry(key, value.toString()));
+    } catch (_) {
+      return {};
+    }
+  }
+
+  String? getVariable(String key) => variableMap[key];
+
+  void putVariable(String key, String val) {
+    final map = variableMap;
+    map[key] = val;
+    variable = jsonEncode(map);
+  }
 
   RssArticle({
     required this.origin,
