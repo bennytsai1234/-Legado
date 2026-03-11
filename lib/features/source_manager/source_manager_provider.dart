@@ -180,21 +180,26 @@ class SourceManagerProvider extends ChangeNotifier {
   }
 
   /// 從 URL 匯入
-  Future<int> importFromUrl(String url) async {
-    try {
-      final response = await Dio().get(url);
-      if (response.data != null) {
-        String content;
-        if (response.data is String) {
-          content = response.data;
-        } else {
-          content = jsonEncode(response.data);
+  Future<int> importFromUrl(String urlText) async {
+    final urls = urlText.split(RegExp(r'[\n\r]+')).map((e) => e.trim()).where((e) => e.isNotEmpty);
+    int totalCount = 0;
+    
+    for (final url in urls) {
+      try {
+        final response = await Dio().get(url);
+        if (response.data != null) {
+          String content;
+          if (response.data is String) {
+            content = response.data;
+          } else {
+            content = jsonEncode(response.data);
+          }
+          totalCount += await importFromText(content);
         }
-        return await importFromText(content);
+      } catch (e) {
+        debugPrint('從 URL 匯入失敗 ($url): $e');
       }
-    } catch (e) {
-      debugPrint('從 URL 匯入失敗: $e');
     }
-    return 0;
+    return totalCount;
   }
 }

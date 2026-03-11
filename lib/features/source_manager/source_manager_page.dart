@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'source_manager_provider.dart';
+import 'source_editor_page.dart';
 import '../../core/models/book_source.dart';
 
 class SourceManagerPage extends StatefulWidget {
@@ -54,11 +55,20 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
                           _showImportDialog(context, isUrl: true);
                         } else if (value == 'clipboard') {
                           _importFromClipboard(context);
+                        } else if (value == 'new') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SourceEditorPage(),
+                            ),
+                          );
                         }
                       },
                       itemBuilder: (context) => [
                         const PopupMenuItem(value: 'url', child: Text('網路匯入')),
-                        const PopupMenuItem(value: 'clipboard', child: Text('剪貼簿匯入')),
+                        const PopupMenuItem(
+                            value: 'clipboard', child: Text('剪貼簿匯入')),
+                        const PopupMenuItem(value: 'new', child: Text('新建書源')),
                       ],
                       icon: const Icon(Icons.add),
                     ),
@@ -169,7 +179,12 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
         if (provider.isBatchMode) {
           provider.toggleSelect(source.bookSourceUrl);
         } else {
-          // TODO: 進入編輯頁面
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SourceEditorPage(source: source),
+            ),
+          );
         }
       },
       onLongPress: () {
@@ -249,9 +264,9 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
         content: TextField(
           controller: _importController,
           decoration: InputDecoration(
-            hintText: isUrl ? '請輸入書源 URL' : '請貼上書源 JSON',
+            hintText: isUrl ? '請輸入書源 URL (可換行多個)' : '請貼上書源 JSON',
           ),
-          maxLines: isUrl ? 1 : 5,
+          maxLines: 5,
         ),
         actions: [
           TextButton(
