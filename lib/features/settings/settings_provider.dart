@@ -139,6 +139,15 @@ class SettingsProvider extends ChangeNotifier {
   bool recordLog = false;
   bool recordHeapDump = false;
 
+  // Aloud Settings Properties
+  bool ignoreAudioFocusAloud = false;
+  bool pauseReadAloudWhilePhoneCalls = false;
+  bool readAloudWakeLock = false;
+  bool systemMediaControlCompatibilityChange = false;
+  bool mediaButtonPerNext = false;
+  bool readAloudByPage = false;
+  bool streamReadAloudAudio = false;
+
   Future<void> setAutoRefresh(bool v) async { autoRefresh = v; notifyListeners(); }
   Future<void> setDefaultToRead(bool v) async { defaultToRead = v; notifyListeners(); }
   Future<void> setShowDiscovery(bool v) async { showDiscovery = v; notifyListeners(); }
@@ -156,6 +165,14 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setProcessText(bool v) async { processText = v; notifyListeners(); }
   Future<void> setRecordLog(bool v) async { recordLog = v; notifyListeners(); }
   Future<void> setRecordHeapDump(bool v) async { recordHeapDump = v; notifyListeners(); }
+
+  Future<void> setIgnoreAudioFocusAloud(bool v) async { ignoreAudioFocusAloud = v; notifyListeners(); }
+  Future<void> setPauseReadAloudWhilePhoneCalls(bool v) async { pauseReadAloudWhilePhoneCalls = v; notifyListeners(); }
+  Future<void> setReadAloudWakeLock(bool v) async { readAloudWakeLock = v; notifyListeners(); }
+  Future<void> setSystemMediaControlCompatibilityChange(bool v) async { systemMediaControlCompatibilityChange = v; notifyListeners(); }
+  Future<void> setMediaButtonPerNext(bool v) async { mediaButtonPerNext = v; notifyListeners(); }
+  Future<void> setReadAloudByPage(bool v) async { readAloudByPage = v; notifyListeners(); }
+  Future<void> setStreamReadAloudAudio(bool v) async { streamReadAloudAudio = v; notifyListeners(); }
 
   /// 資料庫備份
   Future<String?> backupDatabase() async {

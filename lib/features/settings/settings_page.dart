@@ -8,6 +8,7 @@ import '../replace_rule/replace_rule_page.dart';
 import '../source_manager/source_manager_page.dart';
 import 'theme_settings_page.dart';
 import 'other_settings_page.dart';
+import 'aloud_settings_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -103,6 +104,18 @@ class SettingsPage extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const OtherSettingsPage()),
+                  );
+                },
+              ),
+              // 9-1. 朗讀設定
+              ListTile(
+                title: const Text('朗讀設定'),
+                subtitle: const Text('發音引擎、媒體按鍵控制、語調配置'),
+                leading: const Icon(Icons.record_voice_over_outlined),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AloudSettingsPage()),
                   );
                 },
               ),
