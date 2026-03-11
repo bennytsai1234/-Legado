@@ -174,6 +174,51 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setReadAloudByPage(bool v) async { readAloudByPage = v; notifyListeners(); }
   Future<void> setStreamReadAloudAudio(bool v) async { streamReadAloudAudio = v; notifyListeners(); }
 
+  // Reading Settings Properties
+  bool hideStatusBar = false;
+  bool hideNavigationBar = false;
+  bool readBodyToLh = true;
+  bool paddingDisplayCutouts = false;
+  bool useZhLayout = false;
+  bool textFullJustify = true;
+  bool textBottomJustify = true;
+  bool mouseWheelPage = true;
+  bool volumeKeyPage = true;
+  bool volumeKeyPageOnPlay = false;
+  bool keyPageOnLongPress = false;
+  bool autoChangeSource = true;
+  bool selectText = true;
+  bool showBrightnessView = true;
+  bool noAnimScrollPage = false;
+  bool previewImageByClick = false;
+  bool optimizeRender = false;
+  bool disableReturnKey = false;
+  bool expandTextMenu = false;
+  bool showReadTitleAddition = true;
+  bool readBarStyleFollowPage = false;
+
+  Future<void> setHideStatusBar(bool v) async { hideStatusBar = v; notifyListeners(); }
+  Future<void> setHideNavigationBar(bool v) async { hideNavigationBar = v; notifyListeners(); }
+  Future<void> setReadBodyToLh(bool v) async { readBodyToLh = v; notifyListeners(); }
+  Future<void> setPaddingDisplayCutouts(bool v) async { paddingDisplayCutouts = v; notifyListeners(); }
+  Future<void> setUseZhLayout(bool v) async { useZhLayout = v; notifyListeners(); }
+  Future<void> setTextFullJustify(bool v) async { textFullJustify = v; notifyListeners(); }
+  Future<void> setTextBottomJustify(bool v) async { textBottomJustify = v; notifyListeners(); }
+  Future<void> setMouseWheelPage(bool v) async { mouseWheelPage = v; notifyListeners(); }
+  Future<void> setVolumeKeyPage(bool v) async { volumeKeyPage = v; notifyListeners(); }
+  Future<void> setVolumeKeyPageOnPlay(bool v) async { volumeKeyPageOnPlay = v; notifyListeners(); }
+  Future<void> setKeyPageOnLongPress(bool v) async { keyPageOnLongPress = v; notifyListeners(); }
+  Future<void> setAutoChangeSource(bool v) async { autoChangeSource = v; notifyListeners(); }
+  Future<void> setSelectText(bool v) async { selectText = v; notifyListeners(); }
+  Future<void> setShowBrightnessView(bool v) async { showBrightnessView = v; notifyListeners(); }
+  Future<void> setNoAnimScrollPage(bool v) async { noAnimScrollPage = v; notifyListeners(); }
+  Future<void> setPreviewImageByClick(bool v) async { previewImageByClick = v; notifyListeners(); }
+  Future<void> setOptimizeRender(bool v) async { optimizeRender = v; notifyListeners(); }
+  Future<void> setDisableReturnKey(bool v) async { disableReturnKey = v; notifyListeners(); }
+  Future<void> setExpandTextMenu(bool v) async { expandTextMenu = v; notifyListeners(); }
+  Future<void> setShowReadTitleAddition(bool v) async { showReadTitleAddition = v; notifyListeners(); }
+  Future<void> setReadBarStyleFollowPage(bool v) async { readBarStyleFollowPage = v; notifyListeners(); }
+
   /// 資料庫備份
   Future<String?> backupDatabase() async {
     try {

@@ -9,6 +9,7 @@ import '../source_manager/source_manager_page.dart';
 import 'theme_settings_page.dart';
 import 'other_settings_page.dart';
 import 'aloud_settings_page.dart';
+import 'reading_settings_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -116,6 +117,18 @@ class SettingsPage extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const AloudSettingsPage()),
+                  );
+                },
+              ),
+              // 9-2. 閱讀設定
+              ListTile(
+                title: const Text('閱讀設定'),
+                subtitle: const Text('文字排版、翻頁動畫、點擊區域'),
+                leading: const Icon(Icons.menu_book),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ReadingSettingsPage()),
                   );
                 },
               ),
