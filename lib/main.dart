@@ -16,7 +16,7 @@ import 'core/services/default_data.dart';
 import 'core/services/tts_service.dart';
 import 'package:flutter/foundation.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   // 全域錯誤捕獲 (對應 Android CrashHandler)
@@ -29,8 +29,6 @@ void main() async {
     return true;
   };
 
-  await DefaultData.init();
-  
   runApp(
     MultiProvider(
       providers: [
@@ -59,9 +57,72 @@ class LegadoReaderApp extends StatelessWidget {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: settings.themeMode,
-          home: const MainPage(),
+          home: const SplashPage(),
         );
       },
+    );
+  }
+}
+
+class SplashPage extends StatefulWidget {
+  const SplashPage({super.key});
+
+  @override
+  State<SplashPage> createState() => _SplashPageState();
+}
+
+class _SplashPageState extends State<SplashPage> {
+  String _status = '正在初始化...';
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _initApp();
+  }
+
+  Future<void> _initApp() async {
+    try {
+      setState(() => _status = '正在載入資料庫與預設資料...');
+      await DefaultData.init();
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const MainPage()),
+        );
+      }
+    } catch (e, stack) {
+      debugPrint("Init Error: $e\n$stack");
+      if (mounted) {
+        setState(() {
+          _error = "$e\n$stack";
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: _error != null
+            ? SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    '啟動失敗:\n$_error', 
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(_status),
+                ],
+              ),
+      ),
     );
   }
 }
