@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'source_manager_provider.dart';
 import 'source_editor_page.dart';
+import 'source_login_page.dart';
 import '../../core/models/book_source.dart';
 
 class SourceManagerPage extends StatefulWidget {
@@ -171,10 +172,29 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
           ),
         ],
       ),
-      trailing: provider.isBatchMode ? null : Switch(
-        value: source.enabled,
-        onChanged: (value) => provider.toggleEnabled(source),
-      ),
+      trailing: provider.isBatchMode
+          ? null
+          : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (source.loginUrl != null && source.loginUrl!.isNotEmpty)
+                IconButton(
+                  icon: const Icon(Icons.login, size: 20),
+                  tooltip: '登入',
+                  onPressed:
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SourceLoginPage(source: source),
+                        ),
+                      ),
+                ),
+              Switch(
+                value: source.enabled,
+                onChanged: (value) => provider.toggleEnabled(source),
+              ),
+            ],
+          ),
       onTap: () {
         if (provider.isBatchMode) {
           provider.toggleSelect(source.bookSourceUrl);

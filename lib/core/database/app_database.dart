@@ -192,7 +192,13 @@ class AppDatabase {
     int oldVersion,
     int newVersion,
   ) async {
-    // TODO: Handle database migrations
+    for (int i = oldVersion + 1; i <= newVersion; i++) {
+      switch (i) {
+        case 2:
+          // TODO: Implement migrations for version 2
+          break;
+      }
+    }
   }
 
   /// Close the database

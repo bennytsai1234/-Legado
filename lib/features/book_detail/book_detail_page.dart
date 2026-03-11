@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'book_detail_provider.dart';
 import '../../core/models/search_book.dart';
 import '../reader/reader_page.dart';
+import '../cache_manager/cache_manager_page.dart';
 
 class BookDetailPage extends StatelessWidget {
   final SearchBook searchBook;
@@ -21,6 +22,18 @@ class BookDetailPage extends StatelessWidget {
             appBar: AppBar(
               title: Text(book.name),
               actions: [
+                IconButton(
+                  icon: const Icon(Icons.download_for_offline),
+                  tooltip: '快取管理',
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CacheManagerPage(book: book),
+                      ),
+                    );
+                  },
+                ),
                 IconButton(
                   icon: const Icon(Icons.find_replace),
                   tooltip: '換源',
