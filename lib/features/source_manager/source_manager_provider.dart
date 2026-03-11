@@ -176,8 +176,8 @@ class SourceManagerProvider extends ChangeNotifier {
         await loadSources();
         return newSources.length;
       }
-    } catch (e) {
-      debugPrint('匯入書源失敗: $e');
+    } catch (e, stack) {
+      debugPrint('匯入書源失敗: $e\n$stack');
     }
     return 0;
   }
