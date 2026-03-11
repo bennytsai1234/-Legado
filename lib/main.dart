@@ -12,9 +12,11 @@ import 'features/settings/settings_page.dart';
 import 'features/settings/settings_provider.dart';
 import 'features/rss/rss_source_page.dart';
 import 'features/rss/rss_source_provider.dart';
+import 'core/services/default_data.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await DefaultData.init();
   runApp(
     MultiProvider(
       providers: [

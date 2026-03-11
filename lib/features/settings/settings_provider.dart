@@ -10,6 +10,17 @@ class SettingsProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
   ThemeMode get themeMode => _themeMode;
 
+  // WebDAV
+  String _webdavUrl = '';
+  String _webdavUser = '';
+  String _webdavPassword = '';
+  bool _webdavEnabled = false;
+
+  String get webdavUrl => _webdavUrl;
+  String get webdavUser => _webdavUser;
+  String get webdavPassword => _webdavPassword;
+  bool get webdavEnabled => _webdavEnabled;
+
   SettingsProvider() {
     _loadSettings();
   }
@@ -18,6 +29,12 @@ class SettingsProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final mode = prefs.getString('theme_mode') ?? 'system';
     _themeMode = _parseThemeMode(mode);
+
+    _webdavUrl = prefs.getString('webdav_url') ?? '';
+    _webdavUser = prefs.getString('webdav_user') ?? '';
+    _webdavPassword = prefs.getString('webdav_password') ?? '';
+    _webdavEnabled = prefs.getBool('webdav_enabled') ?? false;
+
     notifyListeners();
   }
 
@@ -36,6 +53,24 @@ class SettingsProvider extends ChangeNotifier {
     _themeMode = mode;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('theme_mode', mode.toString().split('.').last);
+    notifyListeners();
+  }
+
+  Future<void> updateWebDav({
+    required String url,
+    required String user,
+    required String password,
+  }) async {
+    _webdavUrl = url;
+    _webdavUser = user;
+    _webdavPassword = password;
+    _webdavEnabled = url.isNotEmpty && user.isNotEmpty && password.isNotEmpty;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('webdav_url', url);
+    await prefs.setString('webdav_user', user);
+    await prefs.setString('webdav_password', password);
+    await prefs.setBool('webdav_enabled', _webdavEnabled);
     notifyListeners();
   }
 
