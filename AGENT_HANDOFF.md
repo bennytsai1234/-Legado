@@ -61,6 +61,133 @@ ios/lib/
 
 ---
 
+## 🏗️ Android 完整結構 → iOS 對照表
+
+Android 根目錄: `legado/app/src/main/java/io/legado/app/`
+
+### data/ — 資料層
+
+| Android | 檔案數 | iOS 對應 | 狀態 |
+|---------|--------|---------|------|
+| `data/entities/` (28 files) | `Book.kt`, `BookSource.kt`, `BookChapter.kt`, `BookGroup.kt`, `Bookmark.kt`, `Cache.kt`, `Cookie.kt`, `DictRule.kt`, `HttpTTS.kt`, `KeyboardAssist.kt`, `ReadRecord.kt`, `ReplaceRule.kt`, `RssArticle.kt`, `RssSource.kt`, `RssStar.kt`, `SearchBook.kt`, etc. | `core/models/` (24 files) | ✅ 少 `RuleSub`, `Server`, `TxtTocRule`, `ReadRecordShow` 4 個 |
+| `data/entities/rule/` | `SearchRule.kt`, `ExploreRule.kt`, `BookInfoRule.kt`, `TocRule.kt`, `ContentRule.kt` | 合併在 `book_source.dart` | ✅ |
+| `data/dao/` (21 files) | BookDao, BookSourceDao, BookGroupDao, BookmarkDao, CacheDao, CookieDao, ReadRecordDao, ReplaceRuleDao, RssArticleDao, RssSourceDao, SearchBookDao, etc. | `core/database/dao/` (13 files) | 🟡 少 `DictRuleDao`, `HttpTTSDao`, `KeyboardAssistsDao`, `RssStarDao`, `RuleSubDao`, `SearchBookDao`, `ServerDao`, `TxtTocRuleDao` |
+
+### model/ — 業務模型層
+
+| Android | 檔案數/大小 | iOS 對應 | 狀態 |
+|---------|-----------|---------|------|
+| `model/analyzeRule/AnalyzeRule.kt` | 32KB | `core/engine/analyze_rule.dart` (539行) | ✅ |
+| `model/analyzeRule/AnalyzeUrl.kt` | 29KB | `core/engine/analyze_url.dart` (364行) | ✅ |
+| `model/analyzeRule/RuleAnalyzer.kt` | 15KB | `core/engine/rule_analyzer.dart` | ✅ |
+| `model/analyzeRule/AnalyzeByJSoup.kt` | 18KB | `core/engine/parsers/analyze_by_css.dart` (482行) | ✅ |
+| `model/analyzeRule/AnalyzeByJSonPath.kt` | 6KB | `core/engine/parsers/analyze_by_json_path.dart` | ✅ |
+| `model/analyzeRule/AnalyzeByXPath.kt` | 5KB | `core/engine/parsers/analyze_by_xpath.dart` | ✅ |
+| `model/analyzeRule/AnalyzeByRegex.kt` | 2KB | `core/engine/parsers/analyze_by_regex.dart` | ✅ |
+| `model/analyzeRule/QueryTTF.java` | 39KB | `core/engine/js/query_ttf.dart` | ✅ |
+| `model/analyzeRule/RuleData.kt` | 1KB | `core/models/rule_data_interface.dart` | ✅ |
+| `model/webBook/WebBook.kt` | 15KB | `core/services/book_source_service.dart` (290行) | ✅ |
+| `model/webBook/BookList.kt` | 13KB | 合併在 book_source_service.dart | ✅ |
+| `model/webBook/BookInfo.kt` | 7KB | 合併在 book_source_service.dart | ✅ |
+| `model/webBook/BookChapterList.kt` | 13KB | 合併在 book_source_service.dart | ✅ |
+| `model/webBook/BookContent.kt` | 9KB | 合併在 book_source_service.dart | ✅ |
+| `model/webBook/SearchModel.kt` | 8KB | 整合在 search_provider.dart | ✅ |
+| `model/rss/Rss.kt` | 4KB | ❌ 未實作 | ❌ |
+| `model/rss/RssParserByRule.kt` | 6KB | ❌ 未實作 | ❌ |
+| `model/rss/RssParserDefault.kt` | 7KB | ❌ 未實作 | ❌ |
+| `model/localBook/` | EpubFile.kt, TextFile.kt etc. | `core/local_book/epub_parser.dart`, `txt_parser.dart` | ✅ |
+| `model/remote/` | RemoteBookWebDav.kt | 整合在 webdav_service.dart | ✅ |
+
+### help/ — 工具/輔助層
+
+| Android | 大小 | iOS 對應 | 狀態 |
+|---------|------|---------|------|
+| `help/JsExtensions.kt` | 33KB | `core/engine/js/js_extensions.dart` (526行) | ✅ |
+| `help/JsEncodeUtils.kt` | 15KB | `core/engine/js/js_encode_utils.dart` | ✅ |
+| `help/AppWebDav.kt` | — | `core/services/webdav_service.dart` (231行) | ✅ |
+| `help/CacheManager.kt` | — | `core/services/cache_manager.dart` | ✅ |
+| `help/ConcurrentRateLimiter.kt` | — | `core/services/rate_limiter.dart` | ✅ |
+| `help/TTS.kt` | — | `core/services/tts_service.dart` | ✅ |
+| `help/ReplaceAnalyzer.kt` | — | 合併在 content_processor.dart | 🟡 部分 |
+| `help/DefaultData.kt` | — | ❌ 預設書源/規則 | ❌ |
+| `help/http/CookieStore.kt` | — | `core/services/cookie_store.dart` | ✅ |
+| `help/http/HttpHelper.kt` + OkHttp系列 | 13 files | `core/services/http_client.dart` | ✅ (簡化) |
+| `help/http/BackstageWebView.kt` | — | `core/services/backstage_webview.dart` | ✅ |
+| `help/rhino/` | — | `core/engine/js/shared_js_scope.dart` | ✅ |
+| `help/config/` | AppConfig, ReadBookConfig, ThemeConfig | `shared/theme/app_theme.dart` + settings_provider | 🟡 部分 |
+| `help/book/` | BookHelp, ContentProcessor | `core/services/content_processor.dart` | ✅ |
+| `help/crypto/` | — | 合併在 js_encode_utils.dart | ✅ |
+| `help/storage/` | — | 用 SharedPreferences 替代 | ✅ |
+| `help/glide/` | 圖片載入 | 用 cached_network_image | ✅ |
+| `help/exoplayer/` | 音頻播放器 | ❌ 無 (需 just_audio) | ❌ |
+
+### service/ — 後台服務
+
+| Android | iOS 對應 | 狀態 |
+|---------|---------|------|
+| `service/TTSReadAloudService.kt` | `core/services/tts_service.dart` | ✅ |
+| `service/CacheBookService.kt` | `core/services/download_service.dart` | ✅ |
+| `service/CheckSourceService.kt` | ❌ 書源校驗服務 | ❌ |
+| `service/AudioPlayService.kt` | ❌ 音頻播放服務 | ❌ |
+| `service/DownloadService.kt` | 合併在 download_service.dart | ✅ |
+| `service/WebService.kt` | ❌ Web 服務器 (不需要) | ⏭️ 跳過 |
+| `service/HttpReadAloudService.kt` | ❌ HTTP TTS | ❌ |
+| `service/ExportBookService.kt` | ❌ 書籍匯出 | ❌ |
+
+### ui/ — 介面層 (最龐大)
+
+| Android 模組 | 子模組 | iOS 對應 | 狀態 |
+|-------------|--------|---------|------|
+| `ui/main/bookshelf/` | 書架 | `features/bookshelf/` | ✅ |
+| `ui/main/explore/` | 發現 | `features/explore/` | ✅ |
+| `ui/main/` | MainActivity | `main.dart` (5-tab) | ✅ |
+| `ui/book/read/` | 閱讀器 (40+ files, ~300KB) | `features/reader/` | ✅ 85% |
+| `ui/book/search/` | 搜尋 | `features/search/` | ✅ |
+| `ui/book/info/` | 書籍詳情 | `features/book_detail/` | ✅ |
+| `ui/book/explore/` | 發現子頁 | 合併在 explore/ | ✅ |
+| `ui/book/source/` + `edit/` | 書源管理 + 編輯器 | `features/source_manager/` | 🟡 缺編輯器 |
+| `ui/book/import/` | 書源匯入 | 🟡 僅剪貼簿 | 🟡 缺 URL |
+| `ui/book/changesource/` | 書源切換 | ❌ | ❌ |
+| `ui/book/changecover/` | 換封面 | ❌ | ❌ |
+| `ui/book/searchContent/` | 正文搜尋 | ❌ | ❌ |
+| `ui/book/cache/` | 快取管理 | ❌ UI | ❌ |
+| `ui/book/toc/` | 章節目錄 | 🟡 缺側滑欄 | 🟡 |
+| `ui/book/bookmark/` | 書籤管理 | 整合在 reader | ✅ |
+| `ui/book/group/` | 書籍分組 | 整合在 bookshelf | ✅ |
+| `ui/book/manage/` | 書架管理 | 整合在 bookshelf | ✅ |
+| `ui/book/audio/` | 音頻播放 | ❌ | ❌ |
+| `ui/book/manga/` | 漫畫閱讀 | ❌ | ❌ |
+| `ui/rss/source/` | RSS 來源 | `features/rss/` | 🟡 骨架 |
+| `ui/rss/article/` | RSS 文章列表 | ❌ | ❌ |
+| `ui/rss/read/` | RSS 閱讀 | ❌ | ❌ |
+| `ui/rss/favorites/` | RSS 收藏 | ❌ | ❌ |
+| `ui/rss/subscription/` | RSS 訂閱管理 | ❌ | ❌ |
+| `ui/replace/edit/` | 替換規則管理 | ❌ | ❌ |
+| `ui/config/` | 設定 | `features/settings/` | ✅ |
+| `ui/login/` | 書源登入 | ❌ | ❌ |
+| `ui/file/` | 本地檔案 | ❌ UI (有解析器) | ❌ |
+| `ui/font/` | 字體管理 | ❌ | ❌ |
+| `ui/dict/` | 字典 | ❌ | ❌ |
+| `ui/qrcode/` | 二維碼 | ❌ | ❌ |
+| `ui/about/` | 關於 | 整合在 settings | ✅ |
+| `ui/browser/` | 內建瀏覽器 | ❌ (可用 url_launcher) | ⏭️ 低優先 |
+| `ui/welcome/` | 歡迎頁 | ❌ (非必須) | ⏭️ 跳過 |
+| `ui/association/` | 檔案關聯 | ❌ (iOS 不適用) | ⏭️ 跳過 |
+| `ui/widget/` | 自訂元件 | 用 Flutter 內建 | ✅ |
+
+### 其他 Android 模組
+
+| Android | iOS 對應 | 狀態 |
+|---------|---------|------|
+| `api/` (ReaderProvider, ShortCuts) | 不需要 (Android 特有) | ⏭️ 跳過 |
+| `base/` (BaseActivity, BaseViewModel) | Flutter 不需要 | ⏭️ 跳過 |
+| `constant/` | 分散在各檔案 | ✅ |
+| `exception/` | Dart 異常處理 | ✅ |
+| `lib/` (cronet, mobi, dialogs, etc.) | 用 Flutter 套件替代 | ✅ |
+| `receiver/` | Android 特有 | ⏭️ 跳過 |
+
+---
+
 ## ❌ 尚未完成的功能 (18 項)
 
 ### P0 — 核心用戶體驗
