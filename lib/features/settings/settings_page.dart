@@ -186,6 +186,7 @@ class SettingsPage extends StatelessWidget {
                 user: userController.text,
                 password: passController.text,
               );
+              if (!context.mounted) return;
               Navigator.pop(context);
             },
             child: const Text('儲存'),
