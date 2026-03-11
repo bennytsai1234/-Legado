@@ -1,13 +1,5 @@
 /// AppDatabase - 本地資料庫管理
 /// 對應 Android: data/AppDatabase.kt
-///
-/// 使用 sqflite 管理所有本地資料：
-/// - 書源 (book_sources)
-/// - 書籍 (books)
-/// - 章節 (chapters)
-/// - 替換規則 (replace_rules)
-/// - 書籤 (bookmarks)
-/// - 搜尋歷史 (search_history)
 library;
 
 import 'package:sqflite/sqflite.dart';
@@ -19,21 +11,20 @@ import 'dao/read_record_dao.dart';
 import 'dao/book_group_dao.dart';
 import 'dao/rss_source_dao.dart';
 import 'dao/rss_article_dao.dart';
-
-// TODO: Phase 1~2 實作
-// - [ ] 建立所有表結構
-// - [ ] 書源 CRUD
-// - [ ] 書籍 CRUD
-// - [ ] 章節快取
-// - [ ] 替換規則
-// - [ ] 資料庫遷移
+import 'dao/dict_rule_dao.dart';
+import 'dao/http_tts_dao.dart';
+import 'dao/rss_star_dao.dart';
+import 'dao/rule_sub_dao.dart';
+import 'dao/search_keyword_dao.dart';
+import 'dao/txt_toc_rule_dao.dart';
+import 'dao/rss_read_record_dao.dart';
+import 'dao/keyboard_assist_dao.dart';
 
 class AppDatabase {
   static const String _dbName = 'legado_reader.db';
   static const int _dbVersion = 1;
   static Database? _database;
 
-  /// Get or create the database instance
   static Future<Database> get database async {
     if (_database != null) return _database!;
     _database = await _initDatabase();
@@ -52,7 +43,7 @@ class AppDatabase {
   }
 
   static Future<void> _onCreate(Database db, int version) async {
-    // Book Sources table
+    // Core tables
     await db.execute('''
       CREATE TABLE book_sources (
         bookSourceUrl TEXT PRIMARY KEY,
@@ -86,7 +77,6 @@ class AppDatabase {
       )
     ''');
 
-    // Books table
     await db.execute('''
       CREATE TABLE books (
         bookUrl TEXT PRIMARY KEY,
@@ -118,7 +108,6 @@ class AppDatabase {
       )
     ''');
 
-    // Chapters table
     await db.execute('''
       CREATE TABLE chapters (
         url TEXT NOT NULL,
@@ -135,15 +124,6 @@ class AppDatabase {
       )
     ''');
 
-    // DAOs tables
-    await db.execute(BookmarkDao.createTableQuery());
-    await db.execute(CacheDao.createTableQuery());
-    await db.execute(ReadRecordDao.createTableQuery());
-    await db.execute(BookGroupDao.createTableQuery());
-    await db.execute(RssSourceDao.createTableQuery());
-    await db.execute(RssArticleDao.createTableQuery());
-
-    // Chapter content cache
     await db.execute('''
       CREATE TABLE chapter_contents (
         bookUrl TEXT NOT NULL,
@@ -153,7 +133,6 @@ class AppDatabase {
       )
     ''');
 
-    // Replace rules table
     await db.execute('''
       CREATE TABLE replace_rules (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -169,7 +148,6 @@ class AppDatabase {
       )
     ''');
 
-    // Search history
     await db.execute('''
       CREATE TABLE search_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -178,30 +156,39 @@ class AppDatabase {
       )
     ''');
 
-    // Cookies table
     await db.execute('''
       CREATE TABLE cookies (
         url TEXT PRIMARY KEY,
         cookie TEXT NOT NULL
       )
     ''');
+
+    // DAO Tables
+    await db.execute(BookmarkDao.createTableQuery());
+    await db.execute(CacheDao.createTableQuery());
+    await db.execute(ReadRecordDao.createTableQuery());
+    await db.execute(BookGroupDao.createTableQuery());
+    await db.execute(RssSourceDao.createTableQuery());
+    await db.execute(RssArticleDao.createTableQuery());
+    await db.execute(DictRuleDao.createTableQuery());
+    await db.execute(HttpTtsDao.createTableQuery());
+    await db.execute(RssStarDao.createTableQuery());
+    await db.execute(RuleSubDao.createTableQuery());
+    await db.execute(SearchKeywordDao.createTableQuery());
+    await db.execute(TxtTocRuleDao.createTableQuery());
+    await db.execute(RssReadRecordDao.createTableQuery());
+    await db.execute(KeyboardAssistDao.createTableQuery());
   }
 
-  static Future<void> _onUpgrade(
-    Database db,
-    int oldVersion,
-    int newVersion,
-  ) async {
+  static Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     for (int i = oldVersion + 1; i <= newVersion; i++) {
       switch (i) {
         case 2:
-          // TODO: Implement migrations for version 2
           break;
       }
     }
   }
 
-  /// Close the database
   static Future<void> close() async {
     final db = _database;
     if (db != null) {
