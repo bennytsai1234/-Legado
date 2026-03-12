@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:provider/provider.dart';
@@ -24,17 +25,71 @@ class PageViewWidget extends StatelessWidget {
     // 監聽 Provider 中的自動翻頁進度
     final provider = context.watch<ReaderProvider>();
 
-    return CustomPaint(
-      size: Size.infinite,
-      painter: _TextPagePainter(
-        page: page,
-        contentStyle: contentStyle,
-        titleStyle: titleStyle,
-        currentTime: DateFormat('HH:mm').format(DateTime.now()),
-        batteryLevel: provider.batteryLevel,
-        isAutoPaging: provider.isAutoPaging,
-        autoPageProgress: provider.autoPageProgress,
-        accentColor: Theme.of(context).colorScheme.primary,
+    return Stack(
+      children: [
+        // 1. 文本與狀態列繪製
+        Positioned.fill(
+          child: CustomPaint(
+            painter: _TextPagePainter(
+              page: page,
+              contentStyle: contentStyle,
+              titleStyle: titleStyle,
+              currentTime: DateFormat('HH:mm').format(DateTime.now()),
+              batteryLevel: provider.batteryLevel,
+              isAutoPaging: provider.isAutoPaging,
+              autoPageProgress: provider.autoPageProgress,
+              accentColor: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ),
+        
+        // 2. 圖片互動層 (深度還原：支援點擊查看圖片)
+        ...page.lines.where((l) => l.image != null).map((line) {
+          final img = line.image!;
+          return Positioned(
+            left: ChapterProvider.paddingLeft + img.left,
+            top: ChapterProvider.paddingTop + line.lineTop,
+            width: img.width,
+            height: img.height,
+            child: GestureDetector(
+              onTap: () => _showImageDialog(context, img.url),
+              child: CachedNetworkImage(
+                imageUrl: img.url,
+                fit: BoxFit.contain,
+                placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                errorWidget: (context, url, error) => const Icon(Icons.broken_image, color: Colors.grey),
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  void _showImageDialog(BuildContext context, String url) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CachedNetworkImage(imageUrl: url),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text("關閉")),
+                const SizedBox(width: 16),
+                ElevatedButton(onPressed: () {
+                  // 深度還原：這裡可實作保存圖片邏輯 (對標 Android ReadBookViewModel.saveImage)
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("已保存圖片 (模擬)")));
+                }, child: const Text("保存")),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -87,12 +87,43 @@ class ChapterProvider {
       textDirection: TextDirection.ltr,
     );
 
+    final imgRegex = RegExp(r'<img src="(.*?)".*?>');
+
     for (int pIndex = 0; pIndex < paragraphs.length; pIndex++) {
       String paraText = paragraphs[pIndex];
       paragraphNum++;
 
       if (paraText.trim().isEmpty) {
         currentHeight += paragraphSpacing;
+        chapterPosition += paraText.length + 1;
+        continue;
+      }
+
+      // 1. 處理圖片標籤
+      if (imgRegex.hasMatch(paraText)) {
+        final match = imgRegex.firstMatch(paraText)!;
+        final url = match.group(1)!;
+        
+        // 圖片排版邏輯：預設佔據 200 高度，寬度撐滿
+        final double imgHeight = 200.0;
+        
+        if (currentHeight + imgHeight > visibleHeight && currentLines.isNotEmpty) {
+          pages.add(TextPage(index: pageIndex++, lines: List.from(currentLines), title: chapter.title, chapterIndex: chapterIndex, chapterSize: chapterSize));
+          currentLines.clear(); currentHeight = 0.0;
+        }
+        
+        currentLines.add(TextLine(
+          text: "[圖片]",
+          width: visibleWidth,
+          height: imgHeight,
+          chapterPosition: chapterPosition,
+          lineTop: currentHeight,
+          lineBottom: currentHeight + imgHeight,
+          paragraphNum: paragraphNum,
+          image: TextImage(url: url, width: visibleWidth, height: imgHeight),
+        ));
+        
+        currentHeight += imgHeight + paragraphSpacing;
         chapterPosition += paraText.length + 1;
         continue;
       }

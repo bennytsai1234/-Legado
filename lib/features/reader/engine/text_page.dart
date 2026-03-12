@@ -1,3 +1,20 @@
+/// TextImage - 圖片資訊 (對標 Android ReadBookViewModel.saveImage)
+class TextImage {
+  final String url;
+  final double width;
+  final double height;
+  final double left;
+  final double top;
+
+  TextImage({
+    required this.url,
+    this.width = 0,
+    this.height = 0,
+    this.left = 0,
+    this.top = 0,
+  });
+}
+
 /// TextLine - 單行文字資訊
 /// 對應 Android: ui/book/read/page/entities/TextLine.kt
 class TextLine {
@@ -10,6 +27,7 @@ class TextLine {
   final double lineTop;
   final double lineBottom;
   final int paragraphNum;
+  final TextImage? image; // 深度還原：支援行內圖片互動
 
   TextLine({
     required this.text,
@@ -21,6 +39,7 @@ class TextLine {
     this.lineTop = 0,
     this.lineBottom = 0,
     this.paragraphNum = 0,
+    this.image,
   });
 }
 

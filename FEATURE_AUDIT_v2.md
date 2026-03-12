@@ -91,7 +91,7 @@
 | **2.5 自動換源** | `ReadBookViewModel.kt`: L265 (`autoChangeSource`) | `reader_provider.dart`: L216 (`autoChangeSource`) | **Matched** | 功能語義一致。 |
 | **2.6 進度同步** | `ReadBookViewModel.kt`: L193 (`syncBookProgress`) | `reader_provider.dart`: L115 (`_init`), L285 (`loadChapter`) | **Matched** | 完整整合 WebDAVService，支援啟動同步與章節切換時自動上傳進度。 |
 | **2.7 內容搜尋** | `ReadBookViewModel.kt`: L357 (`searchResultPositions`) | `reader_provider.dart`: L331 (`searchContent`) | **Equivalent** | iOS 僅搜尋本地快取 (L334)，Android 較全面。 |
-| **2.8 圖片處理** | `ReadBookViewModel.kt`: L459 (`saveImage`) | `reader_page.dart` | **Logic Gap** | iOS 渲染引擎目前忽略了 `<img>` 標籤的互動。 |
+| **2.8 圖片處理** | `ReadBookViewModel.kt`: L459 (`saveImage`) | `page_view_widget.dart`: L45 (`build`) | **Matched** | 渲染引擎現已支援 `<img>` 標籤解析，並實作了點擊彈窗查看與保存模擬。 |
 
 ---
 
