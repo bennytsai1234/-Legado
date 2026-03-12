@@ -21,4 +21,10 @@
 | **2.4 記憶體日誌上限** | `AppLog.kt` | `about_page.dart`: L503 (AppLog) | **Matched** | 均支援在內存中維護最多 500 條運行日誌，包含 Exception 堆疊。 |
 | **2.5 全量清除邏輯** | `ReadRecordActivity.kt`: L100 (dao.clear) | `about_page.dart`: L210 (_clearAll) | **Matched** | 均支援一鍵清空所有閱讀時長紀錄。 |
 | **2.6 記錄全域開關** | `ReadRecordActivity.kt`: L65 (enableReadRecord) | `about_page.dart`: L385 (settings.enableReadRecord) | **Matched** | 均支援透過配置位控制是否紀錄閱讀時長。 |
+| **3.1 JSON 內容特徵辨識** | `FileAssociationActivity.kt`: L71 (successLive) | `intent_handler_service.dart`: L114 (_handleSharedFile) | **Matched** | 均支援根據 JSON 鍵值（如 bookSourceUrl）自動識別書源、RSS 等類型。 |
+| **3.2 書籍物理搬移備份** | `FileAssociationActivity.kt`: L138 (copyTo) | `intent_handler_service.dart`: L85 (_handleSharedBook) | **Matched** | 均支援將外部導入書籍拷貝至 App 專屬沙盒目錄（LegadoBooks）以防遺失。 |
+| **3.3 私有 Scheme 處理** | `FileAssociationActivity.kt`: L55 (onLineImportLive) | `intent_handler_service.dart`: L60 (_handleUri) | **Matched** | 均支援處理 `legado://import/` 等私有鏈接觸發聯機導入。 |
+| **3.4 強制導入機制** | `FileAssociationActivity.kt`: L90 (notSupportedLiveData) | `intent_handler_service.dart`: L142 (_showForceImportDialog) | **Matched** | 當格式無法辨識時，均支援提示用戶是否作為書籍檔案強制導入。 |
+| **3.5 多類型導入對話框** | `ImportBookSourceDialog.kt` 等 | `intent_handler_service.dart`: L163 (_showImportDialog) | **Equivalent** | Android 為每種類型準備獨立 Activity/Dialog；iOS 採用單一動態分發彈窗處理。 |
+
 
