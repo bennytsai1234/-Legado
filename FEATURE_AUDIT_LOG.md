@@ -44,6 +44,12 @@
 | **15.5 搜尋狀態手動控制** | `SearchActivity.kt`: L315 (fbStartStop) | - | **Logic Gap** | Android 提供顯式的「停止/繼續」按鈕以管理正在進行的耗時搜尋任務；iOS 僅提供進度條，無法手動中斷。 |
 | **15.6 精準搜尋模式** | `SearchActivity.kt`: R.id.menu_precision_search | - | **Logic Gap** | Android 提供「精準搜尋」開關以過濾非完全匹配的結果；iOS 目前尚未實作此過濾邏輯。 |
 | **15.7 空結果引導提示** | `SearchActivity.kt`: L523 (alert) | - | **Logic Gap** | Android 在分組搜尋為空時會主動引導切換範圍或關閉精準搜尋；iOS 僅顯示空狀態。 |
+| **16.1 全書內文檢索邏輯** | `SearchContentActivity.kt`: L168 (startContentSearch) | `reader_provider.dart`: L403 (searchContent) | **Matched** | 均支援遞迴掃描全書已快取章節的內文，尋找關鍵字並返回片段。 |
+| **16.2 搜尋狀態控管** | `SearchContentActivity.kt`: L125 (fbStop) | - | **Logic Gap** | Android 支援在搜尋過程中手動停止檢索；iOS 採用 await 模式，無法在中途手動中斷。 |
+| **16.3 搜尋結果定位** | `SearchContentActivity.kt`: L202 (openSearchResult) | `reader_page.dart`: L335 (onTap) | **Matched** | 均支援點擊搜尋結果後自動跳轉至對應章節。 |
+| **16.4 替換規則套用** | `SearchContentActivity.kt`: L88 (menu_enable_replace) | - | **Logic Gap** | Android 可切換搜尋時是否套用正則替換規則；iOS 目前僅對加載後的內容套用規則，搜尋時使用的是原始快取文本。 |
+| **16.5 下一處/上一處定位** | `SearchContentActivity.kt`: L112 (ivSearchContentTop/Bottom) | - | **Logic Gap** | Android 提供快速跳轉至首個/最後一個結果的按鈕；iOS 僅提供列表捲動。 |
+
 
 
 
