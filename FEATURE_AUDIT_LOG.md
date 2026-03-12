@@ -62,6 +62,13 @@
 | **18.4 自定義 TOC 正則** | `TocActivity.kt`: L135 (menu_toc_regex) | - | **Logic Gap** | Android 支援針對本地 TXT 手動輸入正則表達式解析目錄；iOS 目前依賴預設的 TxtParser 邏輯。 |
 | **18.5 章節字數統計** | `TocActivity.kt`: L160 (menu_load_word_count) | - | **Logic Gap** | Android 支援在目錄列表中顯示每個章節的字數預算；iOS 目前僅顯示標題。 |
 | **18.6 書籤匯出功能** | `TocActivity.kt`: L165 (menu_export_bookmark) | - | **Logic Gap** | Android 支援將單本書籍的書籤匯出為 JSON 或 Markdown；iOS 目前缺失此導出路徑。 |
+| **19.1 Cookie 雙向同步** | `CookieStore.kt` | `browser_page.dart`: L50 (_captureCookies) | **Matched** | 均支援在網頁加載完成後擷取 Cookie 並同步至 App 全域儲存。 |
+| **19.2 Cloudflare 挑戰自動識別** | `WebViewActivity.kt`: L300 (isCloudflareChallenge) | - | **Logic Gap** | Android 支援自動檢測 CF 驗證頁面並在通過後自動保存結果；iOS 僅提供基礎網頁展示，需手動操作。 |
+| **19.3 聯機導入 Scheme 攔截** | `WebViewActivity.kt`: L315 (shouldOverrideUrlLoading) | - | **Logic Gap** | Android 可攔截 `legado://` 等私有協定觸發導入；iOS 目前僅處理標準 http/https 請求。 |
+| **19.4 長按交互與圖片保存** | `WebViewActivity.kt`: L165 (OnLongClickListener) | - | **Logic Gap** | Android 支援長按網頁圖片進行保存或選取目錄；iOS 尚未實作此 WebView 擴展。 |
+| **19.5 全屏模式與系統列控制** | `WebViewActivity.kt`: L125 (toggleFullScreen) | - | **Logic Gap** | Android 支援一鍵進入網頁全屏模式並隱藏系統狀態列；iOS 採用標準頁面模式。 |
+| **19.6 自定義下載攔截** | `WebViewActivity.kt`: L185 (setDownloadListener) | - | **Logic Gap** | Android 支援攔截網頁下載請求並導向 App 內建下載器；iOS 依賴 WebView 默認處理或無反應。 |
+
 
 
 
