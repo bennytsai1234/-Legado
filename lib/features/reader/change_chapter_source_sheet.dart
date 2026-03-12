@@ -150,6 +150,22 @@ class _ChangeChapterSourceSheetState extends State<ChangeChapterSourceSheet> {
           _isSearching = false;
           _status = results.isEmpty ? "未找到備用書源" : "搜尋完成 (已自動優選)";
         });
+
+        // 深度還原：空結果引導邏輯 (對標 Android searchFinishCallback)
+        if (results.isEmpty && _selectedGroup != '全部') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('分組「$_selectedGroup」下無結果，是否切換至全部？'),
+              action: SnackBarAction(
+                label: '切換',
+                onPressed: () {
+                  setState(() => _selectedGroup = '全部');
+                  _startSearch();
+                },
+              ),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
