@@ -217,7 +217,7 @@ class _ExplorePageState extends State<ExplorePage> {
             title: const Text('置頂書源'),
             onTap: () {
               Navigator.pop(ctx);
-              // TODO: 實作置頂邏輯 (更新 customOrder)
+              provider.topSource(source);
             },
           ),
           ListTile(
@@ -225,7 +225,7 @@ class _ExplorePageState extends State<ExplorePage> {
             title: const Text('編輯書源'),
             onTap: () {
               Navigator.pop(ctx);
-              // TODO: 跳轉至書源編輯頁
+              // TODO: 跳轉至書源編輯頁 (待模組 17 補齊後連動)
             },
           ),
           ListTile(
@@ -236,7 +236,35 @@ class _ExplorePageState extends State<ExplorePage> {
               Navigator.push(context, MaterialPageRoute(builder: (_) => SearchPage(initialSource: source)));
             },
           ),
+          ListTile(
+            leading: const Icon(Icons.delete_outline, color: Colors.red),
+            title: const Text('刪除書源', style: TextStyle(color: Colors.red)),
+            onTap: () {
+              Navigator.pop(ctx);
+              _showDeleteConfirm(context, source, provider);
+            },
+          ),
           const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirm(BuildContext context, BookSource source, ExploreProvider provider) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('確認刪除'),
+        content: Text('是否刪除書源「${source.bookSourceName}」？'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              provider.deleteSource(source);
+            },
+            child: const Text('刪除', style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );

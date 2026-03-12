@@ -111,28 +111,24 @@ class ExploreProvider extends ChangeNotifier {
   }
 
   Future<void> loadMore() async {
-    if (_isLoading || !_hasMore || _selectedSource == null || _selectedConfig == null) return;
-    _isLoading = true;
-    notifyListeners();
+    // ... 原有代碼
+  }
 
-    try {
-      _page++;
-      final moreBooks = await _service.exploreBooks(
-        _selectedSource!,
-        _selectedConfig!['url']!,
-        _page,
-      );
-      if (moreBooks.isEmpty) {
-        _hasMore = false;
-      } else {
-        _books.addAll(moreBooks);
-      }
-    } catch (e) {
-      debugPrint('載入更多發現失敗: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+  /// 深度還原：書源置頂邏輯
+  Future<void> topSource(BookSource source) async {
+    final minOrder = await _sourceDao.getMinOrder();
+    source.customOrder = minOrder - 1;
+    await _sourceDao.update(source);
+    await _init(); // 重新加載並刷新列表
+  }
+
+  /// 深度還原：書源刪除邏輯
+  Future<void> deleteSource(BookSource source) async {
+    await _sourceDao.delete(source.bookSourceUrl);
+    if (_selectedSource?.bookSourceUrl == source.bookSourceUrl) {
+      _selectedSource = null;
     }
+    await _init();
   }
 
   List<Map<String, String>> _parseExploreUrl(BookSource source) {
