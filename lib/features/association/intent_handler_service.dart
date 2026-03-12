@@ -55,12 +55,19 @@ class IntentHandlerService {
 
   void _handleUri(BuildContext context, Uri uri) {
     debugPrint("處理 Deep Link: $uri");
-    // 範例: legado://import/bookSource?src=url
-    if (uri.host == 'import') {
-      final type = uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : 'auto';
-      final src = uri.queryParameters['src'];
-      if (src != null) {
-        _showImportDialog(context, type, src);
+    // 深度還原：處理更多 legado:// 協議路徑 (對標 Android OnLineImportActivity)
+    if (uri.scheme == 'legado') {
+      if (uri.host == 'import') {
+        final type = uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : 'auto';
+        final src = uri.queryParameters['src'];
+        if (src != null) {
+          _showImportDialog(context, type, src);
+        }
+      } else if (uri.host == 'addBook') {
+        final url = uri.queryParameters['url'];
+        if (url != null) {
+          _showImportDialog(context, 'book', url);
+        }
       }
     }
   }
@@ -201,6 +208,10 @@ class IntentHandlerService {
               context.read<RssSourceProvider>().importFromUrl(src);
             }
           }),
+          if (type == 'book' || type == 'auto')
+            _buildImportButton(ctx, '書籍', () {
+              context.read<BookshelfProvider>().importBookshelfFromUrl(src);
+            }),
           if (type == 'replaceRule' || type == 'auto')
             _buildImportButton(ctx, '替換規則', () {
               if (isFile && jsonData != null) context.read<ReplaceRuleProvider>().importFromText(jsonData);
