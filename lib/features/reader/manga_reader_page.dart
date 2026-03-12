@@ -18,7 +18,7 @@ class MangaReaderPage extends StatefulWidget {
   State<MangaReaderPage> createState() => _MangaReaderPageState();
 }
 
-class _MangaReaderPageState extends State<MangaReaderPage> {
+class _MangaReaderPageState extends State<MangaReaderPage> with WidgetsBindingObserver {
   late int _currentChapterIndex;
   List<String> _imageUrls = [];
   bool _isLoading = true;
@@ -26,7 +26,13 @@ class _MangaReaderPageState extends State<MangaReaderPage> {
   BookSource? _source;
   bool _showControls = true;
   double _brightness = 1.0;
+  int _currentPage = 0; // 當前頁碼 (對標 Android durChapterPos)
+  
+  // 閱讀模式：0: 垂直, 1: 水平, 2: WebToon
+  int _readingMode = 0; 
 
+  final PageController _pageController = PageController();
+  final ScrollController _scrollController = ScrollController();
   final BookSourceService _service = BookSourceService();
   final BookSourceDao _sourceDao = BookSourceDao();
   final ChapterDao _chapterDao = ChapterDao();
@@ -37,12 +43,53 @@ class _MangaReaderPageState extends State<MangaReaderPage> {
     _currentChapterIndex = widget.chapterIndex;
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     _init();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_readingMode != 1) { // 垂直或 WebToon 模式
+      // 根據捲動偏移量簡單估算頁碼 (對標 Android 邏輯)
+      final pos = (_scrollController.offset / 600).floor();
+      if (pos != _currentPage && pos < _imageUrls.length) {
+        setState(() => _currentPage = pos);
+      }
+    }
   }
 
   @override
   void dispose() {
+    _scrollController.dispose();
+    _pageController.dispose();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
+  }
+
+  // 深度還原：處理點擊區域 (對標 Android webtoonFrame.onTouchMiddle/onNextPage)
+  void _handleTap(TapUpDetails details, double width) {
+    final x = details.globalPosition.dx;
+    if (x < width / 3) {
+      _prevPage();
+    } else if (x > width * 2 / 3) {
+      _nextPage();
+    } else {
+      _toggleControls();
+    }
+  }
+
+  void _nextPage() {
+    if (_readingMode == 1) {
+      _pageController.nextPage(duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
+    } else {
+      _scrollController.animateTo(_scrollController.offset + 500, duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
+    }
+  }
+
+  void _prevPage() {
+    if (_readingMode == 1) {
+      _pageController.previousPage(duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
+    } else {
+      _scrollController.animateTo(_scrollController.offset - 500, duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
+    }
   }
 
   Future<void> _init() async {
@@ -82,97 +129,113 @@ class _MangaReaderPageState extends State<MangaReaderPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // 內容層
-          GestureDetector(
-            onTap: _toggleControls,
-            child: _isLoading 
-              ? const Center(child: CircularProgressIndicator(color: Colors.white))
-              : InteractiveViewer(
-                  minScale: 1.0,
-                  maxScale: 5.0,
-                  child: ListView.builder(
-                    itemCount: _imageUrls.length,
-                    cacheExtent: 1000, // 預加載圖片
-                    itemBuilder: (context, index) {
-                      return CachedNetworkImage(
-                        imageUrl: _imageUrls[index],
-                        placeholder: (context, url) => Container(
-                          height: 400,
-                          color: Colors.black,
-                          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          height: 200,
-                          color: Colors.grey[900],
-                          child: const Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.broken_image, color: Colors.white),
-                              Text("圖片加載失敗", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                            ],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return Stack(
+            children: [
+              // 內容層：深度還原三段式區域點擊與模式切換
+              GestureDetector(
+                onTapUp: (details) => _handleTap(details, constraints.maxWidth),
+                child: _isLoading 
+                  ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                  : InteractiveViewer(
+                      minScale: 1.0,
+                      maxScale: 5.0,
+                      child: _readingMode == 1 
+                        ? PageView.builder(
+                            controller: _pageController,
+                            itemCount: _imageUrls.length,
+                            onPageChanged: (idx) => setState(() => _currentPage = idx),
+                            itemBuilder: (ctx, idx) => _buildMangaImage(idx),
+                          )
+                        : ListView.builder(
+                            controller: _scrollController,
+                            itemCount: _imageUrls.length,
+                            cacheExtent: 2000,
+                            padding: EdgeInsets.zero,
+                            itemBuilder: (ctx, idx) => _buildMangaImage(idx),
                           ),
-                        ),
-                        fit: BoxFit.fitWidth,
-                      );
-                    },
-                  ),
+                    ),
+              ),
+
+              // 頁尾資訊條 (深度還原 Android InfoBar)
+              if (!_showControls)
+                Positioned(
+                  bottom: 4, left: 0, right: 0,
+                  child: _buildInfoBar(),
                 ),
-          ),
 
-          // 頂部工具列
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 200),
-            top: _showControls ? 0 : -100,
-            left: 0,
-            right: 0,
-            child: _buildTopBar(),
-          ),
+              // 頂部工具列
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 200),
+                top: _showControls ? 0 : -100,
+                left: 0, right: 0,
+                child: _buildTopBar(),
+              ),
 
-          // 底部工具列
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 200),
-            bottom: _showControls ? 0 : -120,
-            left: 0,
-            right: 0,
-            child: _buildBottomBar(),
-          ),
+              // 底部工具列
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 200),
+                bottom: _showControls ? 0 : -150,
+                left: 0, right: 0,
+                child: _buildBottomBar(),
+              ),
 
-          // 亮度覆蓋
-          if (_brightness < 1.0)
-            IgnorePointer(
-              child: Container(color: Colors.black.withValues(alpha: 1.0 - _brightness)),
-            ),
-        ],
+              // 亮度覆蓋
+              if (_brightness < 1.0)
+                IgnorePointer(
+                  child: Container(color: Colors.black.withValues(alpha: 1.0 - _brightness)),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildTopBar() {
-    final topPadding = MediaQuery.of(context).padding.top;
-    return Container(
-      padding: EdgeInsets.only(top: topPadding),
-      color: Colors.black.withValues(alpha: 0.85),
-      child: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildMangaImage(int index) {
+    return CachedNetworkImage(
+      imageUrl: _imageUrls[index],
+      placeholder: (context, url) => Container(
+        height: 400,
+        color: Colors.black,
+        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      ),
+      errorWidget: (context, url, error) => Container(
+        height: 200,
+        color: Colors.grey[900],
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(widget.book.name, style: const TextStyle(color: Colors.white, fontSize: 16)),
-            Text(_chapters.isNotEmpty ? _chapters[_currentChapterIndex].title : "", 
-              style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            Icon(Icons.broken_image, color: Colors.white),
+            Text("圖片加載失敗", style: TextStyle(color: Colors.white70, fontSize: 12)),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.list, color: Colors.white),
-            onPressed: _showToc,
+      ),
+      fit: _readingMode == 2 ? BoxFit.fitWidth : BoxFit.contain,
+    );
+  }
+
+  Widget _buildInfoBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.4)),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            '${_chapters.isNotEmpty ? _chapters[_currentChapterIndex].title : ""} (${_currentPage + 1}/${_imageUrls.length})',
+            style: const TextStyle(color: Colors.white70, fontSize: 10),
+          ),
+          Row(
+            children: [
+              const Icon(Icons.battery_3_bar, color: Colors.white70, size: 10),
+              const SizedBox(width: 4),
+              Text(
+                DateFormat('HH:mm').format(DateTime.now()),
+                style: const TextStyle(color: Colors.white70, fontSize: 10),
+              ),
+            ],
           ),
         ],
       ),
@@ -189,17 +252,32 @@ class _MangaReaderPageState extends State<MangaReaderPage> {
         children: [
           Row(
             children: [
+              const Icon(Icons.chrome_reader_mode_outlined, color: Colors.white, size: 18),
+              const SizedBox(width: 12),
+              const Text("閱讀模式：", style: TextStyle(color: Colors.white, fontSize: 14)),
+              DropdownButton<int>(
+                dropdownColor: Colors.grey[900],
+                value: _readingMode,
+                items: const [
+                  DropdownMenuItem(value: 0, child: Text("垂直捲動", style: TextStyle(color: Colors.white, fontSize: 13))),
+                  DropdownMenuItem(value: 1, child: Text("水平翻頁", style: TextStyle(color: Colors.white, fontSize: 13))),
+                  DropdownMenuItem(value: 2, child: Text("WebToon", style: TextStyle(color: Colors.white, fontSize: 13))),
+                ],
+                onChanged: (v) => setState(() => _readingMode = v!),
+              ),
+              const Spacer(),
               const Icon(Icons.brightness_6, color: Colors.white70, size: 18),
-              Expanded(
+              SizedBox(
+                width: 100,
                 child: Slider(
                   value: _brightness,
-                  min: 0.1,
-                  max: 1.0,
+                  min: 0.1, max: 1.0,
                   onChanged: (v) => setState(() => _brightness = v),
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
