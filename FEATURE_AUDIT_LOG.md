@@ -60,11 +60,67 @@
 | **9.3 分組過濾與動態選單** | `ExploreFragment.kt`: L123 (upGroupsMenu) | `explore_page.dart`: L81 (_buildSourcePicker) | **Matched** | 均能動態提取所有具備發現規則的書源分組並供用戶過濾。 |
 | **9.4 壓縮/摺疊模式** | `ExploreAdapter.kt`: compressExplore | - | **Logic Gap** | Android 支援一鍵摺疊所有書源的探索項以節省空間；iOS 採用單一書源切換模式，無全域摺疊。 |
 | **9.5 發現頁書源管理** | `ExploreViewModel.kt`: topSource | `explore_page.dart`: L100 (TODO) | **Logic Gap** | Android 支援在發現頁直接置頂、編輯或刪除書源；iOS 目前僅有 UI 佔位，邏輯尚未實作。 |
-
-
-
-
-
-
-
+| **10.1 分組上限檢核** | `GroupManageDialog.kt`: L76 (canAddGroup) | `bookshelf_provider.dart`: L268 (createGroup) | **Matched** | 均實作了 64 個分組的上限檢核邏輯。 |
+| **10.2 拖拽排序與持久化** | `ItemTouchCallback.kt` | `bookshelf_provider.dart`: L305 (reorderGroups) | **Matched** | 均支援透過拖拽調整分組順序並同步更新 `order` 欄位。 |
+| **10.3 批量操作與進度** | `BookshelfManageActivity.kt` | `bookshelf_provider.dart`: L316 (batchAutoChangeSource) | **Matched** | 均支援批量換源、批量下載、批量移動分組，並提供進度反饋。 |
+| **10.4 刷新併發 Pool 控制** | `MainViewModel.kt`: L55 | `bookshelf_provider.dart`: L335 (Pool) | **Matched** | 刷新書架時均採用併發池 (Pool) 機制控制請求頻率，防止被源站封鎖。 |
+| **10.5 滑動連續選取** | `DragSelectTouchHelper.kt` | - | **Logic Gap** | Android 支援滑動連續勾選多本書籍；iOS 目前需逐一擊點勾選，無連選快感。 |
+| **10.6 分組封面自定義** | - | `group_manage_page.dart`: L130 (_showRenameDialog) | **Equivalent** | iOS 額外實作了為每個分組自定義封面的功能，Android 僅顯示文字圖標。 |
+| **11.1 封面點擊交互** | `BookInfoActivity.kt` | `book_detail_page.dart` | **Logic Gap** | Android 點擊封面可查看大圖與保存；iOS 點擊觸發換封面彈窗。 |
+| **11.2 閱讀/繼續閱讀按鈕** | `BookInfoActivity.kt`: L441 | `book_detail_page.dart`: L136 | **Matched** | 均支援根據當前進度顯示「開始/繼續閱讀」。 |
+| **11.3 加入/移出書架** | `BookInfoActivity.kt`: L456 | `book_detail_page.dart`: L29 | **Matched** | 均支援即時切換書架狀態與持久化。 |
+| **11.4 換源彈窗分發** | `ChangeBookSourceDialog.kt` | `book_detail_page.dart`: L141 | **Equivalent** | Android 使用獨立 Dialog；iOS 採用 ModalBottomSheet。 |
+| **11.5 目錄加載與倒序** | `BookInfoViewModel.kt`: L120 | `book_detail_page.dart`: L85 | **Matched** | 均支援目錄搜尋與正/倒序顯示。 |
+| **11.6 WebDav 上傳同步** | `BookInfoViewModel.kt`: L245 | - | **Logic Gap** | Android 支援針對單一書籍觸發同步；iOS 目前僅有全域備份。 |
+| **11.7 正文快取清理** | `BookInfoActivity.kt` | `book_detail_page.dart`: L36 | **Matched** | 均支援刪除該書已下載的章節內容。 |
+| **11.9 大檔案章節物理分割** | `BookInfoViewModel.kt` | - | **Logic Gap** | Android 支援將超大章節物理分割為子章節；iOS 僅在渲染時虛擬分頁。 |
+| **12.1 目錄導航方式** | `ImportBookActivity.kt` | `file_picker` (System) | **Logic Gap** | Android 內建檔案瀏覽器，iOS 呼叫系統 Picker。 |
+| **12.2 遞迴掃描機制** | `ImportBookViewModel.kt`: L138 | `local_book_provider.dart`: L95 | **Matched** | 均支援全資料夾遞迴尋找書籍。 |
+| **12.3 檔案名正則解析** | `ImportBookViewModel.kt` | - | **Logic Gap** | Android 支援從檔名自動提取作者與書名；iOS 僅取檔名。 |
+| **12.4 批量導入功能** | `ImportBookActivity.kt` | `smart_scan_page.dart`: L150 | **Matched** | 均支援勾選多個檔案批次匯入書架。 |
+| **12.5 重複檢測邏輯** | `ImportBookViewModel.kt` | `local_book_provider.dart` | **Matched** | 匯入時均會比對路徑/書名防止重複。 |
+| **13.1 閱讀模式切換** | `ReadMangaActivity.kt` | - | **Logic Gap** | Android 支援 WebToon/雙頁/覆蓋；iOS 僅有基礎 PageView。 |
+| **13.2 自定義手勢區域** | `MangaMenu.kt` | - | **Logic Gap** | Android 支援九宮格點擊區域自定義；iOS 固定。 |
+| **13.3 圖片預加載策略** | `MangaAdapter.kt` | - | **Logic Gap** | Android 支援高度自定義的預載緩衝區；iOS 較基礎。 |
+| **13.4 自動捲動功能** | `AutoPager.kt` | - | **Logic Gap** | Android 支援設定速度自動捲動漫畫；iOS 缺失。 |
+| **13.5 頁尾資訊定制** | `MangaFooterConfig.kt` | - | **Logic Gap** | Android 支援顯示電量/時間/進度條於頁尾；iOS 缺失。 |
+| **14.1 九宮格點擊區域** | `PageView.kt`: L150 | `click_action_config_page.dart` | **Matched** | 均支援自定義九宮格交互。 |
+| **14.2 仿真翻頁動畫** | `PageView.kt` | - | **Logic Gap** | Android 具備原生 Canvas 實現的仿真翻頁；iOS 目前缺乏。 |
+| **14.3 替換規則即時套用** | `ReadBookViewModel.kt`: L435 | `chapter_provider.dart`: L210 | **Matched** | 均在渲染章節內容前套用替換規則。 |
+| **14.5 長章節自動分割** | `ReadBookViewModel.kt` | - | **Logic Gap** | Android 支援對 >1MB 章節進行預處理分割；iOS 僅虛擬分頁。 |
+| **14.8 進度雲端即時同步** | `ReadBookViewModel.kt` | - | **Logic Gap** | Android 支援閱讀時即時同步至 WebDav；iOS 僅在退出。 |
+| **15.1 併發搜尋機制** | `SearchViewModel.kt`: L129 | `search_provider.dart`: L65 | **Matched** | 均採用異步併發模型。 |
+| **15.2 搜尋結果聚合顯示** | `SearchAdapter.kt` | `search_page.dart`: L180 | **Matched** | 均將不同源的結果聚合顯示。 |
+| **15.5 搜尋狀態手動控管** | `SearchActivity.kt` | - | **Logic Gap** | Android 支援手動暫停/恢復單個源；iOS 僅能全域停止。 |
+| **15.6 語法過濾搜尋** | `SearchViewModel.kt` | - | **Logic Gap** | Android 支援 `title=xxx` 等特定語法過濾；iOS 僅關鍵字。 |
+| **16.1 全書文字檢索** | `SearchContentViewModel.kt`: L150 | `reader_provider.dart`: L410 | **Matched** | 均支援在所有已下載章節中搜尋。 |
+| **16.2 搜尋任務中斷停止** | `SearchContentViewModel.kt` | - | **Logic Gap** | Android 可隨時取消 Scan Job；iOS 需等待完成。 |
+| **16.4 搜尋結果替換渲染** | `SearchContentAdapter.kt` | - | **Logic Gap** | Android 搜尋結果會套用替換規則；iOS 顯示原始內容。 |
+| **17.1 多維度匯入路徑** | `BookSourceActivity.kt`: L210 | `source_manager_provider.dart`: L145 | **Matched** | 均支援網址/檔案/掃碼三種路徑。 |
+| **17.2 書源 Debug 輸出** | `BookSourceDebugActivity.kt` | `debug_page.dart` | **Matched** | 均提供即時的 JSON 解析日誌輸出。 |
+| **17.5 響應速度排序** | `BookSourceActivity.kt` | - | **Logic Gap** | Android 支援依據 Ping 值自動排序書源；iOS 缺失。 |
+| **17.6 域名聚合模式** | `BookSourceActivity.kt` | - | **Logic Gap** | Android 支援將同網站的書源摺疊聚合；iOS 缺失。 |
+| **18.1 目錄/書籤切換** | `TocActivity.kt` | - | **Logic Gap** | Android 整合在單一 Tab 中；iOS 拆分為側邊欄與獨立頁面。 |
+| **18.4 目錄正則修正** | `TxtTocRuleActivity.kt` | - | **Logic Gap** | Android 支援用戶自定義正則重構目錄；iOS 依賴書源預設。 |
+| **18.6 書籤匯出格式** | `AllBookmarkViewModel.kt` | - | **Logic Gap** | Android 提供 JSON/TXT 匯出；iOS 僅文字分享。 |
+| **19.1 Cookie 同步持久化** | `WebViewActivity.kt`: L180 | `browser_page.dart`: L120 | **Matched** | 均支援 Web 登入後的 Cookie 同步。 |
+| **19.2 CF 驗證自動跳轉** | `WebViewActivity.kt` | - | **Logic Gap** | Android 整合了自動識別並引導 CF 驗證；iOS 缺失。 |
+| **19.3 Scheme 攔截機制** | `WebViewActivity.kt` | - | **Logic Gap** | Android 支援攔截自定義 Scheme；iOS 受系統限制。 |
+| **20.1 WebDav 自動同步** | `Backup.kt` | `backup_settings_page.dart` | **Equivalent** | 均實作了基於 WebDav 的規則備份與還原。 |
+| **20.2 備份項目完整度** | `Backup.kt` | - | **Logic Gap** | Android 包含字體/主題等；iOS 僅書架/書源。 |
+| **20.3 定時自動備份** | `Backup.kt` | - | **Logic Gap** | Android 支援 WorkManager 定時備份；iOS 僅手動。 |
+| **20.5 備份檔案加密** | `Backup.kt` | - | **Logic Gap** | Android 支援 AES 加密備份檔；iOS 為明文 JSON。 |
+| **21.1 內嵌網頁解析彈窗** | `DictDialog.kt` | - | **Logic Gap** | Android 支援在閱讀頁長按彈出字典 WebView；iOS 缺失。 |
+| **21.2 多字典標籤切換** | `DictDialog.kt` | - | **Logic Gap** | Android 支援同時查詢多個字典並切換標籤；iOS 缺失。 |
+| **22.1 字典規則管理 UI** | `DictRuleActivity.kt` | - | **Logic Gap** | Android 有獨立管理頁面；iOS 僅有資料模型。 |
+| **22.2 規則匯入匯出** | `DictRuleActivity.kt` | - | **Logic Gap** | Android 支援規則匯入機制；iOS 缺失。 |
+| **23.1 FileDoc 系統訪問** | `FileManageActivity.kt` | `file_picker` (System) | **Matched** | 均支援透過系統底層 API 訪問檔案。 |
+| **23.2 交互模式對齊** | `FileManageActivity.kt` | `file_picker` | **Equivalent** | Android 內建檔案總管；iOS 使用系統文件 App 交互。 |
+| **23.4 層級路徑導覽** | `FileManageActivity.kt` | - | **Logic Gap** | Android 支援麵包屑路徑跳轉；iOS 依賴系統 UI。 |
+| **23.5 沙盒內新建資料夾** | `FileManageActivity.kt` | - | **Logic Gap** | Android 支援在 App 專屬目錄新建結構；iOS 受限。 |
+| **24.1 字體動態加載邏輯** | `FontSelectDialog.kt` | `font_manager_page.dart`: L50 (FontLoader) | **Matched** | 均支援在運行時動態加載本地 .ttf/.otf 檔案並套用至 UI。 |
+| **24.2 系統預設字體選單** | `FontSelectDialog.kt`: menu_default | `font_manager_page.dart`: L15 (_systemFonts) | **Matched** | 均提供系統內建字體（如 Sans, Serif, 萍方）的快速選取功能。 |
+| **24.3 字體匯入與備份** | `FileDoc.fromFile` | `font_manager_page.dart`: L85 (File.copy) | **Matched** | 均支援選取外部字體並拷貝至 App 私有目錄以防原始檔案被移動。 |
+| **24.4 外部目錄授權掃描** | `PreferKey.fontFolder` | - | **Logic Gap** | Android 支援直接授權掃描整個 SD 卡字體目錄；iOS 受限於沙盒，僅支援單個檔案匯入管理。 |
+| **24.5 自定義字體管理** | - | `font_manager_page.dart`: L115 (_deleteFont) | **Equivalent** | iOS 額外實作了自定義字體列表的刪除管理功能，Android 僅提供選取。 |
 
