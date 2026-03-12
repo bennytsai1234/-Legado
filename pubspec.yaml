@@ -80,6 +80,7 @@ dependencies:
 
   # === Local Storage (key-value) ===
   shared_preferences: ^2.3.4
+  package_info_plus: ^8.2.0
 
   # === UUID ===
   uuid: ^4.5.1

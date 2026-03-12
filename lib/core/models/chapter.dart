@@ -148,4 +148,42 @@ class BookChapter {
       'variable': variable,
     };
   }
+
+  BookChapter copyWith({
+    String? url,
+    String? title,
+    bool? isVolume,
+    String? baseUrl,
+    String? bookUrl,
+    int? index,
+    bool? isVip,
+    bool? isPay,
+    String? resourceUrl,
+    String? tag,
+    String? wordCount,
+    int? start,
+    int? end,
+    String? startFragmentId,
+    String? endFragmentId,
+    String? variable,
+  }) {
+    return BookChapter(
+      url: url ?? this.url,
+      title: title ?? this.title,
+      isVolume: isVolume ?? this.isVolume,
+      baseUrl: baseUrl ?? this.baseUrl,
+      bookUrl: bookUrl ?? this.bookUrl,
+      index: index ?? this.index,
+      isVip: isVip ?? this.isVip,
+      isPay: isPay ?? this.isPay,
+      resourceUrl: resourceUrl ?? this.resourceUrl,
+      tag: tag ?? this.tag,
+      wordCount: wordCount ?? this.wordCount,
+      start: start ?? this.start,
+      end: end ?? this.end,
+      startFragmentId: startFragmentId ?? this.startFragmentId,
+      endFragmentId: endFragmentId ?? this.endFragmentId,
+      variable: variable ?? this.variable,
+    );
+  }
 }

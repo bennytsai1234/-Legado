@@ -8,7 +8,7 @@ import '../database/dao/book_source_dao.dart';
 import '../database/dao/chapter_dao.dart';
 import '../database/dao/download_dao.dart';
 import 'book_source_service.dart';
-import 'event_bus.dart';
+import '../engine/app_event_bus.dart';
 
 /// DownloadService - 書籍離線快取服務
 /// 對應 Android: service/CacheBookService.kt
@@ -244,9 +244,9 @@ class DownloadService extends ChangeNotifier {
       if (task.status != 2) {
         task.status = 3; // 已完成
         await _downloadDao.updateProgress(task.bookUrl, status: 3);
-        
+
         // 觸發書架刷新 (對標 Android 任務結束後的通知)
-        AppEventBus().fire(AppEvent(AppEventBus.upBookshelf, data: task.bookUrl));
+        AppEventBus().fire(AppEventBus.upBookshelf, data: task.bookUrl);
       }
     } catch (e) {
       if (task.status != 2) {

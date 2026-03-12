@@ -13,22 +13,22 @@ class ChangeCoverProvider extends ChangeNotifier {
   final SearchBookDao _searchBookDao = SearchBookDao();
   final BookSourceService _service = BookSourceService();
 
-  List<SearchBook> _covers = [];
+  List<AggregatedSearchBook> _covers = []; // 修正類型
   bool _isSearching = false;
   int _searchCount = 0;
   int _totalSources = 0;
 
-  List<SearchBook> get covers => _covers;
+  List<AggregatedSearchBook> get covers => _covers;
   bool get isSearching => _isSearching;
   double get progress => _totalSources == 0 ? 0 : _searchCount / _totalSources;
 
   // 預設封面虛擬項 (對標 Android defaultCover)
-  SearchBook _buildDefaultCoverItem(String name, String author) {
-    return SearchBook(
-      book: Book(
+  AggregatedSearchBook _buildDefaultCoverItem(String name, String author) {
+    return AggregatedSearchBook(
+      book: SearchBook(
+        bookUrl: 'use_default_cover',
         name: name,
         author: author,
-        bookUrl: 'use_default_cover',
         origin: 'system',
         originName: '恢復預設封面',
       ),
@@ -72,7 +72,7 @@ class ChangeCoverProvider extends ChangeNotifier {
   }
 
   Future<void> search(String name, String author) async {
-    _isSearching = false; // 先停止現有任務
+    _isSearching = false;
     notifyListeners();
     await Future.delayed(const Duration(milliseconds: 50));
 
@@ -81,7 +81,6 @@ class ChangeCoverProvider extends ChangeNotifier {
     _searchCount = 0;
     notifyListeners();
 
-    // 重新載入快取（防止重複）
     final cached = await _searchBookDao.getEnabledHasCover(name, author);
     for (var b in cached) {
       if (!_covers.any((c) => c.book.coverUrl == b.book.coverUrl)) {
@@ -99,7 +98,6 @@ class ChangeCoverProvider extends ChangeNotifier {
       return;
     }
 
-    // 深度還原：使用全域 Pool 控制併發 (對應 Android threadCount)
     final threadCount = await SharedPreferences.getInstance().then((p) => p.getInt('thread_count') ?? 8);
     final coverPool = Pool(threadCount);
 
@@ -126,11 +124,14 @@ class ChangeCoverProvider extends ChangeNotifier {
       );
 
       for (var result in books) {
-        if (result.book.coverUrl != null && result.book.coverUrl!.isNotEmpty) {
-          if (!_covers.any((c) => c.book.coverUrl == result.book.coverUrl)) {
-            _covers.add(result);
-            // 深度還原：搜尋成功後存入快取資料庫
-            await _searchBookDao.insert(result);
+        if (result.coverUrl != null && result.coverUrl!.isNotEmpty) {
+          if (!_covers.any((c) => c.book.coverUrl == result.coverUrl)) {
+            final aggregated = AggregatedSearchBook(
+              book: result,
+              sources: [result.originName ?? '未知'],
+            );
+            _covers.add(aggregated);
+            await _searchBookDao.insert(aggregated);
             notifyListeners();
           }
         }

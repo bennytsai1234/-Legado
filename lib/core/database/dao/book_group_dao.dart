@@ -21,7 +21,7 @@ class BookGroupDao {
     ''';
   }
 
-  Future<BookGroup?> getByID(int id) async {
+  Future<BookGroup?> getById(int id) async {
     final db = await AppDatabase.database;
     final List<Map<String, dynamic>> maps = await db.query(
       tableName,
@@ -32,6 +32,21 @@ class BookGroupDao {
       return BookGroup.fromJson(maps.first);
     }
     return null;
+  }
+
+  /// 初始化預設分組
+  Future<void> initDefaultGroups() async {
+    final db = await AppDatabase.database;
+    await db.insert(
+      tableName,
+      {'groupId': -1, 'groupName': '全部', 'order': -1, 'show': 1},
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
+    await db.insert(
+      tableName,
+      {'groupId': 0, 'groupName': '未分組', 'order': 0, 'show': 1},
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
   }
 
   Future<BookGroup?> getByName(String groupName) async {

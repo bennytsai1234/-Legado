@@ -61,4 +61,22 @@ class TextPage {
     }
     return formatted;
   }
+
+  TextPage copyWith({
+    int? index,
+    List<TextLine>? lines,
+    String? title,
+    int? chapterIndex,
+    int? chapterSize,
+    int? pageSize,
+  }) {
+    return TextPage(
+      index: index ?? this.index,
+      lines: lines ?? this.lines,
+      title: title ?? this.title,
+      chapterIndex: chapterIndex ?? this.chapterIndex,
+      chapterSize: chapterSize ?? this.chapterSize,
+      pageSize: pageSize ?? this.pageSize,
+    );
+  }
 }

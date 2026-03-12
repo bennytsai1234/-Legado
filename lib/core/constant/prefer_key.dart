@@ -57,6 +57,10 @@ class PreferKey {
   static const String nightBrightness = "nightBrightness";
   
   static const String syncBookProgress = "syncBookProgress";
+  static const String localPassword = "local_password";
+  static const String appCrash = "app_crash";
+  static const String lastVersionCode = "last_version_code";
+  static const String threadCount = "thread_count";
   
   // 顏色與背景配置
   static const String cPrimary = "colorPrimary";

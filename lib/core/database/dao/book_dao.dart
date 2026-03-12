@@ -198,8 +198,20 @@ class BookDao {
     _notify();
   }
 
+  /// 獲取所有在書架上的書籍 (isInBookshelf = 1)
+  Future<List<Book>> getAllInBookshelf() async {
+    final db = await _db;
+    final List<Map<String, dynamic>> maps = await db.query(
+      tableName,
+      where: 'isInBookshelf = 1',
+    );
+    return List.generate(maps.length, (i) {
+      return Book.fromJson(maps[i]);
+    });
+  }
+
   /// 刪除書籍
-  Future<void> delete(String bookUrl) async {
+  Future<void> deleteByUrl(String bookUrl) async {
     final db = await _db;
     await db.delete(tableName, where: 'bookUrl = ?', whereArgs: [bookUrl]);
     _notify();

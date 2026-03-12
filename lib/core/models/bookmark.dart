@@ -54,4 +54,30 @@ class Bookmark {
       content: json['content'] ?? "",
     );
   }
+
+  Bookmark copyWith({
+    int? id,
+    int? time,
+    String? bookName,
+    String? bookAuthor,
+    int? chapterIndex,
+    int? chapterPos,
+    String? chapterName,
+    String? bookUrl,
+    String? bookText,
+    String? content,
+  }) {
+    return Bookmark(
+      id: id ?? this.id,
+      time: time ?? this.time,
+      bookName: bookName ?? this.bookName,
+      bookAuthor: bookAuthor ?? this.bookAuthor,
+      chapterIndex: chapterIndex ?? this.chapterIndex,
+      chapterPos: chapterPos ?? this.chapterPos,
+      chapterName: chapterName ?? this.chapterName,
+      bookUrl: bookUrl ?? this.bookUrl,
+      bookText: bookText ?? this.bookText,
+      content: content ?? this.content,
+    );
+  }
 }

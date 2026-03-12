@@ -75,7 +75,7 @@ class _BookmarkListPageState extends State<BookmarkListPage> {
     if (asJson) {
       try {
         final List<Map<String, dynamic>> jsonList = _allBookmarks.map((e) => e.toJson()).toList();
-        final String jsonStr = const JsonEncoder.withIndent('  ').convert(jsonList);
+        final String jsonStr = JsonEncoder.withIndent('  ').convert(jsonList);
         await Share.share(jsonStr, subject: 'Legado 書籤 JSON 導出');
       } catch (e) {
         if (mounted) {

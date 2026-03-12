@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'shared/theme/app_theme.dart';
 import 'features/bookshelf/bookshelf_page.dart';
 import 'features/explore/explore_page.dart';
@@ -20,11 +22,7 @@ import 'features/book_detail/change_cover_provider.dart';
 import 'features/association/intent_handler_service.dart';
 import 'core/services/tts_service.dart';
 import 'core/engine/app_event_bus.dart';
-import 'package:flutter/services.dart';
-import 'core/engine/app_event_bus.dart';
 import 'core/services/default_data.dart';
-import 'core/services/tts_service.dart';
-import 'package:flutter/foundation.dart';
 
 // 背景任務回呼函數 (對應 Android DownloadService)
 @pragma('vm:entry-point')
@@ -217,7 +215,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
       return false;
     }
 
-    final isTtsPlaying = context.read<TtsService>().isPlaying;
+    final isTtsPlaying = context.read<TTSService>().isPlaying;
     if (isTtsPlaying) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('朗讀正在運行，已為您保持背景播放')),
@@ -406,11 +404,11 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
 
         return PopScope(
           canPop: false,
-          onPopInvokedWithResult: (didPop, result) async {
+          onPopInvokedWithResult: (bool didPop, dynamic result) async {
             if (didPop) return;
             final shouldPop = await _onWillPop();
             if (shouldPop && mounted) {
-              SystemNavigator.pop();
+              await SystemChannels.platform.invokeMethod('SystemNavigator.pop');
             }
           },
           child: Scaffold(
@@ -418,67 +416,68 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
               index: _currentIndex,
               children: menuItems.map((item) => item['page'] as Widget).toList(),
             ),
-          bottomNavigationBar: NavigationBar(
-            selectedIndex: _currentIndex,
-            onDestinationSelected: (index) {
-              if (_currentIndex == index) {
-                final now = DateTime.now();
-                if (now.difference(_lastTapTime).inMilliseconds < 300) {
-                  final label = menuItems[index]['label'];
-                  if (label == '書架') {
-                    AppEventBus().fire(AppEventBus.upBookshelf);
-                  } else if (label == '發現') {
-                    AppEventBus().fire("explore_event");
+            bottomNavigationBar: NavigationBar(
+              selectedIndex: _currentIndex,
+              onDestinationSelected: (index) {
+                if (_currentIndex == index) {
+                  final now = DateTime.now();
+                  if (now.difference(_lastTapTime).inMilliseconds < 300) {
+                    final label = menuItems[index]['label'];
+                    if (label == '書架') {
+                      AppEventBus().fire(AppEventBus.upBookshelf);
+                    } else if (label == '發現') {
+                      AppEventBus().fire("explore_event");
+                    }
                   }
+                  _lastTapTime = now;
+                  return;
                 }
-                _lastTapTime = now;
-                return;
-              }
 
-              setState(() {
-                _currentIndex = index;
-                if (menuItems[index]['label'] == '書架') _newChapterCount = 0;
-                if (menuItems[index]['label'] == '訂閱') context.read<RssSourceProvider>().clearUnread();
-              });
-            },
-            destinations: menuItems.map((item) {
-              if (item['label'] == '書架') {
+                setState(() {
+                  _currentIndex = index;
+                  if (menuItems[index]['label'] == '書架') _newChapterCount = 0;
+                  if (menuItems[index]['label'] == '訂閱') context.read<RssSourceProvider>().clearUnread();
+                });
+              },
+              destinations: menuItems.map((item) {
+                if (item['label'] == '書架') {
+                  return NavigationDestination(
+                    icon: Consumer<BookshelfProvider>(
+                      builder: (ctx, bookshelf, child) {
+                        final upCount = bookshelf.updatingCount;
+                        final label = upCount > 0 ? '$upCount' : (_newChapterCount > 0 ? '$_newChapterCount' : '');
+                        final isUpdate = upCount > 0;
+                        return Badge(
+                          isLabelVisible: isUpdate || _newChapterCount > 0,
+                          label: Text(label),
+                          backgroundColor: isUpdate ? Colors.blue : Colors.red,
+                          child: Icon(item['icon'] as IconData),
+                        );
+                      },
+                    ),
+                    selectedIcon: Consumer<BookshelfProvider>(
+                      builder: (ctx, bookshelf, child) {
+                        final upCount = bookshelf.updatingCount;
+                        final label = upCount > 0 ? '$upCount' : (_newChapterCount > 0 ? '$_newChapterCount' : '');
+                        final isUpdate = upCount > 0;
+                        return Badge(
+                          isLabelVisible: isUpdate || _newChapterCount > 0,
+                          label: Text(label),
+                          backgroundColor: isUpdate ? Colors.blue : Colors.red,
+                          child: Icon(item['selectedIcon'] as IconData),
+                        );
+                      },
+                    ),
+                    label: item['label'] as String,
+                  );
+                }
                 return NavigationDestination(
-                  icon: Consumer<BookshelfProvider>(
-                    builder: (ctx, bookshelf, child) {
-                      final upCount = bookshelf.updatingCount;
-                      final label = upCount > 0 ? '$upCount' : (_newChapterCount > 0 ? '$_newChapterCount' : '');
-                      final isUpdate = upCount > 0;
-                      return Badge(
-                        isLabelVisible: isUpdate || _newChapterCount > 0,
-                        label: Text(label),
-                        backgroundColor: isUpdate ? Colors.blue : Colors.red,
-                        child: Icon(item['icon'] as IconData),
-                      );
-                    },
-                  ),
-                  selectedIcon: Consumer<BookshelfProvider>(
-                    builder: (ctx, bookshelf, child) {
-                      final upCount = bookshelf.updatingCount;
-                      final label = upCount > 0 ? '$upCount' : (_newChapterCount > 0 ? '$_newChapterCount' : '');
-                      final isUpdate = upCount > 0;
-                      return Badge(
-                        isLabelVisible: isUpdate || _newChapterCount > 0,
-                        label: Text(label),
-                        backgroundColor: isUpdate ? Colors.blue : Colors.red,
-                        child: Icon(item['selectedIcon'] as IconData),
-                      );
-                    },
-                  ),
+                  icon: item['icon'] is Widget ? item['icon'] as Widget : Icon(item['icon'] as IconData),
+                  selectedIcon: item['selectedIcon'] is Widget ? item['selectedIcon'] as Widget : Icon(item['selectedIcon'] as IconData),
                   label: item['label'] as String,
                 );
-              }
-              return NavigationDestination(
-                icon: item['icon'] is Widget ? item['icon'] as Widget : Icon(item['icon'] as IconData),
-                selectedIcon: item['selectedIcon'] is Widget ? item['selectedIcon'] as Widget : Icon(item['selectedIcon'] as IconData),
-                label: item['label'] as String,
-              );
-            }).toList(),
+              }).toList(),
+            ),
           ),
         );
       },

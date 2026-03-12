@@ -8,7 +8,25 @@ import 'chinese_utils.dart';
 /// 負責過濾標題、繁簡轉換、文字排版整理等
 /// 對應 Android: help/book/ContentProcessor.kt
 class ContentProcessor {
-  ContentProcessor._();
+  ContentProcessor();
+
+  /// 基礎處理方法 (供 ExportBookService 使用)
+  String process(String content) {
+    if (content == "null" || content.isEmpty) return content;
+    
+    // 執行基本清洗：簡繁轉換與重新分段
+    String result = ChineseUtils.t2s(content);
+    result = _reSegment(result, "");
+    
+    // 基本排版：去除多餘空格並加上縮排
+    final lines = result.split('\n');
+    final processedLines = lines.map((line) {
+      final trimmed = line.trimLeft().replaceAll(RegExp(r'^[\s　]+'), '');
+      return trimmed.isNotEmpty ? "　　$trimmed" : "";
+    }).where((line) => line.isNotEmpty);
+    
+    return processedLines.join('\n');
+  }
 
   /// 處理正文內容
   static String processContent(

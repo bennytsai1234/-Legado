@@ -12,6 +12,20 @@ class AppEventBus {
   static const String upBookshelf = 'upBookshelf';
   static const String bookshelfRefreshStart = 'bookshelfRefreshStart';
   static const String bookshelfRefreshEnd = 'bookshelfRefreshEnd';
+  static const String mediaButton = "mediaButton";
+  static const String recreate = "RECREATE";
+  static const String aloudState = "aloud_state";
+  static const String ttsProgress = "ttsStart";
+  static const String upConfig = "upConfig";
+  static const String webService = "webService";
+  static const String upDownload = "upDownload";
+  static const String upDownloadState = "upDownloadState";
+  static const String saveContent = "saveContent";
+  static const String checkSource = "checkSource";
+  static const String checkSourceDone = "checkSourceDone";
+  static const String sourceChanged = "sourceChanged";
+  static const String searchResult = "searchResult";
+  static const String updateReadActionBar = "updateReadActionBar";
 
   void fire(String name, {dynamic data}) {
     _eventBus.fire(AppEvent(name, data: data));

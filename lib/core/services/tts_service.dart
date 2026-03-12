@@ -137,3 +137,5 @@ class TTSService extends ChangeNotifier {
     super.dispose();
   }
 }
+
+final ttsService = TTSService();
