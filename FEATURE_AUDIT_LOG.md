@@ -123,4 +123,9 @@
 | **24.3 字體匯入與備份** | `FileDoc.fromFile` | `font_manager_page.dart`: L85 (File.copy) | **Matched** | 均支援選取外部字體並拷貝至 App 私有目錄以防原始檔案被移動。 |
 | **24.4 外部目錄授權掃描** | `PreferKey.fontFolder` | - | **Logic Gap** | Android 支援直接授權掃描整個 SD 卡字體目錄；iOS 受限於沙盒，僅支援單個檔案匯入管理。 |
 | **24.5 自定義字體管理** | - | `font_manager_page.dart`: L115 (_deleteFont) | **Equivalent** | iOS 額外實作了自定義字體列表的刪除管理功能，Android 僅提供選取。 |
+| **25.1 WebView 自動登入** | `WebViewActivity.kt` | `source_login_page.dart`: L45 (_captureCookies) | **Matched** | 均支援透過內建瀏覽器登入後自動擷取 Cookie 並持久化。 |
+| **25.2 動態登入 UI 生成** | `loginUi` (JSON Config) | `DynamicFormBuilder.dart` | **Matched** | 均支援根據書源配置的 loginUi JSON 自動生成文字輸入框、密碼框等登入介面。 |
+| **25.3 登入狀態 JS 檢核** | `loginCheckJs` | - | **Logic Gap** | Android 登入後自動執行 JS 檢核 Cookie 有效性；iOS 目前僅保存 Cookie，缺乏實質檢核執行。 |
+| **25.4 登入動作 JS 連動** | `onAction` (JS Call) | `source_login_page.dart`: L60 (TODO) | **Logic Gap** | Android 支援在動態介面中點擊按鈕觸發 JS 進行表單提交或驗證；iOS 目前僅有 UI 觸發，無實質 JS 綁定。 |
+
 
