@@ -69,9 +69,22 @@ class _BookmarkListPageState extends State<BookmarkListPage> {
     }
   }
 
-  Future<void> _exportBookmarks() async {
+  Future<void> _exportBookmarks({bool asJson = false}) async {
     if (_allBookmarks.isEmpty) return;
     
+    if (asJson) {
+      try {
+        final List<Map<String, dynamic>> jsonList = _allBookmarks.map((e) => e.toJson()).toList();
+        final String jsonStr = const JsonEncoder.withIndent('  ').convert(jsonList);
+        await Share.share(jsonStr, subject: 'Legado 書籤 JSON 導出');
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('JSON 導出失敗: $e')));
+        }
+      }
+      return;
+    }
+
     final buffer = StringBuffer();
     buffer.writeln('# Legado Reader 書籤匯出');
     buffer.writeln('導出日期: ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}');
@@ -90,6 +103,31 @@ class _BookmarkListPageState extends State<BookmarkListPage> {
     }
 
     await Share.share(buffer.toString(), subject: 'Legado 書籤匯出');
+  }
+
+  Future<void> _showExportMenu() async {
+    final result = await showModalBottomSheet<int>(
+      context: context,
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.description_outlined),
+            title: const Text('導出為 Markdown (文字版)'),
+            onTap: () => Navigator.pop(ctx, 0),
+          ),
+          ListTile(
+            leading: const Icon(Icons.code),
+            title: const Text('導出為 JSON (備份版)'),
+            onTap: () => Navigator.pop(ctx, 1),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+
+    if (result == 0) _exportBookmarks(asJson: false);
+    if (result == 1) _exportBookmarks(asJson: true);
   }
 
   Future<void> _deleteBookmark(Bookmark bookmark) async {
@@ -241,7 +279,7 @@ class _BookmarkListPageState extends State<BookmarkListPage> {
           IconButton(
             icon: const Icon(Icons.share_outlined),
             tooltip: '匯出書籤',
-            onPressed: _allBookmarks.isNotEmpty ? _exportBookmarks : null,
+            onPressed: _allBookmarks.isNotEmpty ? _showExportMenu : null,
           ),
           IconButton(
             icon: const Icon(Icons.delete_sweep_outlined),
