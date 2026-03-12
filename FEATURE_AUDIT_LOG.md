@@ -110,6 +110,9 @@
 | **20.7 閱讀進度單獨同步** | `AppWebDav.kt`: L300 (uploadBookProgress) | `webdav_service.dart`: L125 (uploadBookProgress) | **Matched** | 均支援針對單本書籍即時同步閱讀進度至 WebDav。 |
 | **21.1 字典內嵌解析對話框** | `DictDialog.kt`: L55 (setHtml) | `dictionary_service.dart`: L20 (launchUrl) | **Logic Gap** | Android 在 App 內部透過對話框請求解析並顯示 HTML 結果；iOS 目前僅替換關鍵字後跳轉外部瀏覽器。 |
 | **21.2 多字典切換標籤** | `DictDialog.kt`: L65 (tabLayout) | `dictionary_service.dart`: L15 (firstWhere) | **Logic Gap** | Android 支援在對話框中透過 Tab 切換多個已啟用的字典；iOS 目前僅抓取第一個啟用的字典規則。 |
+| **22.1 字典規則管理介面** | `DictRuleActivity.kt` | - | **Logic Gap** | Android 擁有完整的字典規則 CRUD、拖拽排序與批量啟用介面；iOS 端目前完全沒有實作字典規則的 UI 管理頁面。 |
+| **22.2 字典規則匯入/匯出** | `DictRuleActivity.kt`: L110 (importDoc/qr) | - | **Logic Gap** | Android 支援透過網路、本地檔案、掃碼匯入/匯出字典規則 JSON；iOS 端目前缺失此功能。 |
+
 
 
 
