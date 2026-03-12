@@ -7,6 +7,7 @@ import 'theme_settings_page.dart';
 import 'font_manager_page.dart';
 import 'other_settings_page.dart';
 import 'aloud_settings_page.dart';
+import '../cache_manager/download_manager_page.dart';
 import '../about/about_page.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -74,6 +75,17 @@ class SettingsPage extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const BackupSettingsPage()),
+                  );
+                },
+              ),
+              _buildListTile(
+                context,
+                icon: Icons.download_for_offline_outlined,
+                title: '下載管理',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const DownloadManagerPage()),
                   );
                 },
               ),
