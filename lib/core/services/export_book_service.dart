@@ -3,44 +3,58 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/book.dart';
 import '../database/dao/chapter_dao.dart';
+import 'content_processor.dart';
 
 class ExportBookService {
   final ChapterDao _chapterDao = ChapterDao();
+  final ContentProcessor _processor = ContentProcessor();
 
-  /// 匯出全書為 TXT 檔案
-  Future<void> exportToTxt(Book book) async {
+  /// 匯出全書為 TXT 檔案 (深度還原：支援規則套用與進度回饋)
+  Future<void> exportToTxt(Book book, {Function(double progress)? onProgress}) async {
     final chapters = await _chapterDao.getChapters(book.bookUrl);
     if (chapters.isEmpty) {
-      throw Exception("書籍目錄為空");
+      throw Exception("書籍目錄為空，請先下載目錄");
     }
 
     final buffer = StringBuffer();
     buffer.writeln(book.name);
     buffer.writeln("作者：${book.author.isEmpty ? '未知' : book.author}");
+    buffer.writeln("來源：${book.originName}");
     buffer.writeln("-" * 20);
     buffer.writeln();
 
-    for (final chapter in chapters) {
-      final content = await _chapterDao.getContent(book.bookUrl, chapter.index);
+    for (int i = 0; i < chapters.length; i++) {
+      final chapter = chapters[i];
+      String? content = await _chapterDao.getContent(book.bookUrl, chapter.index);
+      
       buffer.writeln(chapter.title);
       buffer.writeln();
+      
       if (content != null && content.isNotEmpty) {
+        // 深度還原：套用正則替換規則 (對標 Android ContentProcessor)
+        content = _processor.process(content);
         buffer.writeln(content);
       } else {
-        buffer.writeln("(章節未快取)");
+        buffer.writeln("(該章節尚未下載快取)");
       }
+      
       buffer.writeln();
       buffer.writeln("-" * 10);
       buffer.writeln();
+
+      if (onProgress != null) {
+        onProgress((i + 1) / chapters.length);
+      }
     }
 
     final tempDir = await getTemporaryDirectory();
-    // 清理檔名非法字元
+    // 深度還原：檔名安全性處理
     final safeName = book.name.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
-    final file = File('${tempDir.path}/$safeName.txt');
+    final filePath = '${tempDir.path}/$safeName.txt';
+    final file = File(filePath);
     await file.writeAsString(buffer.toString());
 
-    // 調用分享
+    // 調用系統分享分發檔案
     await Share.shareXFiles([XFile(file.path)], text: '匯出書籍: ${book.name}');
   }
 }

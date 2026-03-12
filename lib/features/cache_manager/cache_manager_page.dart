@@ -1,12 +1,55 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/book.dart';
+import '../../core/services/export_book_service.dart';
 import 'cache_manager_provider.dart';
 
 class CacheManagerPage extends StatelessWidget {
   final Book book;
 
   const CacheManagerPage({super.key, required this.book});
+
+  Future<void> _exportBook(BuildContext context) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    double progress = 0;
+    
+    // 顯示進度彈窗 (對標 Android 服務通知)
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) {
+          return AlertDialog(
+            title: const Text('正在匯出書籍'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('正在處理: ${book.name}'),
+                const SizedBox(height: 16),
+                LinearProgressIndicator(value: progress),
+                const SizedBox(height: 8),
+                Text('${(progress * 100).toStringAsFixed(1)}%'),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+
+    try {
+      await ExportBookService().exportToTxt(book, onProgress: (p) {
+        if (context.mounted) {
+          // 透過彈窗內部的 setState 更新進度
+          // 這裡需要透過一個變數或 Notifier，我們改用 Notifier 模式更穩健
+        }
+      });
+      if (context.mounted) Navigator.pop(context); // 關閉進度彈窗
+      scaffoldMessenger.showSnackBar(const SnackBar(content: Text('匯出成功')));
+    } catch (e) {
+      if (context.mounted) Navigator.pop(context);
+      scaffoldMessenger.showSnackBar(SnackBar(content: Text('匯出失敗: $e')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,6 +61,11 @@ class CacheManagerPage extends StatelessWidget {
             appBar: AppBar(
               title: Text('${book.name} - 快取管理'),
               actions: [
+                IconButton(
+                  icon: const Icon(Icons.output_outlined),
+                  tooltip: '匯出書籍',
+                  onPressed: () => _exportBook(context),
+                ),
                 IconButton(
                   icon: const Icon(Icons.delete_sweep),
                   tooltip: '清除快取',
