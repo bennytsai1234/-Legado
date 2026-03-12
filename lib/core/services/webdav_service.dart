@@ -179,6 +179,18 @@ class WebDAVService extends ChangeNotifier {
     }
   }
 
+  /// 上傳匯出的檔案 (對標 Android exportWebDav)
+  Future<void> uploadFile(String localPath, String remoteFileName) async {
+    try {
+      final client = await _getClient();
+      await _ensureDirs(client);
+      await client.writeFromFile(localPath, '/legado/books/$remoteFileName');
+    } catch (e) {
+      debugPrint("WebDAV Upload File Failed: $e");
+      rethrow;
+    }
+  }
+
   /// 下載並同步所有書籍進度 (對標 Android downloadAllBookProgress)
   Future<void> syncAllBookProgress() async {
     if (_isSyncing) return;
