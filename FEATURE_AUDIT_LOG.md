@@ -15,3 +15,10 @@
 | **1.7 雙擊退出與朗讀背景化** | `MainActivity.kt`: L90 (onBackPressed) | - | **Logic Gap** | Android 支援雙擊退出判定，且朗讀時僅退至背景；iOS 依賴系統手勢，無雙擊退出邏輯。 |
 | **1.8 併發 Pool 動態調整** | `MainViewModel.kt`: L55 (upPool) | - | **Logic Gap** | Android 可根據設置即時調整更新執行緒數（最高 128）；iOS 目前固定併發數或由系統調度。 |
 | **1.9 下載/更新優先權** | `MainViewModel.kt`: L175 (cacheBook) | - | **Logic Gap** | Android 在更新目錄時會暫停背景下載以避開併發限制；iOS 目前下載與更新為獨立併發。 |
+| **2.1 閱讀時長格式化** | `ReadRecordActivity.kt`: L129 (formatDuring) | `about_page.dart`: L236 (_formatDuration) | **Matched** | 均支援將 ms 轉換為「天小時分秒」的邏輯。 |
+| **2.2 三向排序模式** | `ReadRecordActivity.kt`: L141-151 | `about_page.dart`: L183 (_SortMode) | **Matched** | 均支援按名稱、時長、最後閱讀時間排序，且邏輯一致。 |
+| **2.3 記錄連動搜尋** | `ReadRecordActivity.kt`: L183 (startSearch) | `about_page.dart`: L465 (onTap) | **Matched** | 均支援點擊記錄時，若書架無書則自動跳轉至搜尋頁搜尋該書名。 |
+| **2.4 記憶體日誌上限** | `AppLog.kt` | `about_page.dart`: L503 (AppLog) | **Matched** | 均支援在內存中維護最多 500 條運行日誌，包含 Exception 堆疊。 |
+| **2.5 全量清除邏輯** | `ReadRecordActivity.kt`: L100 (dao.clear) | `about_page.dart`: L210 (_clearAll) | **Matched** | 均支援一鍵清空所有閱讀時長紀錄。 |
+| **2.6 記錄全域開關** | `ReadRecordActivity.kt`: L65 (enableReadRecord) | `about_page.dart`: L385 (settings.enableReadRecord) | **Matched** | 均支援透過配置位控制是否紀錄閱讀時長。 |
+
