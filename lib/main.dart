@@ -196,6 +196,35 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   DateTime _lastTapTime = DateTime.now();
   DateTime? _lastBackTime;
 
+  Future<bool> _onWillPop() async {
+    if (_currentIndex != 0) {
+      setState(() => _currentIndex = 0);
+      return false;
+    }
+
+    final now = DateTime.now();
+    if (_lastBackTime == null || now.difference(_lastBackTime!) > const Duration(seconds: 2)) {
+      _lastBackTime = now;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('再按一次退出'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return false;
+    }
+
+    final isTtsPlaying = context.read<TtsService>().isPlaying;
+    if (isTtsPlaying) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('朗讀正在運行，已為您保持背景播放')),
+      );
+      return true;
+    }
+
+    return true;
+  }
+
   @override
   void initState() {
     super.initState();
