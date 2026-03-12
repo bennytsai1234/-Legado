@@ -282,7 +282,7 @@ class ReaderProvider extends ChangeNotifier {
       final sources = await _sourceDao.getEnabled();
       for (final s in sources) {
         if (s.bookSourceUrl == _source?.bookSourceUrl) continue;
-        final searchResults = await _service.preciseSearch([s], book.name, book.author ?? "");
+        final searchResults = await _service.preciseSearch([s], book.name, book.author);
         if (searchResults.isNotEmpty) {
           final bestMatch = searchResults.first;
           book.bookUrl = bestMatch.bookUrl; book.origin = bestMatch.origin; book.originName = bestMatch.originName ?? "";
@@ -306,8 +306,9 @@ class ReaderProvider extends ChangeNotifier {
       String rawContent = "";
       if (_chapterSourceOverrides.containsKey(index)) {
         rawContent = await _service.getContent(_chapterSourceOverrides[index]!, book, _chapters[index]);
-      } else if (cachedContent != null && cachedContent.isNotEmpty) rawContent = cachedContent;
-      else {
+      } else if (cachedContent != null && cachedContent.isNotEmpty) {
+        rawContent = cachedContent;
+      } else {
         if (_source == null) await _loadSource();
         if (_source != null) {
           rawContent = await _service.getContent(_source!, book, _chapters[index]);

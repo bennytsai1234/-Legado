@@ -8,7 +8,6 @@ import '../../core/models/book_source.dart';
 import '../../core/models/search_book.dart';
 import '../../core/services/book_source_service.dart';
 import '../../core/services/webdav_service.dart';
-import '../../core/constant/book_type.dart';
 import '../../core/engine/app_event_bus.dart';
 import '../../core/local_book/txt_parser.dart';
 import '../../core/local_book/epub_parser.dart';

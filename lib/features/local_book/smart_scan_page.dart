@@ -4,7 +4,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'local_book_provider.dart';
 import '../bookshelf/bookshelf_provider.dart';
 
 class SmartScanPage extends StatefulWidget {
@@ -94,7 +93,6 @@ class _SmartScanPageState extends State<SmartScanPage> {
   Future<void> _importSelected() async {
     if (_selectedPaths.isEmpty) return;
 
-    final provider = context.read<LocalBookProvider>();
     int successCount = 0;
 
     showDialog(

@@ -291,7 +291,8 @@ class _ReaderPageState extends State<ReaderPage> {
   void _doSearch(BuildContext context, ReaderProvider provider, String kw) async {
     showDialog(context: context, barrierDismissible: false, builder: (context) => const Center(child: CircularProgressIndicator()));
     final res = await provider.searchContent(kw);
-    if (context.mounted) Navigator.pop(context);
+    if (!context.mounted) return;
+    Navigator.pop(context);
     showModalBottomSheet(context: context, builder: (context) => Container(height: MediaQuery.of(context).size.height * 0.6, padding: const EdgeInsets.all(16), child: Column(children: [
       Text('搜尋結果: "$kw" (${res.length})', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
       const Divider(),

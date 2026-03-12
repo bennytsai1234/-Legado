@@ -23,7 +23,6 @@ class SimulationPageView extends StatefulWidget {
 class _SimulationPageViewState extends State<SimulationPageView> with SingleTickerProviderStateMixin {
   Offset? _dragPoint;
   late AnimationController _animationController;
-  final bool _isTurningNext = true;
 
   @override
   void initState() {

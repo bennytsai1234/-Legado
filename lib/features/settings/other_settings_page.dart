@@ -311,31 +311,5 @@ class OtherSettingsPage extends StatelessWidget {
       },
     );
   }
-
-  void _showGlobalCoverRuleDialog(BuildContext context, SettingsProvider settings) {
-    final controller = TextEditingController(text: settings.globalCoverRule);
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('全域封面規則'),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(hintText: '輸入 JSON 格式的封面覆蓋規則'),
-            maxLines: 5,
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
-            TextButton(
-              onPressed: () {
-                settings.setGlobalCoverRule(controller.text);
-                Navigator.pop(context);
-              },
-              child: const Text('儲存'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 }
+

@@ -234,11 +234,6 @@ class _ReadRecordPageState extends State<ReadRecordPage> {
     }
   }
 
-  Future<void> _saveSortMode(_SortMode mode) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('read_record_sort', mode.index);
-  }
-
   @override
   void dispose() {
     _searchController.dispose();
@@ -555,7 +550,7 @@ class _ReadRecordPageState extends State<ReadRecordPage> {
                                 if (bookList.isEmpty) {
                                   Navigator.push(context, MaterialPageRoute(builder: (_) => SearchPage(initialQuery: record.bookName)));
                                 } else {
-                                  Navigator.push(context, MaterialPageRoute(builder: (_) => BookDetailPage(searchBook: AggregatedSearchBook(book: SearchBook(bookUrl: bookList.first.bookUrl, name: bookList.first.name, author: bookList.first.author, origin: bookList.first.origin, originName: bookList.first.originName), sources: [bookList.first.originName ?? '本地']))));
+                                  Navigator.push(context, MaterialPageRoute(builder: (_) => BookDetailPage(searchBook: AggregatedSearchBook(book: SearchBook(bookUrl: bookList.first.bookUrl, name: bookList.first.name, author: bookList.first.author, origin: bookList.first.origin, originName: bookList.first.originName), sources: [bookList.first.originName]))));
                                 }
                               },
                               onLongPress: () => _deleteRecord(record),

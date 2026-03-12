@@ -77,8 +77,10 @@ class IntentHandlerService {
       debugPrint("收到分享檔案: ${file.path}");
       final ext = p.extension(file.path).toLowerCase();
       if (ext == '.json') {
+        if (!context.mounted) return;
         await _handleSharedFile(context, file.path);
       } else if (ext == '.txt' || ext == '.epub') {
+        if (!context.mounted) return;
         await _handleSharedBook(context, file.path);
       }
     }
