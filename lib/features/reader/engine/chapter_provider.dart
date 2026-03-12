@@ -35,6 +35,47 @@ class ChapterProvider {
       ];
     }
 
+    // 深度還原：大檔案預處理分割邏輯 (對標 Android TextFile.analyze)
+    // 若單章超過 50,000 字，為了排版效能，我們在這裡進行物理切塊
+    const int splitThreshold = 50000;
+    if (content.length > splitThreshold) {
+      final List<TextPage> allSubPages = [];
+      int start = 0;
+      int subChapterIdx = 1;
+      while (start < content.length) {
+        int end = start + splitThreshold;
+        if (end > content.length) {
+          end = content.length;
+        } else {
+          // 確保在換行符處分割，保持語義完整
+          final nextNewline = content.indexOf('\n', end);
+          if (nextNewline != -1 && nextNewline < end + 5000) {
+            end = nextNewline;
+          }
+        }
+        
+        final subContent = content.substring(start, end);
+        final subPages = paginate(
+          content: subContent,
+          chapter: chapter.copyWith(title: '${chapter.title} ($subChapterIdx)'),
+          chapterIndex: chapterIndex,
+          chapterSize: chapterSize,
+          viewSize: viewSize,
+          titleStyle: titleStyle,
+          contentStyle: contentStyle,
+          paragraphSpacing: paragraphSpacing,
+        );
+        allSubPages.addAll(subPages);
+        start = end;
+        subChapterIdx++;
+      }
+      // 重新修正頁碼與頁數
+      return allSubPages.asMap().entries.map((e) => e.value.copyWith(
+        index: e.key,
+        pageSize: allSubPages.length,
+      )).toList();
+    }
+
     final paragraphs = content.split('\n');
     List<TextLine> currentLines = [];
     double currentHeight = 0.0;
