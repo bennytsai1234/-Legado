@@ -127,5 +127,9 @@
 | **25.2 動態登入 UI 生成** | `loginUi` (JSON Config) | `DynamicFormBuilder.dart` | **Matched** | 均支援根據書源配置的 loginUi JSON 自動生成文字輸入框、密碼框等登入介面。 |
 | **25.3 登入狀態 JS 檢核** | `loginCheckJs` | - | **Logic Gap** | Android 登入後自動執行 JS 檢核 Cookie 有效性；iOS 目前僅保存 Cookie，缺乏實質檢核執行。 |
 | **25.4 登入動作 JS 連動** | `onAction` (JS Call) | `source_login_page.dart`: L60 (TODO) | **Logic Gap** | Android 支援在動態介面中點擊按鈕觸發 JS 進行表單提交或驗證；iOS 目前僅有 UI 觸發，無實質 JS 綁定。 |
+| **26.1 相機即時掃碼** | `QrCodeFragment.kt` | `qr_scan_page.dart`: L65 (MobileScanner) | **Matched** | 均支援透過相機即時偵測並解析 QR Code。 |
+| **26.2 相簿圖片辨識** | `selectQrImage` | `qr_scan_page.dart`: L20 (_scanFromGallery) | **Matched** | 均支援從系統相簿選取圖片並進行離線 QR Code 解析。 |
+| **26.3 掃描交互控制** | `QrCodeActivity.kt` | `qr_scan_page.dart`: L55 (toggleTorch) | **Matched** | 均支援切換前後相機與控制手電筒（閃光燈）。 |
+
 
 
