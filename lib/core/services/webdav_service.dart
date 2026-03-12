@@ -21,6 +21,7 @@ import '../models/read_record.dart';
 import '../models/book_group.dart';
 import '../models/book_progress.dart';
 import '../constant/prefer_key.dart';
+import 'backup_aes_service.dart';
 
 /// WebDAVService - WebDAV 備份與還原服務
 /// 對應 Android: help/AppWebDav.kt
@@ -34,6 +35,7 @@ class WebDAVService extends ChangeNotifier {
   final BookGroupDao _groupDao = BookGroupDao();
   final BookmarkDao _bookmarkDao = BookmarkDao();
   final ReadRecordDao _recordDao = ReadRecordDao();
+  final BackupAESService _aesService = BackupAESService();
 
   bool _isSyncing = false;
   bool get isSyncing => _isSyncing;
@@ -79,50 +81,33 @@ class WebDAVService extends ChangeNotifier {
       final bookmarks = await _bookmarkDao.getAll();
       final records = await _recordDao.getAll();
 
-      // 2. 建立 ZIP 封裝
+      // 2. 取得設定檔內容 (對標 Android SharedPreferences 備份)
+      final prefs = await SharedPreferences.getInstance();
+      final Map<String, dynamic> config = {};
+      for (final key in prefs.getKeys()) {
+        dynamic val = prefs.get(key);
+        // 深度還原：對敏感資訊進行 AES 加密
+        if (key == PreferKey.webDavPassword) {
+          val = await _aesService.encrypt(val.toString());
+        }
+        config[key] = val;
+      }
+
+      // 3. 建立 ZIP 封裝
       final encoder = ZipFileEncoder();
       final dir = await getTemporaryDirectory();
       final zipPath = '${dir.path}/legado_backup.zip';
 
-      // We encode JSON directly into memory or files
       encoder.create(zipPath);
 
-      _addJsonToZip(
-        encoder,
-        'books.json',
-        books.map((e) => e.toJson()).toList(),
-        dir,
-      );
-      _addJsonToZip(
-        encoder,
-        'bookSources.json',
-        sources.map((e) => e.toJson()).toList(),
-        dir,
-      );
-      _addJsonToZip(
-        encoder,
-        'replaceRules.json',
-        rules.map((e) => e.toJson()).toList(),
-        dir,
-      );
-      _addJsonToZip(
-        encoder,
-        'bookGroups.json',
-        groups.map((e) => e.toJson()).toList(),
-        dir,
-      );
-      _addJsonToZip(
-        encoder,
-        'bookmarks.json',
-        bookmarks.map((e) => e.toJson()).toList(),
-        dir,
-      );
-      _addJsonToZip(
-        encoder,
-        'readRecords.json',
-        records.map((e) => e.toJson()).toList(),
-        dir,
-      );
+      _addJsonToZip(encoder, 'books.json', books.map((e) => e.toJson()).toList(), dir);
+      _addJsonToZip(encoder, 'bookSources.json', sources.map((e) => e.toJson()).toList(), dir);
+      _addJsonToZip(encoder, 'replaceRules.json', rules.map((e) => e.toJson()).toList(), dir);
+      _addJsonToZip(encoder, 'bookGroups.json', groups.map((e) => e.toJson()).toList(), dir);
+      _addJsonToZip(encoder, 'bookmarks.json', bookmarks.map((e) => e.toJson()).toList(), dir);
+      _addJsonToZip(encoder, 'readRecords.json', records.map((e) => e.toJson()).toList(), dir);
+      // 深度還原：加入設定檔備份
+      _addJsonToZip(encoder, 'config.json', [config], dir);
 
       encoder.close();
 
@@ -317,6 +302,20 @@ class WebDAVService extends ChangeNotifier {
             break;
           case 'readRecords.json':
             await _recordDao.insert(ReadRecord.fromJson(item));
+            break;
+          case 'config.json':
+            // 深度還原：還原設定檔並解密敏感資訊
+            final prefs = await SharedPreferences.getInstance();
+            for (final key in item.keys) {
+              dynamic val = item[key];
+              if (key == PreferKey.webDavPassword) {
+                val = await _aesService.decrypt(val.toString());
+              }
+              if (val is String) await prefs.setString(key, val);
+              if (val is int) await prefs.setInt(key, val);
+              if (val is bool) await prefs.setBool(key, val);
+              if (val is double) await prefs.setDouble(key, val);
+            }
             break;
           // note: BookGroupDao missing insert, skip for now or add later
         }
