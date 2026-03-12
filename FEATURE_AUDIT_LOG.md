@@ -29,5 +29,14 @@
 | **13.5 頁尾資訊條 (InfoBar)** | `ReadMangaActivity.kt`: L303 (upInfoBar) | - | **Logic Gap** | Android 支援顯示精確頁碼、電量、時間與百分比進度條；iOS 僅在選單展開時顯示章節進度。 |
 | **13.6 濾鏡與 E-Ink 適配** | `ReadMangaActivity.kt`: L202 (MangaColorFilterConfig) | `manga_reader_page.dart`: L103 (brightness) | **Logic Gap** | Android 支援複雜的色彩濾鏡、灰色模式及 E-Ink 優化；iOS 僅提供基礎的螢幕亮度覆蓋。 |
 | **13.7 進度雲端同步** | `ReadMangaActivity.kt`: L342 (syncProgress) | - | **Logic Gap** | iOS 目前尚未實作漫畫閱讀進度與 WebDav 或伺服器端的雙向同步。 |
+| **14.1 九宮格點擊區域** | `ReadBookActivity.kt`: L1000+ (onTouch) | `reader_page.dart`: L95 (onTapUp) | **Matched** | 均支援將螢幕劃分為九宮格並自定義各區域的點擊動作（選單、翻頁等）。 |
+| **14.2 翻頁動畫支援** | `ReadView.kt` | `reader_page.dart`: L135 (PageView) | **Logic Gap** | Android 支援覆蓋、翻書、幻燈片、滾輪等多種動畫；iOS 目前主要依賴 PageView 的水平/垂直平滑滑動及模擬覆蓋。 |
+| **14.3 內容替換規則** | `ContentProcessor.kt` | `reader_provider.dart`: L250 (processContent) | **Matched** | 均支援在加載章節時即時應用正則替換規則。 |
+| **14.4 文字選取與查詞** | `TextActionMenu.kt` | `reader_page.dart`: L125 (SelectionArea) | **Equivalent** | Android 使用自定義彈窗選單；iOS 使用系統原生 SelectionArea 配合自定義 ContextMenu。 |
+| **14.5 長章節自動分割** | `ReadBookViewModel.kt`: L500 (splitChapter) | - | **Logic Gap** | iOS 目前缺乏針對單章節超長文本（如 500kb+）在加載時自動分割為虛擬子章節的邏輯。 |
+| **14.6 朗讀背景服務** | `BaseReadAloudService.kt` | `reader_provider.dart`: L305 (TTSService) | **Equivalent** | Android 擁有獨立後台 Service 確保進程穩定性；iOS 依賴 Flutter 插件在背景執行，但在系統資源回收時穩定性略遜。 |
+| **14.7 全書內容搜尋** | `SearchContentActivity.kt` | `reader_provider.dart`: L330 (searchContent) | **Matched** | 均支援在已快取的章節中進行全文關鍵字搜尋。 |
+| **14.8 進度雲端同步** | `ReadBookActivity.kt`: L342 (syncProgress) | - | **Logic Gap** | iOS 目前在啟動閱讀器時缺少與雲端進度（WebDav）的比對與主動恢復提示邏輯。 |
+
 
 
