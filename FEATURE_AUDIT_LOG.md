@@ -68,6 +68,14 @@
 | **19.4 長按交互與圖片保存** | `WebViewActivity.kt`: L165 (OnLongClickListener) | - | **Logic Gap** | Android 支援長按網頁圖片進行保存或選取目錄；iOS 尚未實作此 WebView 擴展。 |
 | **19.5 全屏模式與系統列控制** | `WebViewActivity.kt`: L125 (toggleFullScreen) | - | **Logic Gap** | Android 支援一鍵進入網頁全屏模式並隱藏系統狀態列；iOS 採用標準頁面模式。 |
 | **19.6 自定義下載攔截** | `WebViewActivity.kt`: L185 (setDownloadListener) | - | **Logic Gap** | Android 支援攔截網頁下載請求並導向 App 內建下載器；iOS 依賴 WebView 默認處理或無反應。 |
+| **20.1 WebDav 全量備份** | `Backup.kt`: L115 (backup) | `webdav_service.dart`: L65 (backup) | **Equivalent** | 均支援將資料庫內容序列化為 JSON 並打包為 ZIP 上傳至 WebDav。 |
+| **20.2 備份項目完整度** | `Backup.kt`: L85 (backupFileNames) | `webdav_service.dart`: L80 | **Logic Gap** | Android 備份 20+ 個項目（含 SharedPreferences）；iOS 目前僅備份書架、書源、規則、分組、書籤、記錄等核心資料庫項。 |
+| **20.3 自動備份觸發** | `Backup.kt`: L100 (autoBack) | - | **Logic Gap** | Android 支援啟動時根據時間間隔自動執行 WebDav 備份；iOS 目前僅有手動備份觸發。 |
+| **20.4 設備名稱區分** | `Backup.kt`: L90 (getNowZipFileName) | - | **Logic Gap** | Android 備份檔名包含設備名稱以防多設備覆蓋；iOS 目前採用固定時間戳檔名。 |
+| **20.5 備份加密 (AES)** | `Backup.kt`: L118 (aes.encrypt) | - | **Logic Gap** | Android 支援對備份中的敏感資訊（如密碼、伺服器）進行 AES 加密；iOS 目前為純 JSON 儲存。 |
+| **20.6 背景圖片同步** | `Backup.kt`: L235 (upBgs) | - | **Logic Gap** | Android 支援同步閱讀器的自定義背景圖片至 WebDav；iOS 尚未實作圖片資源的同步邏輯。 |
+| **20.7 閱讀進度單獨同步** | `AppWebDav.kt`: L300 (uploadBookProgress) | `webdav_service.dart`: L125 (uploadBookProgress) | **Matched** | 均支援針對單本書籍即時同步閱讀進度至 WebDav。 |
+
 
 
 
