@@ -15,6 +15,8 @@ class ExplorePage extends StatefulWidget {
 }
 
 class _ExplorePageState extends State<ExplorePage> {
+  String? _expandedSourceUrl;
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -32,19 +34,91 @@ class _ExplorePageState extends State<ExplorePage> {
                 _buildSourcePicker(context, provider),
               ],
             ),
-            body: Column(
-              children: [
-                if (provider.selectedSource != null)
-                  _buildExploreConfig(provider),
-                Expanded(
-                  child: provider.isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : _buildExploreResults(provider),
-                ),
-              ],
-            ),
+            body: provider.selectedSource == null 
+                ? _buildDashboard(provider)
+                : _buildFocusedExplore(provider),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildDashboard(ExploreProvider provider) {
+    if (provider.sources.isEmpty) {
+      return const Center(child: Text('目前無可用發現規則的書源'));
+    }
+
+    return ListView.builder(
+      itemCount: provider.sources.length,
+      itemBuilder: (context, index) {
+        final source = provider.sources[index];
+        final isExpanded = _expandedSourceUrl == source.bookSourceUrl;
+
+        return ExpansionTile(
+          key: PageStorageKey(source.bookSourceUrl),
+          title: Text(source.bookSourceName, style: const TextStyle(fontWeight: FontWeight.bold)),
+          subtitle: Text(source.bookSourceGroup ?? '未分組', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+          initiallyExpanded: isExpanded,
+          onExpansionChanged: (expanded) {
+            setState(() {
+              _expandedSourceUrl = expanded ? source.bookSourceUrl : null;
+            });
+            if (expanded) {
+              provider.setSource(source);
+            }
+          },
+          children: [
+            if (isExpanded)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: provider.exploreConfigs.map((config) {
+                    return ActionChip(
+                      label: Text(config['title'] ?? '', style: const TextStyle(fontSize: 12)),
+                      onPressed: () {
+                        provider.setConfig(config);
+                        // 自動進入專注模式
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildFocusedExplore(ExploreProvider provider) {
+    return Column(
+      children: [
+        _buildExploreHeader(provider),
+        Expanded(
+          child: provider.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _buildExploreResults(provider),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExploreHeader(ExploreProvider provider) {
+    return Container(
+      color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
+      child: Column(
+        children: [
+          ListTile(
+            title: Text(provider.selectedSource!.bookSourceName, style: const TextStyle(fontWeight: FontWeight.bold)),
+            trailing: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => provider.setSource(null),
+            ),
+          ),
+          _buildExploreConfig(provider),
+          const Divider(height: 1),
+        ],
       ),
     );
   }
