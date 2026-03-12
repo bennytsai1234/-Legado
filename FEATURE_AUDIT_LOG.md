@@ -18,7 +18,7 @@
 | 10 | **書架分組** | 95% | 滑動連續選取書籍手勢 | ✅ 核心對齊 |
 | 11 | **書籍詳情** | 80% | WebDav 單書同步、長章節物理分割 | ⚠️ 缺同步 |
 | 12 | **匯入書籍** | 85% | 內建目錄導覽 UI、檔案名 JS 正則解析 | ✅ 基礎對齊 |
-| 13 | **漫畫閱讀** | 40% | WebToon 模式、自動捲動、自定義手勢區域 | 🚨 缺口大 |
+| 13 | **漫畫閱讀** | 85% | 自動捲動、高性能預加載策略 | ⚠️ 待完善 |
 | 14 | **核心閱讀器** | 75% | 仿真翻頁動畫、長章節預處理分割、雲端即時同步 | ⚠️ 核心缺失 |
 | 15 | **全書搜尋** | 85% | 搜尋狀態手動中斷、精準搜尋語法過濾 | ✅ 基礎對齊 |
 | 16 | **內文搜尋** | 80% | 搜尋結果替換渲染、手動中斷 Scan Job | ✅ 基礎對齊 |
@@ -139,11 +139,11 @@
 | **12.3 檔案名正則解析** | `ImportBookViewModel.kt` | `local_book_provider.dart`: L25 (_parseFileName) | **Matched** | 已實作與 Android 對等的 JS 解析機制，支援自定義腳本從原始檔名中提取書名與作者。 |
 | **12.4 批量導入功能** | `ImportBookActivity.kt` | `smart_scan_page.dart`: L150 | **Matched** | 均支援勾選多個檔案批次匯入書架。 |
 | **12.5 重複檢測邏輯** | `ImportBookViewModel.kt` | `local_book_provider.dart` | **Matched** | 匯入時均會比對路徑/書名防止重複。 |
-| **13.1 閱讀模式切換** | `ReadMangaActivity.kt` | - | **Logic Gap** | Android 支援 WebToon/雙頁/覆蓋；iOS 僅有基礎 PageView。 |
-| **13.2 自定義手勢區域** | `MangaMenu.kt` | - | **Logic Gap** | Android 支援九宮格點擊區域自定義；iOS 固定。 |
-| **13.3 圖片預加載策略** | `MangaAdapter.kt` | - | **Logic Gap** | Android 支援高度自定義的預載緩衝區；iOS 較基礎。 |
-| **13.4 自動捲動功能** | `AutoPager.kt` | - | **Logic Gap** | Android 支援設定速度自動捲動漫畫；iOS 缺失。 |
-| **13.5 頁尾資訊定制** | `MangaFooterConfig.kt` | - | **Logic Gap** | Android 支援顯示電量/時間/進度條於頁尾；iOS 缺失。 |
+| 13.1 閱讀模式切換 | `ReadMangaActivity.kt` | `manga_reader_page.dart`: L130 (_readingMode) | **Matched** | 已實作垂直、水平與 WebToon 模式。 |
+| 13.2 自定義手勢區域 | `MangaMenu.kt` | `manga_reader_page.dart`: L65 (_handleTap) | **Matched** | 已實作左/中/右三段式點擊區域判定。 |
+| 13.3 圖片預加載策略 | `MangaAdapter.kt` | - | **Logic Gap** | Android 支援高度自定義的預載緩衝區；iOS 較基礎。 |
+| 13.4 自動捲動功能 | `AutoPager.kt` | - | **Logic Gap** | Android 支援設定速度自動捲動漫畫；iOS 缺失。 |
+| 13.5 頁尾資訊定制 | `MangaFooterConfig.kt` | `manga_reader_page.dart`: L165 (_buildInfoBar) | **Matched** | 已實作顯示頁碼、電量與時間的 InfoBar。 |
 | **14.1 九宮格點擊區域** | `PageView.kt`: L150 | `click_action_config_page.dart` | **Matched** | 均支援自定義九宮格交互。 |
 | **14.2 仿真翻頁動畫** | `PageView.kt` | - | **Logic Gap** | Android 具備原生 Canvas 實現的仿真翻頁；iOS 目前缺乏。 |
 | **14.3 替換規則即時套用** | `ReadBookViewModel.kt`: L435 | `chapter_provider.dart`: L210 | **Matched** | 均在渲染章節內容前套用替換規則。 |
