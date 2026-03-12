@@ -10,13 +10,10 @@ class ExploreProvider extends ChangeNotifier {
 
   List<BookSource> _allSources = [];
   List<BookSource> _filteredSources = [];
-  List<String> _groups = [];
-  String _currentGroup = '全部';
-
+  List<String> _groups = ['全部'];
+  String _selectedGroup = '全部';
   BookSource? _selectedSource;
-  List<Map<String, String>> _exploreConfigs = [];
   Map<String, String>? _selectedConfig;
-  
   List<SearchBook> _books = [];
   bool _isLoading = false;
   int _page = 1;
@@ -24,9 +21,9 @@ class ExploreProvider extends ChangeNotifier {
 
   List<BookSource> get sources => _filteredSources;
   List<String> get groups => _groups;
-  String get currentGroup => _currentGroup;
+  String get selectedGroup => _selectedGroup;
   BookSource? get selectedSource => _selectedSource;
-  List<Map<String, String>> get exploreConfigs => _exploreConfigs;
+  List<Map<String, String>> get exploreConfigs => _selectedSource != null ? _parseExploreUrl(_selectedSource!) : [];
   Map<String, String>? get selectedConfig => _selectedConfig;
   List<SearchBook> get books => _books;
   bool get isLoading => _isLoading;
@@ -38,91 +35,93 @@ class ExploreProvider extends ChangeNotifier {
 
   Future<void> _init() async {
     _allSources = await _sourceDao.getEnabled();
-    _groups = _allSources.map((s) => s.bookSourceGroup ?? '未分組').toSet().toList();
-    _groups.removeWhere((g) => g.isEmpty);
-    _groups.sort();
+    // 過濾掉沒有發現規則的書源
+    _allSources = _allSources.where((s) => s.exploreUrl != null && s.exploreUrl!.isNotEmpty).toList();
     
-    _applyGroupFilter();
-    
-    if (_filteredSources.isNotEmpty) {
-      setSource(_filteredSources.first);
+    final groupSet = {'全部'};
+    for (var s in _allSources) {
+      if (s.bookSourceGroup != null) {
+        groupSet.addAll(s.bookSourceGroup!.split(',').map((e) => e.trim()));
+      }
     }
-    notifyListeners();
+    _groups = groupSet.toList()..sort();
+    _applyGroupFilter();
   }
 
   void setGroup(String group) {
-    _currentGroup = group;
+    _selectedGroup = group;
     _applyGroupFilter();
-    if (_filteredSources.isNotEmpty) {
-      setSource(_filteredSources.first);
-    } else {
-      _selectedSource = null;
-      _exploreConfigs = [];
-      _selectedConfig = null;
-      _books = [];
-    }
     notifyListeners();
   }
 
   void _applyGroupFilter() {
-    if (_currentGroup == '全部') {
+    if (_selectedGroup == '全部') {
       _filteredSources = _allSources;
     } else {
-      _filteredSources = _allSources.where((s) => (s.bookSourceGroup ?? '未分組').contains(_currentGroup)).toList();
+      _filteredSources = _allSources.where((s) {
+        final g = s.bookSourceGroup ?? "";
+        return g.split(',').map((e) => e.trim()).contains(_selectedGroup);
+      }).toList();
     }
   }
 
-  void setSource(BookSource source) {
+  void setSource(BookSource? source) {
     _selectedSource = source;
-    _exploreConfigs = _parseExploreUrl(source);
-    if (_exploreConfigs.isNotEmpty) {
-      setConfig(_exploreConfigs.first);
-    } else {
-      _books = [];
-      notifyListeners();
-    }
+    _selectedConfig = null;
+    _books = [];
+    _page = 1;
+    _hasMore = true;
+    notifyListeners();
   }
 
   void setConfig(Map<String, String> config) {
     _selectedConfig = config;
-    refresh();
+    _books = [];
+    _page = 1;
+    _hasMore = true;
+    notifyListeners();
+    loadMore();
   }
 
   Future<void> refresh() async {
-    if (_selectedSource == null || _selectedConfig == null) return;
     _page = 1;
     _hasMore = true;
+    _books = [];
+    await loadMore();
+  }
+
+  Future<void> loadMore() async {
+    if (_isLoading || !_hasMore || _selectedSource == null || _selectedConfig == null) return;
     _isLoading = true;
     notifyListeners();
 
     try {
-      _books = await _service.exploreBooks(
+      final moreBooks = await _service.exploreBooks(
         _selectedSource!,
         _selectedConfig!['url']!,
-        _page,
+        page: _page,
       );
+      if (moreBooks.isEmpty) {
+        _hasMore = false;
+      } else {
+        _books.addAll(moreBooks);
+        _page++;
+      }
     } catch (e) {
-      debugPrint('發現失敗: $e');
-      _books = [];
+      debugPrint('載入更多發現失敗: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> loadMore() async {
-    // ... 原有代碼
-  }
-
-  /// 深度還原：書源置頂邏輯
   Future<void> topSource(BookSource source) async {
     final minOrder = await _sourceDao.getMinOrder();
     source.customOrder = minOrder - 1;
     await _sourceDao.update(source);
-    await _init(); // 重新加載並刷新列表
+    await _init();
   }
 
-  /// 深度還原：書源刪除邏輯
   Future<void> deleteSource(BookSource source) async {
     await _sourceDao.delete(source.bookSourceUrl);
     if (_selectedSource?.bookSourceUrl == source.bookSourceUrl) {

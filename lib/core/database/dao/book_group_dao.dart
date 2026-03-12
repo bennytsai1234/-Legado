@@ -147,12 +147,14 @@ class BookGroupDao {
     );
   }
 
-  Future<void> delete(BookGroup bookGroup) async {
+  Future<void> delete(BookGroup bookGroup) async => deleteById(bookGroup.groupId);
+
+  Future<void> deleteById(int id) async {
     final db = await AppDatabase.database;
     await db.delete(
       tableName,
       where: 'groupId = ?',
-      whereArgs: [bookGroup.groupId],
+      whereArgs: [id],
     );
   }
 

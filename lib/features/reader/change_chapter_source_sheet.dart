@@ -342,10 +342,12 @@ class _ChangeChapterSourceSheetState extends State<ChangeChapterSourceSheet> {
           Navigator.pop(context); // 關閉 Loading
           
           if (tempBook.type != widget.book.type) {
+            // 深度還原：處理不同類型（如文本轉有聲）的遷移跳轉
             final migratedBook = widget.book.migrateTo(tempBook);
             migratedBook.isInBookshelf = widget.book.isInBookshelf;
             _showMigrationDialog(context, migratedBook);
           } else {
+            // 同類型換源：直接替換當前章節來源
             context.read<ReaderProvider>().replaceChapterSource(widget.chapterIndex, source, content);
             Navigator.pop(context); // 關閉 Sheet
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('已替換自來源: ${source.bookSourceName}')));

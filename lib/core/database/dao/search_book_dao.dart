@@ -9,6 +9,7 @@ class SearchBookDao {
   factory SearchBookDao() => _instance;
   SearchBookDao._internal();
 
+  // 深度還原：修正資料庫存取方式
   Future<Database> get _db async => await AppDatabase.database;
 
   /// 建立資料表 (若不存在)

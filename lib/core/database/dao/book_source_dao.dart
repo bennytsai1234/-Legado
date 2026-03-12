@@ -1,238 +1,108 @@
-import 'dart:async';
-import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
-import '../../models/book_source.dart';
 import '../app_database.dart';
+import '../../models/book_source.dart';
 
 /// BookSourceDao - 書源資料存取對象
 /// 對應 Android: data/dao/BookSourceDao.kt
 class BookSourceDao {
-  static const String tableName = 'book_sources';
-  static final StreamController<void> _changeController = StreamController<void>.broadcast();
-
-  // 記憶體二級快取 (對標 Android Room L2 Cache 概念)
-  static final Map<String, BookSource> _fullCache = {};
-  static List<BookSource>? _partCache;
-
-  // 輕量化投影欄位 (對標 Android book_sources_part)
-  static const List<String> partColumns = [
-    'bookSourceUrl',
-    'bookSourceName',
-    'bookSourceGroup',
-    'customOrder',
-    'enabled',
-    'enabledExplore',
-    'lastUpdateTime',
-    'respondTime',
-    'weight'
-  ];
+  static final BookSourceDao _instance = BookSourceDao._internal();
+  factory BookSourceDao() => _instance;
+  BookSourceDao._internal();
 
   Future<Database> get _db async => await AppDatabase.database;
 
-  void _notify() {
-    _partCache = null; // 清空清單快取
-    _changeController.add(null);
-  }
-
-  /// 監聽輕量化書源清單
-  Stream<List<BookSource>> watchAllPart() {
-    return _changeController.stream.asyncMap((_) => getAllPart());
-  }
-
-  /// 獲取所有書源 (輕量化投影)
-  Future<List<BookSource>> getAllPart() async {
-    if (_partCache != null) return _partCache!;
-
-    final db = await _db;
-    final List<Map<String, dynamic>> maps = await db.query(
-      tableName,
-      columns: partColumns,
-      orderBy: 'customOrder ASC, lastUpdateTime DESC',
-    );
-
-    _partCache = List.generate(maps.length, (i) {
-      return BookSource.fromJson(maps[i]);
-    });
-    return _partCache!;
-  }
-
-  /// 獲取所有書源 (完整版本)
   Future<List<BookSource>> getAll() async {
     final db = await _db;
-    final List<Map<String, dynamic>> maps = await db.query(tableName);
-    return List.generate(maps.length, (i) {
-      final map = Map<String, dynamic>.from(maps[i]);
-      _deserializeRules(map);
-      return BookSource.fromJson(map);
-    });
+    final List<Map<String, dynamic>> maps = await db.query('book_sources', orderBy: 'customOrder ASC');
+    return List.generate(maps.length, (i) => BookSource.fromJson(maps[i]));
   }
 
-  /// 獲取所有啟用的書源 (輕量化投影)
-  Future<List<BookSource>> getEnabledPart() async {
-    final db = await _db;
-    final List<Map<String, dynamic>> maps = await db.query(
-      tableName,
-      columns: partColumns,
-      where: 'enabled = ?',
-      whereArgs: [1],
-      orderBy: 'customOrder ASC',
-    );
+  Future<List<BookSource>> getAllPart() => getAll();
 
-    return List.generate(maps.length, (i) {
-      return BookSource.fromJson(maps[i]);
-    });
-  }
-
-  /// 獲取所有啟用的書源 (完整版本)
   Future<List<BookSource>> getEnabled() async {
     final db = await _db;
     final List<Map<String, dynamic>> maps = await db.query(
-      tableName,
-      where: 'enabled = ?',
-      whereArgs: [1],
+      'book_sources',
+      where: 'enabled = 1',
       orderBy: 'customOrder ASC',
     );
-
-    return List.generate(maps.length, (i) {
-      final map = Map<String, dynamic>.from(maps[i]);
-      _deserializeRules(map);
-      return BookSource.fromJson(map);
-    });
+    return List.generate(maps.length, (i) => BookSource.fromJson(maps[i]));
   }
 
-  /// 獲取完整書源 (包含所有規則)
   Future<BookSource?> getByUrl(String url) async {
-    if (_fullCache.containsKey(url)) return _fullCache[url];
-
     final db = await _db;
     final List<Map<String, dynamic>> maps = await db.query(
-      tableName,
+      'book_sources',
       where: 'bookSourceUrl = ?',
       whereArgs: [url],
     );
-
     if (maps.isEmpty) return null;
-    final map = Map<String, dynamic>.from(maps.first);
-    _deserializeRules(map);
-    final source = BookSource.fromJson(map);
-    _fullCache[url] = source;
-    return source;
+    return BookSource.fromJson(maps.first);
   }
 
-  /// 插入或更新書源
-  Future<void> insertOrUpdate(BookSource source) async {
-    final db = await _db;
-    final map = source.toJson();
-    _serializeRules(map);
-
-    await db.insert(
-      tableName,
-      map,
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-    _fullCache[source.bookSourceUrl] = source;
-    _notify();
-  }
-
-  /// 批量插入或更新
-  Future<void> insertOrUpdateAll(List<BookSource> sources) async {
-    final db = await _db;
-    await db.transaction((txn) async {
-      for (final source in sources) {
-        final map = source.toJson();
-        _serializeRules(map);
-        await txn.insert(
-          tableName,
-          map,
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
-        _fullCache[source.bookSourceUrl] = source;
-      }
-    });
-    _notify();
-  }
-
-  /// 批量啟用/禁用
-  Future<void> enableSources(List<String> urls, bool enabled) async {
-    final db = await _db;
-    await db.update(
-      tableName,
-      {'enabled': enabled ? 1 : 0},
-      where: 'bookSourceUrl IN (${urls.map((_) => '?').join(',')})',
-      whereArgs: urls,
-    );
-    for (var url in urls) {
-      _fullCache.remove(url);
-    }
-    _notify();
-  }
-
-  /// 批量刪除
-  Future<void> deleteSources(List<String> urls) async {
-    final db = await _db;
-    await db.delete(
-      tableName,
-      where: 'bookSourceUrl IN (${urls.map((_) => '?').join(',')})',
-      whereArgs: urls,
-    );
-    for (var url in urls) {
-      _fullCache.remove(url);
-    }
-    _notify();
-  }
-
-  /// 調整排序序號 (高度還原 Android SourceHelp.adjustSortNumber)
-  Future<void> adjustSortNumbers() async {
-    final sources = await getAllPart();
-    final db = await _db;
-    await db.transaction((txn) async {
-      for (int i = 0; i < sources.length; i++) {
-        await txn.update(
-          tableName,
-          {'customOrder': i},
-          where: 'bookSourceUrl = ?',
-          whereArgs: [sources[i].bookSourceUrl],
-        );
-      }
-    });
-    _notify();
-  }
-
-  /// 獲取所有處理後的分組 (高度還原 Android dealGroups)
   Future<List<String>> getGroups() async {
     final db = await _db;
-    final List<Map<String, dynamic>> result = await db.rawQuery(
-      'SELECT DISTINCT bookSourceGroup FROM $tableName WHERE bookSourceGroup IS NOT NULL AND bookSourceGroup != ""',
+    final List<Map<String, dynamic>> maps = await db.rawQuery('SELECT DISTINCT bookSourceGroup FROM book_sources WHERE bookSourceGroup IS NOT NULL');
+    final Set<String> groups = {};
+    for (var m in maps) {
+      final g = m['bookSourceGroup']?.toString();
+      if (g != null) groups.addAll(g.split(',').map((e) => e.trim()));
+    }
+    return groups.toList()..sort();
+  }
+
+  Future<int> getMinOrder() async {
+    final db = await _db;
+    final List<Map<String, dynamic>> maps = await db.rawQuery('SELECT MIN(customOrder) as minOrder FROM book_sources');
+    return maps.first['minOrder'] ?? 0;
+  }
+
+  Future<void> adjustSortNumbers() async {
+    final db = await _db;
+    final sources = await getAll();
+    final batch = db.batch();
+    for (int i = 0; i < sources.length; i++) {
+      batch.update('book_sources', {'customOrder': i}, where: 'bookSourceUrl = ?', whereArgs: [sources[i].bookSourceUrl]);
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<void> insertOrUpdate(BookSource source) async {
+    final db = await _db;
+    await db.insert('book_sources', source.toJson(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> insertOrUpdateAll(List<BookSource> sources) async {
+    final db = await _db;
+    final batch = db.batch();
+    for (var s in sources) {
+      batch.insert('book_sources', s.toJson(), conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<void> update(BookSource source) async {
+    final db = await _db;
+    await db.update(
+      'book_sources',
+      source.toJson(),
+      where: 'bookSourceUrl = ?',
+      whereArgs: [source.bookSourceUrl],
     );
-
-    final groups = <String>{};
-    for (final row in result) {
-      final groupStr = row['bookSourceGroup'] as String;
-      // 處理多種分隔符
-      groups.addAll(groupStr.split(RegExp(r'[,;，；\s]+')).where((e) => e.trim().isNotEmpty));
-    }
-    final sortedGroups = groups.toList()..sort();
-    return sortedGroups;
   }
 
-  // 輔助方法：處理 JSON 規則字串
-  void _serializeRules(Map<String, dynamic> map) {
-    final ruleKeys = ['ruleSearch', 'ruleExplore', 'ruleBookInfo', 'ruleToc', 'ruleContent', 'ruleReview'];
-    for (var key in ruleKeys) {
-      if (map[key] != null && map[key] is! String) {
-        map[key] = jsonEncode(map[key]);
-      }
-    }
+  Future<void> delete(String url) async {
+    final db = await _db;
+    await db.delete('book_sources', where: 'bookSourceUrl = ?', whereArgs: [url]);
   }
 
-  void _deserializeRules(Map<String, dynamic> map) {
-    final ruleKeys = ['ruleSearch', 'ruleExplore', 'ruleBookInfo', 'ruleToc', 'ruleContent', 'ruleReview'];
-    for (var key in ruleKeys) {
-      if (map[key] != null && map[key] is String && (map[key] as String).isNotEmpty) {
-        try {
-          map[key] = jsonDecode(map[key]);
-        } catch (_) {}
-      }
+  /// 批量刪除 (修正：接收 URL 列表以對標 UI 需求)
+  Future<void> deleteSources(List<String> urls) async {
+    final db = await _db;
+    final batch = db.batch();
+    for (var url in urls) {
+      batch.delete('book_sources', where: 'bookSourceUrl = ?', whereArgs: [url]);
     }
+    await batch.commit(noResult: true);
   }
 }

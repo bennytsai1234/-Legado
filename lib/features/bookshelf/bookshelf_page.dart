@@ -33,9 +33,8 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
       final box = key.currentContext!.findRenderObject() as RenderBox;
       final position = box.localToGlobal(Offset.zero);
       final size = box.size;
-      final rect = Rect.fromLTWH(position.dx, position.globalToLocal(Offset.zero).dy + position.dy, size.width, size.height);
       
-      // 使用更簡單的 hitTest 方式
+      // 使用 HitTest 邏輯判斷手指是否在該 Item 範圍內
       final globalPos = (context.findRenderObject() as RenderBox).localToGlobal(localPosition);
       final localInBox = box.globalToLocal(globalPos);
       if (localInBox.dx >= 0 && localInBox.dx <= size.width && localInBox.dy >= 0 && localInBox.dy <= size.height) {

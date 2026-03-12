@@ -87,20 +87,6 @@ class Book {
     return readConfig?.reSegment ?? false;
   }
 
-  // 遷移邏輯 (高度還原 Android migrateTo)
-  void migrateTo(Book newBook) {
-    newBook.group = group;
-    newBook.order = order;
-    newBook.customCoverUrl = customCoverUrl;
-    newBook.customIntro = customIntro;
-    newBook.customTag = customTag;
-    newBook.canUpdate = canUpdate;
-    newBook.readConfig = readConfig;
-    newBook.durChapterIndex = durChapterIndex;
-    newBook.durChapterPos = durChapterPos;
-    newBook.durChapterTime = durChapterTime;
-  }
-
   static int _toInt(dynamic value) {
     if (value == null) return 0;
     if (value is int) return value;
@@ -180,6 +166,90 @@ class Book {
       'syncTime': syncTime,
       'isInBookshelf': isInBookshelf ? 1 : 0,
     };
+  }
+
+  Book copyWith({
+    String? bookUrl,
+    String? tocUrl,
+    String? origin,
+    String? originName,
+    String? name,
+    String? author,
+    String? kind,
+    String? customTag,
+    String? coverUrl,
+    String? customCoverUrl,
+    String? intro,
+    String? customIntro,
+    String? charset,
+    int? type,
+    int? group,
+    String? latestChapterTitle,
+    int? latestChapterTime,
+    int? lastCheckTime,
+    int? lastCheckCount,
+    int? totalChapterNum,
+    String? durChapterTitle,
+    int? durChapterIndex,
+    int? durChapterPos,
+    int? durChapterTime,
+    String? wordCount,
+    bool? canUpdate,
+    int? order,
+    int? originOrder,
+    String? variable,
+    ReadConfig? readConfig,
+    int? syncTime,
+    bool? isInBookshelf,
+  }) {
+    return Book(
+      bookUrl: bookUrl ?? this.bookUrl,
+      tocUrl: tocUrl ?? this.tocUrl,
+      origin: origin ?? this.origin,
+      originName: originName ?? this.originName,
+      name: name ?? this.name,
+      author: author ?? this.author,
+      kind: kind ?? this.kind,
+      customTag: customTag ?? this.customTag,
+      coverUrl: coverUrl ?? this.coverUrl,
+      customCoverUrl: customCoverUrl ?? this.customCoverUrl,
+      intro: intro ?? this.intro,
+      customIntro: customIntro ?? this.customIntro,
+      charset: charset ?? this.charset,
+      type: type ?? this.type,
+      group: group ?? this.group,
+      latestChapterTitle: latestChapterTitle ?? this.latestChapterTitle,
+      latestChapterTime: latestChapterTime ?? this.latestChapterTime,
+      lastCheckTime: lastCheckTime ?? this.lastCheckTime,
+      lastCheckCount: lastCheckCount ?? this.lastCheckCount,
+      totalChapterNum: totalChapterNum ?? this.totalChapterNum,
+      durChapterTitle: durChapterTitle ?? this.durChapterTitle,
+      durChapterIndex: durChapterIndex ?? this.durChapterIndex,
+      durChapterPos: durChapterPos ?? this.durChapterPos,
+      durChapterTime: durChapterTime ?? this.durChapterTime,
+      wordCount: wordCount ?? this.wordCount,
+      canUpdate: canUpdate ?? this.canUpdate,
+      order: order ?? this.order,
+      originOrder: originOrder ?? this.originOrder,
+      variable: variable ?? this.variable,
+      readConfig: readConfig ?? this.readConfig,
+      syncTime: syncTime ?? this.syncTime,
+      isInBookshelf: isInBookshelf ?? this.isInBookshelf,
+    );
+  }
+
+  /// 深度還原：書籍遷移邏輯 (對標 Android Book.migrateTo)
+  Book migrateTo(Book newBook) {
+    return newBook.copyWith(
+      group: group,
+      order: order,
+      canUpdate: canUpdate,
+      durChapterIndex: durChapterIndex,
+      durChapterPos: durChapterPos,
+      durChapterTitle: durChapterTitle,
+      durChapterTime: durChapterTime,
+      readConfig: readConfig,
+    );
   }
 }
 
@@ -261,5 +331,35 @@ class ReadConfig {
       'startChapter': startChapter,
       'dailyChapters': dailyChapters,
     };
+  }
+
+  ReadConfig copyWith({
+    bool? reverseToc,
+    int? pageAnim,
+    bool? reSegment,
+    String? imageStyle,
+    bool? useReplaceRule,
+    int? delTag,
+    String? ttsEngine,
+    bool? splitLongChapter,
+    bool? readSimulating,
+    String? startDate,
+    int? startChapter,
+    int? dailyChapters,
+  }) {
+    return ReadConfig(
+      reverseToc: reverseToc ?? this.reverseToc,
+      pageAnim: pageAnim ?? this.pageAnim,
+      reSegment: reSegment ?? this.reSegment,
+      imageStyle: imageStyle ?? this.imageStyle,
+      useReplaceRule: useReplaceRule ?? this.useReplaceRule,
+      delTag: delTag ?? this.delTag,
+      ttsEngine: ttsEngine ?? this.ttsEngine,
+      splitLongChapter: splitLongChapter ?? this.splitLongChapter,
+      readSimulating: readSimulating ?? this.readSimulating,
+      startDate: startDate ?? this.startDate,
+      startChapter: startChapter ?? this.startChapter,
+      dailyChapters: dailyChapters ?? this.dailyChapters,
+    );
   }
 }

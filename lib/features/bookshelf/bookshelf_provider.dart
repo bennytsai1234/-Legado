@@ -85,12 +85,37 @@ class BookshelfProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // --- UI 輔助方法 (修復報錯) ---
+  void toggleLayout() {
+    isGridLayout = !isGridLayout;
+    SharedPreferences.getInstance().then((p) => p.setBool('bookshelf_is_grid', isGridLayout));
+    notifyListeners();
+  }
+
+  void toggleShowUnread() {
+    showUnread = !showUnread;
+    SharedPreferences.getInstance().then((p) => p.setBool('bookshelf_show_unread', showUnread));
+    notifyListeners();
+  }
+
+  void toggleShowLastUpdate() {
+    showLastUpdate = !showLastUpdate;
+    SharedPreferences.getInstance().then((p) => p.setBool('bookshelf_show_last_update', showLastUpdate));
+    notifyListeners();
+  }
+
   void toggleBatchMode([String? firstBookUrl]) {
     _isBatchMode = !_isBatchMode;
     _selectedBookUrls.clear();
     if (_isBatchMode && firstBookUrl != null) {
       _selectedBookUrls.add(firstBookUrl);
     }
+    notifyListeners();
+  }
+
+  void clearSelected() {
+    _selectedBookUrls.clear();
+    _isBatchMode = false;
     notifyListeners();
   }
 
@@ -117,6 +142,7 @@ class BookshelfProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // --- 業務方法 (修復報錯) ---
   Future<void> deleteSelected() async {
     for (var url in _selectedBookUrls) {
       await _bookDao.deleteByUrl(url);
@@ -137,21 +163,64 @@ class BookshelfProvider extends ChangeNotifier {
     await loadBooks();
   }
 
+  Future<void> createGroup(String name, {String? coverPath}) async {
+    final group = BookGroup(groupId: DateTime.now().millisecondsSinceEpoch, groupName: name, coverPath: coverPath, show: true, order: 0);
+    await _groupDao.insert(group);
+    await loadGroups();
+  }
+
+  Future<void> renameGroup(int id, String name, {String? coverPath}) async {
+    final group = await _groupDao.getById(id);
+    if (group != null) {
+      group.groupName = name;
+      group.coverPath = coverPath;
+      await _groupDao.update(group);
+      await loadGroups();
+    }
+  }
+
+  Future<void> deleteGroup(int id) async {
+    await _groupDao.deleteById(id);
+    await loadGroups();
+    await loadBooks();
+  }
+
+  Future<void> reorderGroups(int oldIdx, int newIdx) async {
+    // 深度還原：過濾出可排序的自定義分組
+    final customGroups = _groups.where((g) => g.groupId > 0).toList();
+    if (oldIdx < newIdx) newIdx -= 1;
+    
+    final movedGroup = customGroups.removeAt(oldIdx);
+    customGroups.insert(newIdx, movedGroup);
+    
+    // 重新計算並更新所有分組的 Order
+    for (int i = 0; i < customGroups.length; i++) {
+      customGroups[i].order = i;
+      await _groupDao.update(customGroups[i]);
+    }
+    await loadGroups();
+  }
+
+  void updateGroupVisibility(int id, bool show) async {
+    final group = await _groupDao.getById(id);
+    if (group != null) {
+      group.show = show;
+      await _groupDao.update(group);
+      await loadGroups();
+    }
+  }
+
   Future<void> refreshBookshelf() async {
     AppEventBus().fire(AppEventBus.bookshelfRefreshStart);
     try {
-      final disabledGroups =
-          _groups.where((g) => !g.enableRefresh).map((g) => g.groupId).toSet();
-      final onlineBooks = _books
-          .where((b) => b.origin != 'local' && !disabledGroups.contains(b.group))
-          .toList();
+      final disabledGroups = _groups.where((g) => !g.enableRefresh).map((g) => g.groupId).toSet();
+      final onlineBooks = _books.where((b) => b.origin != 'local' && !disabledGroups.contains(b.group)).toList();
 
       _updatingCount = onlineBooks.length;
       notifyListeners();
 
-      final threadCount = await SharedPreferences.getInstance()
-          .then((p) => p.getInt('thread_count') ?? 8);
-      final updatePool = Pool(threadCount);
+      final threadCount = await SharedPreferences.getInstance().then((p) => p.getInt('thread_count') ?? 8);
+      final updatePool = Pool(threadCount); 
       int completed = 0;
       final List<Future<void>> updateTasks = [];
 
@@ -187,29 +256,6 @@ class BookshelfProvider extends ChangeNotifier {
     }
   }
 
-  void toggleLayout() {
-    isGridLayout = !isGridLayout;
-    notifyListeners();
-    SharedPreferences.getInstance().then((p) => p.setBool('bookshelf_is_grid', isGridLayout));
-  }
-
-  void toggleShowUnread() {
-    showUnread = !showUnread;
-    notifyListeners();
-    SharedPreferences.getInstance().then((p) => p.setBool('bookshelf_show_unread', showUnread));
-  }
-
-  void toggleShowLastUpdate() {
-    showLastUpdate = !showLastUpdate;
-    notifyListeners();
-    SharedPreferences.getInstance().then((p) => p.setBool('bookshelf_show_last_update', showLastUpdate));
-  }
-
-  void clearSelected() {
-    _selectedBookUrls.clear();
-    notifyListeners();
-  }
-
   Future<void> importLocalBook() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -217,12 +263,10 @@ class BookshelfProvider extends ChangeNotifier {
     );
 
     if (result == null || result.files.single.path == null) return;
-    await importFile(result.files.single.path!);
+    return importLocalBookPath(result.files.single.path!);
   }
 
-  Future<void> importLocalBookPath(String path) => importFile(path);
-
-  Future<void> importFile(String path) async {
+  Future<void> importLocalBookPath(String path) async {
     final file = File(path);
     final ext = path.split('.').last.toLowerCase();
     final bookUrl = "local://${file.path}";
@@ -239,50 +283,25 @@ class BookshelfProvider extends ChangeNotifier {
         final parser = TxtParser(file);
         await parser.load();
         final chaptersData = await parser.splitChapters();
-        book = Book(
-            bookUrl: bookUrl,
-            name: p.basenameWithoutExtension(path),
-            origin: 'local',
-            originName: '本地',
-            isInBookshelf: true,
-            type: 0);
+        book = Book(bookUrl: bookUrl, name: p.basenameWithoutExtension(path), origin: 'local', originName: '本地', isInBookshelf: true, type: 0);
         await _bookDao.insertOrUpdate(book);
         final List<BookChapter> bookChapters = [];
         final List<Map<String, dynamic>> bookContents = [];
         for (int i = 0; i < chaptersData.length; i++) {
-          bookChapters.add(BookChapter(
-              url: "$bookUrl#$i",
-              title: chaptersData[i]['title'] ?? "第 $i 章",
-              bookUrl: bookUrl,
-              index: i));
-          bookContents.add({
-            'bookUrl': bookUrl,
-            'chapterIndex': i,
-            'content': chaptersData[i]['content'] ?? ""
-          });
+          bookChapters.add(BookChapter(url: "$bookUrl#$i", title: chaptersData[i]['title'] ?? "第 $i 章", bookUrl: bookUrl, index: i));
+          bookContents.add({'bookUrl': bookUrl, 'chapterIndex': i, 'content': chaptersData[i]['content'] ?? ""});
         }
         await ChapterDao().insertChapters(bookChapters);
         await ChapterDao().insertContents(bookContents);
       } else if (ext == 'epub') {
         final parser = EpubParser(file);
         await parser.load();
-        book = Book(
-            bookUrl: bookUrl,
-            name: parser.title,
-            author: parser.author,
-            origin: "local",
-            originName: "本地",
-            isInBookshelf: true,
-            type: 1);
+        book = Book(bookUrl: bookUrl, name: parser.title, author: parser.author, origin: "local", originName: "本地", isInBookshelf: true, type: 1);
         await _bookDao.insertOrUpdate(book);
         final chapters = parser.getChapters();
         final List<BookChapter> bookChapters = [];
         for (int i = 0; i < chapters.length; i++) {
-          bookChapters.add(BookChapter(
-              url: chapters[i]['href'] ?? "",
-              title: chapters[i]['title'] ?? "第 $i 章",
-              bookUrl: bookUrl,
-              index: i));
+          bookChapters.add(BookChapter(url: chapters[i]['href'] ?? "", title: chapters[i]['title'] ?? "第 $i 章", bookUrl: bookUrl, index: i));
         }
         await ChapterDao().insertChapters(bookChapters);
       }
@@ -295,46 +314,38 @@ class BookshelfProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> createGroup(String name, {String? coverPath}) async {
-    final group = BookGroup(groupId: DateTime.now().millisecondsSinceEpoch, groupName: name, coverPath: coverPath, show: true, order: 0);
-    await _groupDao.insert(group);
-    await loadGroups();
+  Future<void> exportBookshelf() async {
+    try {
+      final List<Map<String, String>> exportList = _books.map((b) => {"name": b.name, "author": b.author, "intro": b.intro ?? ""}).toList();
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/bookshelf.json');
+      await file.writeAsString(jsonEncode(exportList));
+      await Share.shareXFiles([XFile(file.path)], text: 'Exported Bookshelf');
+    } catch (e) { debugPrint('匯出書架失敗: $e'); }
   }
 
-  Future<void> renameGroup(int id, String name, {String? coverPath}) async {
-    final group = await _groupDao.getById(id);
-    if (group != null) {
-      group.groupName = name;
-      group.coverPath = coverPath;
-      await _groupDao.update(group);
-      await loadGroups();
-    }
-  }
-
-  Future<void> deleteGroup(int id) async {
-    await _groupDao.delete(id);
-    await loadGroups();
-    await loadBooks();
-  }
-
-  Future<void> reorderGroups(int oldIdx, int newIdx) async {
-    if (oldIdx < newIdx) newIdx -= 1;
-    final group = _groups.removeAt(oldIdx);
-    _groups.insert(newIdx, group);
-    for (int i = 0; i < _groups.length; i++) {
-      _groups[i].order = i;
-      await _groupDao.update(_groups[i]);
-    }
-    notifyListeners();
-  }
-
-  void updateGroupVisibility(int id, bool show) async {
-    final group = await _groupDao.getById(id);
-    if (group != null) {
-      group.show = show;
-      await _groupDao.update(group);
-      await loadGroups();
-    }
+  Future<void> importBookshelfFromUrl(String url) async {
+    try {
+      final response = await Dio().get(url);
+      if (response.data != null) {
+        final jsonStr = response.data is String ? response.data : jsonEncode(response.data);
+        final List<dynamic> decoded = jsonDecode(jsonStr);
+        final sources = await _sourceDao.getEnabled();
+        for (var item in decoded) {
+          if (item is! Map) continue;
+          final name = item['name']?.toString() ?? "";
+          final author = item['author']?.toString() ?? "";
+          if (name.isEmpty) continue;
+          final searchResults = await _service.preciseSearch(sources, name, author);
+          if (searchResults.isNotEmpty) {
+            final bestMatch = searchResults.first;
+            final newBook = bestMatch.toBook().copyWith(isInBookshelf: true);
+            await _bookDao.insertOrUpdate(newBook);
+          }
+        }
+        await loadBooks();
+      }
+    } catch (e) { debugPrint('從 URL 匯入書架失敗: $e'); }
   }
 
   @override

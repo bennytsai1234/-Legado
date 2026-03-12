@@ -210,6 +210,9 @@ class BookDao {
     });
   }
 
+  /// 刪除書籍 (Alias for deleteByUrl)
+  Future<void> delete(String bookUrl) => deleteByUrl(bookUrl);
+
   /// 刪除書籍
   Future<void> deleteByUrl(String bookUrl) async {
     final db = await _db;

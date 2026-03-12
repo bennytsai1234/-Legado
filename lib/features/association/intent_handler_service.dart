@@ -118,20 +118,34 @@ class IntentHandlerService {
       if (data is List && data.isNotEmpty) {
         final first = data.first;
         if (first is Map) {
-          if (first.containsKey('bookSourceUrl')) type = 'bookSource';
-          else if (first.containsKey('sourceUrl')) type = 'rssSource';
-          else if (first.containsKey('pattern')) type = 'replaceRule';
-          else if (first.containsKey('loginUrl')) type = 'httpTts';
-          else if (first.containsKey('themeName')) type = 'theme';
-          else if (first.containsKey('chapterName')) type = 'txtRule';
+          if (first.containsKey('bookSourceUrl')) {
+            type = 'bookSource';
+          } else if (first.containsKey('sourceUrl')) {
+            type = 'rssSource';
+          } else if (first.containsKey('pattern')) {
+            type = 'replaceRule';
+          } else if (first.containsKey('loginUrl')) {
+            type = 'httpTts';
+          } else if (first.containsKey('themeName')) {
+            type = 'theme';
+          } else if (first.containsKey('chapterName')) {
+            type = 'txtRule';
+          }
         }
       } else if (data is Map) {
-        if (data.containsKey('bookSourceUrl')) type = 'bookSource';
-        else if (data.containsKey('sourceUrl')) type = 'rssSource';
-        else if (data.containsKey('pattern')) type = 'replaceRule';
-        else if (data.containsKey('loginUrl')) type = 'httpTts';
-        else if (data.containsKey('themeName')) type = 'theme';
-        else if (data.containsKey('chapterName')) type = 'txtRule';
+        if (data.containsKey('bookSourceUrl')) {
+          type = 'bookSource';
+        } else if (data.containsKey('sourceUrl')) {
+          type = 'rssSource';
+        } else if (data.containsKey('pattern')) {
+          type = 'replaceRule';
+        } else if (data.containsKey('loginUrl')) {
+          type = 'httpTts';
+        } else if (data.containsKey('themeName')) {
+          type = 'theme';
+        } else if (data.containsKey('chapterName')) {
+          type = 'txtRule';
+        }
       }
 
       if (context.mounted) {

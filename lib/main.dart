@@ -61,6 +61,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => RssSourceProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => ChangeCoverProvider()),
+        ChangeNotifierProvider(create: (_) => TTSService()),
       ],
       child: const LegadoReaderApp(),
     ),

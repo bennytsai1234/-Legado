@@ -175,7 +175,7 @@ class _ChangeCoverSheetState extends State<ChangeCoverSheet> {
     );
   }
 
-  Widget _buildCoverItem(SearchBook result) {
+  Widget _buildCoverItem(AggregatedSearchBook result) {
     final isDefault = result.book.bookUrl == 'use_default_cover';
     return GestureDetector(
       onTap: () {

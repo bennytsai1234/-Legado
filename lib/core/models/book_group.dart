@@ -3,7 +3,7 @@
 class BookGroup {
   final int groupId;
   String groupName;
-  String? cover;
+  String? coverPath;
   int order;
   bool enableRefresh;
   bool show;
@@ -20,7 +20,7 @@ class BookGroup {
   BookGroup({
     this.groupId = 1,
     this.groupName = "",
-    this.cover,
+    this.coverPath,
     this.order = 0,
     this.enableRefresh = true,
     this.show = true,
@@ -31,7 +31,7 @@ class BookGroup {
     return {
       'groupId': groupId,
       'groupName': groupName,
-      'cover': cover,
+      'coverPath': coverPath,
       'order': order,
       'enableRefresh': enableRefresh,
       'show': show,
@@ -43,7 +43,7 @@ class BookGroup {
     return BookGroup(
       groupId: json['groupId'] ?? 1,
       groupName: json['groupName'] ?? "",
-      cover: json['cover'],
+      coverPath: json['coverPath'],
       order: json['order'] ?? 0,
       enableRefresh: json['enableRefresh'] ?? true,
       show: json['show'] ?? true,
