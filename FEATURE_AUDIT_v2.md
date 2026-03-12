@@ -37,11 +37,11 @@
 - ✅ 狀態顯示：支援未讀章節數顯示、最後更新時間顯示。
 - ✅ 本地匯入：支援 TXT/EPUB 本地檔案掃描與匯入。
 - ✅ 導出功能：支援將書架清單導出為 JSON並分享。
-- ✅ 書籍更新：支援線程池並發檢查所有在架書籍的章節更新。
+- ✅ 排序功能：支援手動、最後閱讀、最晚更新、書名、作者等多種排序維度。
+- ✅ 書架分組：支援多分組位運算過濾，顯示正確的分組書籍。
 
 **不足之處**：
-- [ ] **URL 單書匯入缺失**：Android 支持貼上書籍詳情頁 URL 直接解析添加，iOS 僅支援匯入 JSON 格式的書單。
-- [ ] **排序邏輯不完全**：Android 支援「手動、最後閱讀、最晚更新、書名、作者」等多種排序，iOS 目前缺乏排序切換邏輯。
+- [ ] **無顯著 Logic Gap**：核心書架功能已基本與 Android 對齊。
 
 ### 證據鏈明細
 
@@ -54,7 +54,7 @@
 | **1.5 匯出書架** | `BookshelfViewModel.kt`: L107 (`exportBookshelf`) | `bookshelf_provider.dart`: L257 (`exportBookshelf`) | **Matched** | 均導出為 JSON 數組。 |
 | **1.6 本地匯入** | `ImportBookActivity.kt` | `bookshelf_provider.dart`: L205 (`importLocalBook`) | **Matched** | 支援 TXT/EPUB 解析。 |
 | **1.7 URL 解析匯入** | `BookshelfViewModel.kt`: L35 (`addBookByUrl`) | `bookshelf_provider.dart`: L327 (`importBookshelfFromUrl`) | **Matched** | 現已支援單個書籍詳情頁 URL 解析並自動獲取書名、作者及目錄。 |
-| **1.8 書架排序** | `BaseBookshelfFragment.kt`: L190 (`AppConfig.bookshelfSort`) | `bookshelf_provider.dart` | **Logic Gap** | iOS 端缺乏 UI 指定的動態排序邏輯。 |
+| **1.8 書架排序** | `BaseBookshelfFragment.kt`: L190 (`AppConfig.bookshelfSort`) | `bookshelf_provider.dart`: L108 (`loadBooks`) | **Matched** | 支援多維度排序與 SharedPreferences 持久化。 |
 
 ---
 

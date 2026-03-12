@@ -55,12 +55,24 @@ class BookshelfProvider extends ChangeNotifier {
     _eventSub = AppEventBus().onName(AppEventBus.upBookshelf).listen((_) => loadBooks());
   }
 
+  int _sortMode = 0; // 0:手動, 1:最後閱讀, 2:最晚更新, 3:書名, 4:作者
+  int get sortMode => _sortMode;
+
   Future<void> _init() async {
     final prefs = await SharedPreferences.getInstance();
     isGridLayout = prefs.getBool('bookshelf_is_grid') ?? true;
     showUnread = prefs.getBool('bookshelf_show_unread') ?? true;
     showLastUpdate = prefs.getBool('bookshelf_show_last_update') ?? false;
+    _sortMode = prefs.getInt('bookshelf_sort_mode') ?? 0;
+    
     await loadGroups();
+    await loadBooks();
+  }
+
+  Future<void> setSortMode(int mode) async {
+    _sortMode = mode;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('bookshelf_sort_mode', mode);
     await loadBooks();
   }
 
@@ -81,7 +93,36 @@ class BookshelfProvider extends ChangeNotifier {
   Future<void> loadBooks() async {
     _isLoading = true;
     notifyListeners();
-    _books = await _bookDao.getAllInBookshelf();
+    
+    List<Book> allBooks = await _bookDao.getAllInBookshelf();
+    
+    // 1. 分組過濾 (位運算，比照 Android)
+    if (_currentGroupId > 0) {
+      allBooks = allBooks.where((b) => (b.group & _currentGroupId) != 0).toList();
+    } else if (_currentGroupId == -1) { // 未分組
+      allBooks = allBooks.where((b) => b.group == 0).toList();
+    }
+    
+    // 2. 排序邏輯 (深度還原 Android 排序)
+    switch (_sortMode) {
+      case 1: // 最後閱讀
+        allBooks.sort((a, b) => b.durChapterTime.compareTo(a.durChapterTime));
+        break;
+      case 2: // 最晚更新
+        allBooks.sort((a, b) => b.latestChapterTime.compareTo(a.latestChapterTime));
+        break;
+      case 3: // 書名
+        allBooks.sort((a, b) => a.name.compareTo(b.name));
+        break;
+      case 4: // 作者
+        allBooks.sort((a, b) => a.author.compareTo(b.author));
+        break;
+      default: // 手動
+        allBooks.sort((a, b) => a.order.compareTo(b.order));
+        break;
+    }
+
+    _books = allBooks;
     _isLoading = false;
     notifyListeners();
   }
