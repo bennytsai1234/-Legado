@@ -15,8 +15,15 @@ class SearchProvider extends ChangeNotifier {
   List<String> _history = [];
   List<AggregatedSearchBook> _results = [];
   bool _isSearching = false;
+  bool _isCancelled = false;
   int _searchCount = 0;
   int _totalSources = 0;
+
+  void stopSearch() {
+    _isCancelled = true;
+    _isSearching = false;
+    notifyListeners();
+  }
 
   // 搜尋範圍與熱搜詞
   List<String> _sourceGroups = ['全部'];
@@ -69,6 +76,7 @@ class SearchProvider extends ChangeNotifier {
     if (keyword.isEmpty) return;
 
     _isSearching = true;
+    _isCancelled = false;
     _results = [];
     _searchCount = 0;
     notifyListeners();
@@ -101,7 +109,11 @@ class SearchProvider extends ChangeNotifier {
     // 並發搜尋
     final List<Future<void>> tasks = [];
     for (final source in enabledSources) {
-      tasks.add(searchPool.withResource(() => _searchSingleSource(source, keyword)));
+      if (_isCancelled) break;
+      tasks.add(searchPool.withResource(() async {
+        if (_isCancelled) return;
+        return _searchSingleSource(source, keyword);
+      }));
     }
 
     await Future.wait(tasks);
@@ -114,6 +126,7 @@ class SearchProvider extends ChangeNotifier {
     if (keyword.isEmpty) return;
     
     _isSearching = true;
+    _isCancelled = false;
     _results = [];
     _searchCount = 0;
     _totalSources = 1;
@@ -130,11 +143,13 @@ class SearchProvider extends ChangeNotifier {
   }
 
   Future<void> _searchSingleSource(BookSource source, String keyword) async {
+    if (_isCancelled) return;
     try {
       final List<SearchBook> books = await _service.searchBooks(
         source,
         keyword,
       );
+      if (_isCancelled) return;
       _aggregateResults(books);
     } catch (e) {
       debugPrint('搜尋書源 ${source.bookSourceName} 失敗: $e');

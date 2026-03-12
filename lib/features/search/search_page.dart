@@ -67,6 +67,20 @@ class _SearchPageState extends State<SearchPage> {
           actions: [
             Consumer<SearchProvider>(
               builder: (context, provider, child) {
+                return IconButton(
+                  icon: Icon(provider.isSearching ? Icons.stop_circle_outlined : Icons.search, color: provider.isSearching ? Colors.red : null),
+                  onPressed: () {
+                    if (provider.isSearching) {
+                      provider.stopSearch();
+                    } else {
+                      _onSearch(_controller.text);
+                    }
+                  },
+                );
+              },
+            ),
+            Consumer<SearchProvider>(
+              builder: (context, provider, child) {
                 return PopupMenuButton<String>(
                   tooltip: '搜尋範圍',
                   icon: const Icon(Icons.filter_alt),
