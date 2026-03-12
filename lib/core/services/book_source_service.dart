@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import '../models/book.dart';
 import '../models/chapter.dart';
 import '../models/search_book.dart';
@@ -16,6 +17,7 @@ class BookSourceService {
     String keyword, {
     int page = 1,
     bool Function(String name, String author)? filter,
+    CancelToken? cancelToken,
   }) async {
     final searchUrl = source.searchUrl;
     if (searchUrl == null || searchUrl.isEmpty) return [];
@@ -31,7 +33,7 @@ class BookSourceService {
         analyzer: analyzeRule,
       );
 
-      final resBody = await analyzeUrl.getResponseBody();
+      final resBody = await analyzeUrl.getResponseBody(cancelToken: cancelToken);
       if (resBody.isEmpty) return [];
 
       final list = _analyzeBookList(
@@ -55,8 +57,9 @@ class BookSourceService {
   Future<List<SearchBook>> preciseSearch(
     List<BookSource> sources,
     String name,
-    String author,
-  ) async {
+    String author, {
+    CancelToken? cancelToken,
+  }) async {
     final List<SearchBook> allResults = [];
     final List<Future<List<SearchBook>>> futures = [];
 
@@ -68,6 +71,7 @@ class BookSourceService {
           filter: (fName, fAuthor) {
             return fName == name && (author.isEmpty || fAuthor == author);
           },
+          cancelToken: cancelToken,
         ),
       );
     }
@@ -84,6 +88,7 @@ class BookSourceService {
     BookSource source,
     String url, {
     int page = 1,
+    CancelToken? cancelToken,
   }) async {
     final limiter = ConcurrentRateLimiter(source);
     return await limiter.withLimit(() async {
@@ -95,13 +100,13 @@ class BookSourceService {
         analyzer: analyzeRule,
       );
 
-      final resBody = await analyzeUrl.getResponseBody();
+      final resBody = await analyzeUrl.getResponseBody(cancelToken: cancelToken);
       return _analyzeBookList(source, resBody, analyzeUrl.url, isSearch: false);
     });
   }
 
   /// 獲取書籍詳情
-  Future<Book> getBookInfo(BookSource source, Book book) async {
+  Future<Book> getBookInfo(BookSource source, Book book, {CancelToken? cancelToken}) async {
     final limiter = ConcurrentRateLimiter(source);
     return await limiter.withLimit(() async {
       final analyzeRule = AnalyzeRule(source: source);
@@ -111,7 +116,7 @@ class BookSourceService {
         analyzer: analyzeRule,
       );
 
-      final resBody = await analyzeUrl.getResponseBody();
+      final resBody = await analyzeUrl.getResponseBody(cancelToken: cancelToken);
       if (resBody.isEmpty) return book;
 
       final rule = analyzeRule.setContent(resBody, baseUrl: analyzeUrl.url);
@@ -134,12 +139,12 @@ class BookSourceService {
   }
 
   /// 獲取章節目錄 (支援翻頁)
-  Future<List<BookChapter>> getChapterList(BookSource source, Book book) async {
+  Future<List<BookChapter>> getChapterList(BookSource source, Book book, {CancelToken? cancelToken}) async {
     final chapters = <BookChapter>[];
     String? nextUrl = book.tocUrl.isEmpty ? book.bookUrl : book.tocUrl;
 
     while (nextUrl != null && nextUrl.isNotEmpty) {
-      final res = await _fetchChapterPage(source, book, nextUrl);
+      final res = await _fetchChapterPage(source, book, nextUrl, cancelToken: cancelToken);
       chapters.addAll(res.chapters);
       nextUrl = res.nextUrl;
 
@@ -152,8 +157,9 @@ class BookSourceService {
   Future<({List<BookChapter> chapters, String? nextUrl})> _fetchChapterPage(
     BookSource source,
     Book book,
-    String url,
-  ) async {
+    String url, {
+    CancelToken? cancelToken,
+  }) async {
     final limiter = ConcurrentRateLimiter(source);
     return await limiter.withLimit(() async {
       final analyzeRule = AnalyzeRule(source: source);
@@ -163,7 +169,7 @@ class BookSourceService {
         analyzer: analyzeRule,
       );
 
-      final resBody = await analyzeUrl.getResponseBody();
+      final resBody = await analyzeUrl.getResponseBody(cancelToken: cancelToken);
       if (resBody.isEmpty) return (chapters: <BookChapter>[], nextUrl: null);
 
       final rule = analyzeRule.setContent(resBody, baseUrl: analyzeUrl.url);
@@ -203,6 +209,7 @@ class BookSourceService {
     Book book,
     BookChapter chapter, {
     String? nextChapterUrl,
+    CancelToken? cancelToken,
   }) async {
     final limiter = ConcurrentRateLimiter(source);
     return await limiter.withLimit(() async {
@@ -222,7 +229,7 @@ class BookSourceService {
           analyzer: analyzeRule,
         );
 
-        final resBody = await analyzeUrl.getResponseBody();
+        final resBody = await analyzeUrl.getResponseBody(cancelToken: cancelToken);
         if (resBody.isEmpty) break;
 
         final rule = analyzeRule.setContent(resBody, baseUrl: analyzeUrl.url);

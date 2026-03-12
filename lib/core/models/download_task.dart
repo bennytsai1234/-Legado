@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 /// DownloadTask - 下載任務模型
 /// 用於持久化儲存下載隊列，確保 App 重啟後能恢復

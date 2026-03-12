@@ -15,13 +15,14 @@ import '../../services/http_client.dart';
 import '../../services/cookie_store.dart';
 import '../../services/cache_manager.dart';
 import '../../services/chinese_utils.dart';
+import '../../services/encoding_detect.dart';
 import 'package:fast_gbk/fast_gbk.dart';
 
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:archive/archive.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../services/backstage_webview.dart';
 import '../../services/source_verification_service.dart';
 import 'query_ttf.dart';
@@ -34,11 +35,27 @@ class JsExtensions {
   final CookieStore _cookieStore = CookieStore();
   final CacheManager _cacheManager = CacheManager();
   static final Map<String, QueryTTF> _ttfCache = {};
+  static final Map<String, String> _fontReplaceCache = {};
+  
+  // 全域 JS 作用域 (模擬 Android SharedJsScope)
+  static final Map<String, dynamic> _sharedScope = {};
 
   JsExtensions(this.runtime, {this.source});
 
   /// 注入 java 物件及函式
   void inject() {
+    // 實作 java.put
+    runtime.onMessage('put', (dynamic args) {
+      if (args is List && args.length >= 2) {
+        _sharedScope[args[0].toString()] = args[1];
+      }
+    });
+
+    // 實作 java.get
+    runtime.onMessage('get', (dynamic args) {
+      return _sharedScope[args.toString()];
+    });
+
     // 實作 java.log
     runtime.onMessage('log', (dynamic args) {
       debugPrint('JS_LOG: $args');
@@ -385,7 +402,14 @@ class JsExtensions {
         final buffer = StringBuffer();
         final files = folder.listSync().whereType<File>().toList();
         for (var f in files) {
-          final content = await f.readAsString();
+          final bytes = await f.readAsBytes();
+          final charset = EncodingDetect.getEncode(bytes);
+          String content;
+          if (charset == "GBK") {
+            content = gbk.decode(bytes);
+          } else {
+            content = utf8.decode(bytes, allowMalformed: true);
+          }
           buffer.writeln(content);
         }
         return buffer.toString();
@@ -457,12 +481,10 @@ class JsExtensions {
           return cacheKey;
         }
       } catch (e) {
-        debugPrint('queryTTF error: \$e');
+        debugPrint('queryTTF error: $e');
       }
       return null;
     });
-
-    static final Map<String, String> _fontReplaceCache = {};
 
     runtime.onMessage('replaceFont', (dynamic args) {
       try {
@@ -624,39 +646,6 @@ class JsExtensions {
       final url = args[0].toString();
       final saveTime = args.length > 1 ? args[1] as int : 0;
       return await _cacheFile(url, saveTime);
-    });
-  }
-
-  String _toNumChapter(String s) {
-    // Basic implementation of converting Chinese numbers to Arabic in chapter titles
-    final chnMap = {
-      '零': 0,
-      '一': 1,
-      '二': 2,
-      '三': 3,
-      '四': 4,
-      '五': 5,
-      '六': 6,
-      '七': 7,
-      '八': 8,
-      '九': 9,
-      '十': 10,
-    };
-    return s.replaceAllMapped(RegExp(r'[零一二三四五六七八九十]+'), (match) {
-      final chn = match.group(0)!;
-      int res = 0;
-      if (chn.length == 1) return chnMap[chn]?.toString() ?? chn;
-      if (chn.length == 2 && chn.startsWith('十')) {
-        res = 10 + (chnMap[chn[1]] ?? 0);
-      } else if (chn.length == 2 && chn.endsWith('十')) {
-        res = (chnMap[chn[0]] ?? 0) * 10;
-      } else if (chn.length == 3 && chn[1] == '十') {
-        res = (chnMap[chn[0]] ?? 0) * 10 + (chnMap[chn[2]] ?? 0);
-      } else {
-        // Fallback for long numbers like "一百二十三" - not fully implemented here
-        return chn;
-      }
-      return res.toString();
     });
   }
 

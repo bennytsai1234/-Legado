@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'replace_rule_provider.dart';
 import '../../core/models/replace_rule.dart';
+import 'replace_rule_edit_page.dart';
 
 class ReplaceRulePage extends StatelessWidget {
   const ReplaceRulePage({super.key});
@@ -18,7 +19,7 @@ class ReplaceRulePage extends StatelessWidget {
               actions: [
                 IconButton(
                   icon: const Icon(Icons.add),
-                  onPressed: () => _showEditDialog(context, provider),
+                  onPressed: () => _navigateToEdit(context, provider),
                 ),
               ],
             ),
@@ -57,7 +58,7 @@ class ReplaceRulePage extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.edit),
-            onPressed: () => _showEditDialog(context, provider, rule: rule),
+            onPressed: () => _navigateToEdit(context, provider, rule: rule),
           ),
           IconButton(
             icon: const Icon(Icons.delete),
@@ -68,69 +69,20 @@ class ReplaceRulePage extends StatelessWidget {
     );
   }
 
-  void _showEditDialog(BuildContext context, ReplaceRuleProvider provider,
+  void _navigateToEdit(BuildContext context, ReplaceRuleProvider provider,
       {ReplaceRule? rule}) {
-    final nameController = TextEditingController(text: rule?.name ?? '');
-    final patternController = TextEditingController(text: rule?.pattern ?? '');
-    final replacementController =
-        TextEditingController(text: rule?.replacement ?? '');
-    bool isRegex = rule?.isRegex ?? true;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(rule == null ? '新增規則' : '編輯規則'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: '名稱'),
-                ),
-                TextField(
-                  controller: patternController,
-                  decoration: const InputDecoration(labelText: '正則/替換目標'),
-                ),
-                TextField(
-                  controller: replacementController,
-                  decoration: const InputDecoration(labelText: '替換為'),
-                ),
-                CheckboxListTile(
-                  title: const Text('是否為正則'),
-                  value: isRegex,
-                  onChanged: (val) => setState(() => isRegex = val ?? true),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('取消'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final newRule = ReplaceRule(
-                  id: rule?.id ?? 0,
-                  name: nameController.text,
-                  pattern: patternController.text,
-                  replacement: replacementController.text,
-                  isRegex: isRegex,
-                  isEnabled: rule?.isEnabled ?? true,
-                  order: rule?.order ?? provider.rules.length,
-                );
-                if (rule == null) {
-                  provider.addRule(newRule);
-                } else {
-                  provider.updateRule(newRule);
-                }
-                Navigator.pop(context);
-              },
-              child: const Text('儲存'),
-            ),
-          ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReplaceRuleEditPage(
+          rule: rule,
+          onSave: (newRule) {
+            if (rule == null) {
+              provider.addRule(newRule);
+            } else {
+              provider.updateRule(newRule);
+            }
+          },
         ),
       ),
     );

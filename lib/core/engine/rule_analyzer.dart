@@ -82,26 +82,40 @@ class RuleAnalyzer {
     bool inDoubleQuote = false;
 
     do {
-      if (pos >= _queue.length) break;
+      if (pos >= _queue.length) {
+        break;
+      }
       final c = _queue[pos++];
       if (c.codeUnitAt(0) != _esc) {
-        if (c == '\'' && !inDoubleQuote) inSingleQuote = !inSingleQuote;
-        else if (c == '"' && !inSingleQuote) inDoubleQuote = !inDoubleQuote;
+        if (c == '\'' && !inDoubleQuote) {
+          inSingleQuote = !inSingleQuote;
+        } else if (c == '"' && !inSingleQuote) {
+          inDoubleQuote = !inDoubleQuote;
+        }
 
-        if (inSingleQuote || inDoubleQuote) continue;
+        if (inSingleQuote || inDoubleQuote) {
+          continue;
+        }
 
-        if (c == '[') depth++;
-        else if (c == ']') depth--;
-        else if (depth == 0) {
-          if (c == open) otherDepth++;
-          else if (c == close) otherDepth--;
+        if (c == '[') {
+          depth++;
+        } else if (c == ']') {
+          depth--;
+        } else if (depth == 0) {
+          if (c == open) {
+            otherDepth++;
+          } else if (c == close) {
+            otherDepth--;
+          }
         }
       } else {
         pos++; // Skip escaped char
       }
     } while (depth > 0 || otherDepth > 0);
 
-    if (depth > 0 || otherDepth > 0) return false;
+    if (depth > 0 || otherDepth > 0) {
+      return false;
+    }
     _pos = pos;
     return true;
   }
@@ -114,19 +128,32 @@ class RuleAnalyzer {
     bool inDoubleQuote = false;
 
     do {
-      if (pos >= _queue.length) break;
+      if (pos >= _queue.length) {
+        break;
+      }
       final c = _queue[pos++];
-      if (c == '\'' && !inDoubleQuote) inSingleQuote = !inSingleQuote;
-      else if (c == '"' && !inSingleQuote) inDoubleQuote = !inDoubleQuote;
+      if (c == '\'' && !inDoubleQuote) {
+        inSingleQuote = !inSingleQuote;
+      } else if (c == '"' && !inSingleQuote) {
+        inDoubleQuote = !inDoubleQuote;
+      }
 
-      if (inSingleQuote || inDoubleQuote) continue;
-      else if (c == '\\') { pos++; continue; }
+      if (inSingleQuote || inDoubleQuote) {
+        continue;
+      } else if (c == '\\') {
+        pos++; continue;
+      }
 
-      if (c == open) depth++;
-      else if (c == close) depth--;
+      if (c == open) {
+        depth++;
+      } else if (c == close) {
+        depth--;
+      }
     } while (depth > 0);
 
-    if (depth > 0) return false;
+    if (depth > 0) {
+      return false;
+    }
     _pos = pos;
     return true;
   }
@@ -250,5 +277,10 @@ class RuleAnalyzer {
     if (_startX == 0) return _queue;
     st.write(_queue.substring(_startX));
     return st.toString();
+  }
+
+  /// 替換內嵌規則 (便捷版)
+  String innerRule(String startStr, {required String? Function(String) fr}) {
+    return innerRuleRange(startStr, "}", fr: fr);
   }
 }

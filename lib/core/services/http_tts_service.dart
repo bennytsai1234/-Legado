@@ -73,8 +73,24 @@ class HttpTtsService extends ChangeNotifier {
 
           final bytes = await analyzeUrl.getByteArray();
           if (bytes != null && bytes.isNotEmpty) {
-            // 簡單檢查 Content-Type 或內容是否為錯誤訊息 (Legado 邏輯)
-            // 這裡簡化處理，直接寫入文件
+            // 檢查是否為錯誤訊息 (如 JSON 或 HTML) 而非音檔
+            bool isErrorText = false;
+            if (bytes.length < 1000) {
+              try {
+                final str = utf8.decode(bytes);
+                if (str.contains('{') || str.contains('<html') || str.contains('error')) {
+                  isErrorText = true;
+                }
+              } catch (_) {
+                // Not valid UTF-8, likely binary audio data
+              }
+            }
+
+            if (isErrorText) {
+              debugPrint("HttpTtsService: Received error instead of audio: ${utf8.decode(bytes)}");
+              continue;
+            }
+
             await file.writeAsBytes(bytes);
           } else {
             continue; // 下載失敗則跳過此段

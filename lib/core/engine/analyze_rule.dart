@@ -1,10 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:html_unescape/html_unescape.dart';
 import 'parsers/analyze_by_css.dart';
 import 'parsers/analyze_by_json_path.dart';
 import 'parsers/analyze_by_xpath.dart';
 import 'parsers/analyze_by_regex.dart';
-import 'rule_analyzer.dart';
 import 'js/js_engine.dart';
 import '../models/rule_data_interface.dart';
 
@@ -13,6 +14,15 @@ import '../models/rule_data_interface.dart';
 class AnalyzeRule {
   RuleDataInterface? ruleData;
   dynamic source; // BaseSource equivalent
+
+  // 全域調試日誌流
+  static StreamController<String>? debugLogController;
+
+  void _log(String msg) {
+    if (debugLogController != null && !debugLogController!.isClosed) {
+      debugLogController!.add(msg);
+    }
+  }
 
   dynamic _content;
   String? _baseUrl;
@@ -28,7 +38,8 @@ class AnalyzeRule {
   static final HtmlUnescape _htmlUnescape = HtmlUnescape();
   static final Map<String, RegExp> _regexCache = {};
   static final Map<String, List<SourceRule>> _stringRuleCache = {};
-  static final Map<String, dynamic> _scriptCache = {}; // 模擬 Android CompiledScript
+  static final Map<String, dynamic> _scriptCache =
+      {}; // 模擬 Android CompiledScript
 
   AnalyzeRule({this.ruleData, this.source});
 
@@ -76,6 +87,7 @@ class AnalyzeRule {
   dynamic getElement(String ruleStr) {
     if (ruleStr.isEmpty) return null;
 
+    _log("⇒ 執行 getElement: $ruleStr");
     var result = _content;
     final ruleList = _splitSourceRuleCacheString(ruleStr);
 
@@ -85,6 +97,7 @@ class AnalyzeRule {
 
         sourceRule.makeUpRule(result, this);
         final rule = sourceRule.rule;
+        _log("  ◇ 模式: ${sourceRule.mode.name}, 規則: $rule");
 
         switch (sourceRule.mode) {
           case Mode.regex:
@@ -110,8 +123,16 @@ class AnalyzeRule {
         }
 
         if (result != null && sourceRule.replaceRegex.isNotEmpty) {
+          _log(
+            "  ◇ 正則替換: ${sourceRule.replaceRegex} -> ${sourceRule.replacement}",
+          );
           result = _replaceRegex(result.toString(), sourceRule);
         }
+
+        final preview = result?.toString() ?? "null";
+        _log(
+          "  └ 結果類型: ${result?.runtimeType}, 預覽: ${preview.length > 50 ? preview.substring(0, 50) : preview}",
+        );
       }
     }
     return result;
@@ -121,6 +142,7 @@ class AnalyzeRule {
   List<dynamic> getElements(String ruleStr) {
     if (ruleStr.isEmpty) return [];
 
+    _log("⇒ 執行 getElements: $ruleStr");
     var result = _content;
     final ruleList = _splitSourceRuleCacheString(ruleStr);
 
@@ -130,6 +152,7 @@ class AnalyzeRule {
 
         sourceRule.makeUpRule(result, this);
         final rule = sourceRule.rule;
+        _log("  ◇ 模式: ${sourceRule.mode.name}, 規則: $rule");
 
         switch (sourceRule.mode) {
           case Mode.regex:
@@ -152,6 +175,7 @@ class AnalyzeRule {
         }
 
         if (result != null && sourceRule.replaceRegex.isNotEmpty) {
+          _log("  ◇ 正則替換列表元素: ${sourceRule.replaceRegex}");
           if (result is List) {
             result =
                 result
@@ -161,6 +185,9 @@ class AnalyzeRule {
             result = _replaceRegex(result.toString(), sourceRule);
           }
         }
+        _log(
+          "  └ 列表長度: ${result is List ? result.length : (result == null ? 0 : 1)}",
+        );
       }
     }
 
@@ -173,6 +200,7 @@ class AnalyzeRule {
   String getString(String ruleStr, {bool isUrl = false, bool unescape = true}) {
     if (ruleStr.isEmpty) return "";
 
+    _log("⇒ 執行 getString: $ruleStr");
     final ruleList = _splitSourceRuleCacheString(ruleStr);
     var result = _content;
 
@@ -182,6 +210,7 @@ class AnalyzeRule {
 
         sourceRule.makeUpRule(result, this);
         final rule = sourceRule.rule;
+        _log("  ◇ 模式: ${sourceRule.mode.name}, 規則: $rule");
 
         if (rule.isNotEmpty || sourceRule.replaceRegex.isEmpty) {
           switch (sourceRule.mode) {
@@ -207,8 +236,14 @@ class AnalyzeRule {
         }
 
         if (result != null && sourceRule.replaceRegex.isNotEmpty) {
+          _log("  ◇ 正則替換: ${sourceRule.replaceRegex}");
           result = _replaceRegex(result.toString(), sourceRule);
         }
+
+        final preview = result?.toString() ?? "null";
+        _log(
+          "  └ 字串預覽: ${preview.length > 50 ? preview.substring(0, 50) : preview}",
+        );
       }
     }
 
@@ -375,10 +410,18 @@ class AnalyzeRule {
     }
 
     dynamic sourceMap;
-    try { sourceMap = source?.toJson(); } catch (_) { sourceMap = source; }
+    try {
+      sourceMap = source?.toJson();
+    } catch (_) {
+      sourceMap = source;
+    }
 
     dynamic chapterMap;
-    try { chapterMap = _chapter?.toJson(); } catch (_) { chapterMap = _chapter; }
+    try {
+      chapterMap = _chapter?.toJson();
+    } catch (_) {
+      chapterMap = _chapter;
+    }
 
     final context = {
       'java': this,
@@ -432,7 +475,7 @@ class SourceRule {
 
   List<String> ruleParam = [];
   List<int> ruleType = [];
-  
+
   static const int getRuleType = -2;
   static const int jsRuleType = -1;
   static const int defaultRuleType = 0;
@@ -468,16 +511,19 @@ class SourceRule {
     rule = vRuleStr;
 
     // 3. 拆分 @get, {{ }} (高度還原 Android init 核心)
-    final evalPattern = RegExp(r'@get:\{[^}]+?\}|\{\{[\w\W]*?\}\}', caseSensitive: false);
+    final evalPattern = RegExp(
+      r'@get:\{[^}]+?\}|\{\{[\w\W]*?\}\}',
+      caseSensitive: false,
+    );
     int start = 0;
     final evalMatches = evalPattern.allMatches(rule);
-    
+
     for (final match in evalMatches) {
       if (match.start > start) {
         _splitRegex(rule.substring(start, match.start));
       }
       final tmp = match.group(0)!;
-      if (tmp.startsWith('@get:', true)) {
+      if (tmp.toLowerCase().startsWith('@get:')) {
         ruleType.add(getRuleType);
         ruleParam.add(tmp.substring(6, tmp.length - 1));
       } else if (tmp.startsWith('{{')) {
@@ -533,7 +579,9 @@ class SourceRule {
             infoVal.write(ruleParam[i]);
           }
         } else if (type == jsRuleType) {
-          infoVal.write(analyzer.evalJS(ruleParam[i], result)?.toString() ?? "");
+          infoVal.write(
+            analyzer.evalJS(ruleParam[i], result)?.toString() ?? "",
+          );
         } else if (type == getRuleType) {
           infoVal.write(analyzer.get(ruleParam[i]));
         } else {

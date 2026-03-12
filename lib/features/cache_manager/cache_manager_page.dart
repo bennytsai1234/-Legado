@@ -77,12 +77,6 @@ class CacheManagerPage extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              // 下載未快取的章節
-              final List<int> unCached = [];
-              for (int i = 0; i < provider.chapters.length; i++) {
-                if (!provider.cachedIndices.contains(i)) unCached.add(i);
-              }
-              // 此處簡化為下載全部 (DownloadService 會自動跳過已快取的)
               provider.downloadChapters(0, provider.chapters.length);
             },
             child: const Text('下載未快取'),

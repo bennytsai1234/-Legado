@@ -16,7 +16,7 @@ class ExportBookService {
 
     final buffer = StringBuffer();
     buffer.writeln(book.name);
-    buffer.writeln("作者：${book.author ?? '未知'}");
+    buffer.writeln("作者：${book.author.isEmpty ? '未知' : book.author}");
     buffer.writeln("-" * 20);
     buffer.writeln();
 

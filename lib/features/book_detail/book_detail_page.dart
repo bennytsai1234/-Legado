@@ -168,7 +168,7 @@ class BookDetailPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '作者：${book.author ?? '未知'}',
+                  '作者：${book.author.isEmpty ? '未知' : book.author}',
                   style: const TextStyle(fontSize: 16),
                 ),
                 const SizedBox(height: 4),
@@ -176,7 +176,7 @@ class BookDetailPage extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        '來源：${book.originName ?? '未知'}',
+                        '來源：${book.originName.isEmpty ? '未知' : book.originName}',
                         style: const TextStyle(fontSize: 14, color: Colors.grey),
                         overflow: TextOverflow.ellipsis,
                       ),

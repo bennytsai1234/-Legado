@@ -2,6 +2,7 @@
 /// 對應 Android: data/AppDatabase.kt
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -215,78 +216,86 @@ class AppDatabase {
   }
 
   static Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    debugPrint('Database: Upgrading from $oldVersion to $newVersion');
     for (int i = oldVersion + 1; i <= newVersion; i++) {
-      switch (i) {
-        case 2:
-          // Recreate txt_toc_rules table to fix missing columns (example, serialNumber, enable)
-          await db.execute('DROP TABLE IF EXISTS txt_toc_rules');
-          await db.execute(TxtTocRuleDao.createTableQuery());
-          break;
-        case 3:
-          await db.execute('ALTER TABLE books ADD COLUMN tocUrl TEXT DEFAULT ""');
-          await db.execute('ALTER TABLE books ADD COLUMN infoHtml TEXT');
-          await db.execute('ALTER TABLE books ADD COLUMN tocHtml TEXT');
-          break;
-        case 4:
-          try { await db.execute('ALTER TABLE chapters ADD COLUMN startFragmentId TEXT'); } catch (_) {}
-          try { await db.execute('ALTER TABLE chapters ADD COLUMN endFragmentId TEXT'); } catch (_) {}
-          break;
-        case 5:
-          // Ensure http_tts table exists
-          await db.execute('DROP TABLE IF EXISTS http_tts');
-          await db.execute(HttpTtsDao.createTableQuery());
-          break;
-        case 6:
-          // Add missing fields to books table
-          try { await db.execute('ALTER TABLE books ADD COLUMN customTag TEXT'); } catch (_) {}
-          try { await db.execute('ALTER TABLE books ADD COLUMN customCoverUrl TEXT'); } catch (_) {}
-          try { await db.execute('ALTER TABLE books ADD COLUMN customIntro TEXT'); } catch (_) {}
-          try { await db.execute('ALTER TABLE books ADD COLUMN charset TEXT'); } catch (_) {}
-          try { await db.execute('ALTER TABLE books ADD COLUMN syncTime INTEGER DEFAULT 0'); } catch (_) {}
-          break;
-        case 7:
-          // Add missing fields to chapters table
-          try { await db.execute('ALTER TABLE chapters ADD COLUMN baseUrl TEXT DEFAULT ""'); } catch (_) {}
-          try { await db.execute('ALTER TABLE chapters ADD COLUMN wordCount TEXT'); } catch (_) {}
-          try { await db.execute('ALTER TABLE chapters ADD COLUMN start INTEGER'); } catch (_) {}
-          try { await db.execute('ALTER TABLE chapters ADD COLUMN "end" INTEGER'); } catch (_) {}
-          break;
-        case 8:
-          // Add missing fields to book_sources table
-          try { await db.execute('ALTER TABLE book_sources ADD COLUMN coverDecodeJs TEXT'); } catch (_) {}
-          try { await db.execute('ALTER TABLE book_sources ADD COLUMN exploreScreen TEXT'); } catch (_) {}
-          try { await db.execute('ALTER TABLE book_sources ADD COLUMN ruleReview TEXT'); } catch (_) {}
-          break;
-        case 9:
-          // Add missing fields to replace_rules table
-          try { await db.execute('ALTER TABLE replace_rules ADD COLUMN scopeTitle INTEGER DEFAULT 0'); } catch (_) {}
-          try { await db.execute('ALTER TABLE replace_rules ADD COLUMN excludeScope TEXT'); } catch (_) {}
-          try { await db.execute('ALTER TABLE replace_rules ADD COLUMN timeoutMillisecond INTEGER DEFAULT 3000'); } catch (_) {}
-          break;
-        case 10:
-          // Ensure download_tasks table exists
-          await db.execute('DROP TABLE IF EXISTS download_tasks');
-          await db.execute('''
-            CREATE TABLE download_tasks (
-              bookUrl TEXT PRIMARY KEY,
-              bookName TEXT,
-              startChapterIndex INTEGER,
-              endChapterIndex INTEGER,
-              currentChapterIndex INTEGER DEFAULT 0,
-              status INTEGER DEFAULT 0,
-              totalCount INTEGER DEFAULT 0,
-              successCount INTEGER DEFAULT 0,
-              errorCount INTEGER DEFAULT 0,
-              lastUpdateTime INTEGER DEFAULT 0
-            )
-          ''');
-          break;
-        case 11:
-          // Add bookText to bookmarks table
-          try { await db.execute('ALTER TABLE bookmarks ADD COLUMN bookText TEXT'); } catch (_) {}
-          break;
+      debugPrint('Database: Executing migration to version $i');
+      try {
+        switch (i) {
+          case 2:
+            // Recreate txt_toc_rules table to fix missing columns (example, serialNumber, enable)
+            await db.execute('DROP TABLE IF EXISTS txt_toc_rules');
+            await db.execute(TxtTocRuleDao.createTableQuery());
+            break;
+          case 3:
+            await db.execute('ALTER TABLE books ADD COLUMN tocUrl TEXT DEFAULT ""');
+            await db.execute('ALTER TABLE books ADD COLUMN infoHtml TEXT');
+            await db.execute('ALTER TABLE books ADD COLUMN tocHtml TEXT');
+            break;
+          case 4:
+            try { await db.execute('ALTER TABLE chapters ADD COLUMN startFragmentId TEXT'); } catch (_) {}
+            try { await db.execute('ALTER TABLE chapters ADD COLUMN endFragmentId TEXT'); } catch (_) {}
+            break;
+          case 5:
+            // Ensure http_tts table exists
+            await db.execute('DROP TABLE IF EXISTS http_tts');
+            await db.execute(HttpTtsDao.createTableQuery());
+            break;
+          case 6:
+            // Add missing fields to books table
+            try { await db.execute('ALTER TABLE books ADD COLUMN customTag TEXT'); } catch (_) {}
+            try { await db.execute('ALTER TABLE books ADD COLUMN customCoverUrl TEXT'); } catch (_) {}
+            try { await db.execute('ALTER TABLE books ADD COLUMN customIntro TEXT'); } catch (_) {}
+            try { await db.execute('ALTER TABLE books ADD COLUMN charset TEXT'); } catch (_) {}
+            try { await db.execute('ALTER TABLE books ADD COLUMN syncTime INTEGER DEFAULT 0'); } catch (_) {}
+            break;
+          case 7:
+            // Add missing fields to chapters table
+            try { await db.execute('ALTER TABLE chapters ADD COLUMN baseUrl TEXT DEFAULT ""'); } catch (_) {}
+            try { await db.execute('ALTER TABLE chapters ADD COLUMN wordCount TEXT'); } catch (_) {}
+            try { await db.execute('ALTER TABLE chapters ADD COLUMN start INTEGER'); } catch (_) {}
+            try { await db.execute('ALTER TABLE chapters ADD COLUMN "end" INTEGER'); } catch (_) {}
+            break;
+          case 8:
+            // Add missing fields to book_sources table
+            try { await db.execute('ALTER TABLE book_sources ADD COLUMN coverDecodeJs TEXT'); } catch (_) {}
+            try { await db.execute('ALTER TABLE book_sources ADD COLUMN exploreScreen TEXT'); } catch (_) {}
+            try { await db.execute('ALTER TABLE book_sources ADD COLUMN ruleReview TEXT'); } catch (_) {}
+            break;
+          case 9:
+            // Add missing fields to replace_rules table
+            try { await db.execute('ALTER TABLE replace_rules ADD COLUMN scopeTitle INTEGER DEFAULT 0'); } catch (_) {}
+            try { await db.execute('ALTER TABLE replace_rules ADD COLUMN excludeScope TEXT'); } catch (_) {}
+            try { await db.execute('ALTER TABLE replace_rules ADD COLUMN timeoutMillisecond INTEGER DEFAULT 3000'); } catch (_) {}
+            break;
+          case 10:
+            // Ensure download_tasks table exists
+            await db.execute('DROP TABLE IF EXISTS download_tasks');
+            await db.execute('''
+              CREATE TABLE download_tasks (
+                bookUrl TEXT PRIMARY KEY,
+                bookName TEXT,
+                startChapterIndex INTEGER,
+                endChapterIndex INTEGER,
+                currentChapterIndex INTEGER DEFAULT 0,
+                status INTEGER DEFAULT 0,
+                totalCount INTEGER DEFAULT 0,
+                successCount INTEGER DEFAULT 0,
+                errorCount INTEGER DEFAULT 0,
+                lastUpdateTime INTEGER DEFAULT 0
+              )
+            ''');
+            break;
+          case 11:
+            // Add bookText to bookmarks table
+            try { await db.execute('ALTER TABLE bookmarks ADD COLUMN bookText TEXT'); } catch (_) {}
+            break;
+        }
+        debugPrint('Database: Migration to version $i successful');
+      } catch (e) {
+        debugPrint('Database: Migration to version $i failed: $e');
       }
     }
+    debugPrint('Database: All migrations completed');
   }
 
   static Future<void> close() async {

@@ -55,6 +55,19 @@ class BookDao {
     });
   }
 
+  /// 根據書名與作者獲取書籍 (高度還原 Android getBook)
+  Future<Book?> getByNameAndAuthor(String name, String author) async {
+    final db = await _db;
+    final List<Map<String, dynamic>> maps = await db.query(
+      tableName,
+      where: 'name = ? AND author = ?',
+      whereArgs: [name, author],
+    );
+
+    if (maps.isEmpty) return null;
+    return Book.fromJson(maps.first);
+  }
+
   /// 插入或更新書籍
   Future<void> insertOrUpdate(Book book) async {
     final db = await _db;
@@ -86,6 +99,30 @@ class BookDao {
 
     if (maps.isEmpty) return null;
     return Book.fromJson(maps.first);
+  }
+
+  /// 更新是否在書架上
+  Future<void> updateInBookshelf(String bookUrl, bool inBookshelf) async {
+    final db = await _db;
+    final book = await getByUrl(bookUrl);
+    if (book != null) {
+      int newType = book.type;
+      if (inBookshelf) {
+        newType &= ~BookType.notShelf;
+      } else {
+        newType |= BookType.notShelf;
+      }
+      await db.update(
+        tableName,
+        {
+          'type': newType,
+          'isInBookshelf': inBookshelf ? 1 : 0,
+        },
+        where: 'bookUrl = ?',
+        whereArgs: [bookUrl],
+      );
+      _notify();
+    }
   }
 
   /// 更新閱讀進度 (高度還原 Android upProgress)
@@ -136,6 +173,18 @@ class BookDao {
   Future<void> deleteNotShelfBook() async {
     final db = await _db;
     await db.delete(tableName, where: '(type & ?) > 0', whereArgs: [BookType.notShelf]);
+    _notify();
+  }
+
+  /// 更新排序 (高度還原 Android upOrder)
+  Future<void> updateOrder(String bookUrl, int order) async {
+    final db = await _db;
+    await db.update(
+      tableName,
+      {'order': order},
+      where: 'bookUrl = ?',
+      whereArgs: [bookUrl],
+    );
     _notify();
   }
 

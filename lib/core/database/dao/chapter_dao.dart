@@ -119,6 +119,22 @@ class ChapterDao {
     );
   }
 
+  /// 批量插入章節正文
+  Future<void> insertContents(List<Map<String, dynamic>> contents) async {
+    final db = await _db;
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final content in contents) {
+        batch.insert(
+          contentsTable,
+          content,
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+      await batch.commit(noResult: true);
+    });
+  }
+
   /// 獲取章節正文
   Future<String?> getContent(String bookUrl, int index) async {
     final db = await _db;

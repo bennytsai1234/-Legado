@@ -19,6 +19,8 @@ import '../models/replace_rule.dart';
 import '../models/bookmark.dart';
 import '../models/read_record.dart';
 import '../models/book_group.dart';
+import '../models/book_progress.dart';
+import '../constant/prefer_key.dart';
 
 /// WebDAVService - WebDAV 備份與還原服務
 /// 對應 Android: help/AppWebDav.kt
@@ -40,13 +42,23 @@ class WebDAVService extends ChangeNotifier {
 
   Future<webdav.Client> _getClient() async {
     final prefs = await SharedPreferences.getInstance();
-    final url = prefs.getString('webdav_url') ?? '';
-    final user = prefs.getString('webdav_user') ?? '';
-    final pwd = prefs.getString('webdav_password') ?? '';
+    final url = prefs.getString(PreferKey.webDavUrl) ?? '';
+    final user = prefs.getString(PreferKey.webDavAccount) ?? '';
+    final pwd = prefs.getString(PreferKey.webDavPassword) ?? '';
     if (url.isEmpty || user.isEmpty || pwd.isEmpty) {
       throw Exception('WebDAV 未配置');
     }
     return webdav.newClient(url, user: user, password: pwd, debug: kDebugMode);
+  }
+
+  /// 確保基礎目錄存在 (對標 Android upConfig)
+  Future<void> _ensureDirs(webdav.Client client) async {
+    final dirs = ['/legado', '/legado/bookProgress', '/legado/books', '/legado/background'];
+    for (final dir in dirs) {
+      try {
+        await client.mkdir(dir);
+      } catch (_) {}
+    }
   }
 
   /// 備份資料到 WebDAV
@@ -57,6 +69,7 @@ class WebDAVService extends ChangeNotifier {
 
     try {
       final client = await _getClient();
+      await _ensureDirs(client);
 
       // 1. 取得資料庫內容
       final books = await _bookDao.getAll();
@@ -113,16 +126,10 @@ class WebDAVService extends ChangeNotifier {
 
       encoder.close();
 
-      // 3. 確保 WebDAV 目錄存在
-      try {
-        await client.mkdir('/legado');
-      } catch (e) {
-        // Ignored, might already exist
-      }
-
       // 4. 上傳
       final localFile = File(zipPath);
-      await client.writeFromFile(localFile.path, '/legado/legado_backup.zip');
+      final fileName = "backup_${DateTime.now().millisecondsSinceEpoch}.zip";
+      await client.writeFromFile(localFile.path, '/legado/$fileName');
 
       // 清理暫存檔
       if (await localFile.exists()) await localFile.delete();
@@ -135,6 +142,83 @@ class WebDAVService extends ChangeNotifier {
       _isSyncing = false;
       notifyListeners();
       return false;
+    }
+  }
+
+  /// 上傳書籍閱讀進度 (對標 Android uploadBookProgress)
+  Future<void> uploadBookProgress(Book book) async {
+    try {
+      final client = await _getClient();
+      await _ensureDirs(client);
+
+      final progress = BookProgress(
+        name: book.name,
+        author: book.author,
+        durChapterIndex: book.durChapterIndex,
+        durChapterPos: book.durChapterPos,
+        durChapterTime: book.durChapterTime,
+        durChapterTitle: book.durChapterTitle,
+      );
+
+      final jsonStr = jsonEncode(progress.toJson());
+      final fileName = "${book.name}_${book.author}.json".replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+      
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File('${tempDir.path}/$fileName');
+      await tempFile.writeAsString(jsonStr);
+
+      await client.writeFromFile(tempFile.path, '/legado/bookProgress/$fileName');
+      
+      // 更新本地同步時間
+      book.syncTime = DateTime.now().millisecondsSinceEpoch;
+      await _bookDao.insertOrUpdate(book);
+      
+      await tempFile.delete();
+    } catch (e) {
+      debugPrint("WebDAV Upload Progress Failed: $e");
+    }
+  }
+
+  /// 下載並同步所有書籍進度 (對標 Android downloadAllBookProgress)
+  Future<void> syncAllBookProgress() async {
+    if (_isSyncing) return;
+    _isSyncing = true;
+    notifyListeners();
+
+    try {
+      final client = await _getClient();
+      final files = await client.readDir('/legado/bookProgress');
+      
+      final books = await _bookDao.getAll();
+      for (final book in books) {
+        final fileName = "${book.name}_${book.author}.json".replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+        final match = files.cast<webdav.File?>().firstWhere((f) => f?.name == fileName, orElse: () => null);
+        
+        if (match != null) {
+          // 如果雲端更新時間晚於本地同步時間，則下載
+          final tempDir = await getTemporaryDirectory();
+          final tempPath = '${tempDir.path}/temp_progress.json';
+          await client.read2File('/legado/bookProgress/$fileName', tempPath);
+          
+          final jsonStr = await File(tempPath).readAsString();
+          final progress = BookProgress.fromJson(jsonDecode(jsonStr));
+          
+          if (progress.durChapterTime > book.durChapterTime) {
+            book.durChapterIndex = progress.durChapterIndex;
+            book.durChapterPos = progress.durChapterPos;
+            book.durChapterTitle = progress.durChapterTitle ?? "";
+            book.durChapterTime = progress.durChapterTime;
+            book.syncTime = DateTime.now().millisecondsSinceEpoch;
+            await _bookDao.insertOrUpdate(book);
+          }
+          await File(tempPath).delete();
+        }
+      }
+    } catch (e) {
+      debugPrint("WebDAV Sync Progress Failed: $e");
+    } finally {
+      _isSyncing = false;
+      notifyListeners();
     }
   }
 

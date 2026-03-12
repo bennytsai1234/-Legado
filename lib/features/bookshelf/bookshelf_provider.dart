@@ -1,26 +1,31 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/base/base_provider.dart';
 import '../../core/database/dao/book_dao.dart';
+import '../../core/database/dao/book_group_dao.dart';
+import '../../core/database/dao/book_source_dao.dart';
 import '../../core/database/dao/chapter_dao.dart';
 import '../../core/models/book.dart';
 import '../../core/models/chapter.dart';
 import '../../core/models/book_source.dart';
-import '../../core/database/dao/book_source_dao.dart';
+import '../../core/models/book_group.dart';
 import '../../core/services/book_source_service.dart';
+import '../../core/services/event_bus.dart';
 import '../../core/local_book/epub_parser.dart';
 import '../../core/local_book/txt_parser.dart';
-import '../../core/models/book_group.dart';
-import '../../core/database/dao/book_group_dao.dart';
 
-class BookshelfProvider extends ChangeNotifier {
+class BookshelfProvider extends BaseProvider {
   final BookDao _bookDao = BookDao();
   final BookSourceDao _sourceDao = BookSourceDao();
   final BookGroupDao _groupDao = BookGroupDao();
   final BookSourceService _service = BookSourceService();
+  StreamSubscription? _eventSub;
 
   List<Book> _books = [];
-  bool _isLoading = false;
+  // _isLoading is now handled by BaseProvider
 
   List<BookGroup> _groups = [];
   int _currentGroupId = BookGroup.idAll;
@@ -28,9 +33,10 @@ class BookshelfProvider extends ChangeNotifier {
 
   bool _isBatchMode = false;
   Set<String> _selectedBookUrls = {};
+  bool _isGridLayout = true;
 
   List<Book> get books => _books;
-  bool get isLoading => _isLoading;
+  // isLoading is now handled by BaseProvider
 
   List<BookGroup> get groups => _groups;
   int get currentGroupId => _currentGroupId;
@@ -38,10 +44,39 @@ class BookshelfProvider extends ChangeNotifier {
 
   bool get isBatchMode => _isBatchMode;
   Set<String> get selectedBookUrls => _selectedBookUrls;
+  bool get isGridLayout => _isGridLayout;
 
   BookshelfProvider() {
+    _loadLayout();
     loadGroups();
     loadBooks();
+    _initEventBus();
+  }
+
+  Future<void> _loadLayout() async {
+    final prefs = await SharedPreferences.getInstance();
+    _isGridLayout = prefs.getBool('bookshelf_is_grid') ?? true;
+    notifyListeners();
+  }
+
+  void toggleLayout() async {
+    _isGridLayout = !_isGridLayout;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('bookshelf_is_grid', _isGridLayout);
+  }
+
+  void _initEventBus() {
+    _eventSub = AppEventBus().onName(AppEventBus.upBookshelf).listen((event) {
+      debugPrint("BookshelfProvider: received upBookshelf event for ${event.data}");
+      loadBooks();
+    });
+  }
+
+  @override
+  void dispose() {
+    _eventSub?.cancel();
+    super.dispose();
   }
 
   Future<void> loadGroups() async {
@@ -75,57 +110,69 @@ class BookshelfProvider extends ChangeNotifier {
   }
 
   Future<void> loadBooks() async {
-    _isLoading = true;
-    notifyListeners();
+    await runTask(() async {
+      // 將 BookGroup 的 ID 轉換為 BookDao 可識別的查詢 ID (高度還原 Android 過濾)
+      int queryGroupId = _currentGroupId;
+      if (_currentGroupId == BookGroup.idAudio) {
+        queryGroupId = -2; // BookDao 中的音訊過濾 ID
+      } else if (_currentGroupId == BookGroup.idLocal) {
+        queryGroupId = -3; // BookDao 中的本地過濾 ID
+      } else if (_currentGroupId == BookGroup.idError) {
+        queryGroupId = -4; // BookDao 中的更新錯誤過濾 ID
+      }
 
-    // 將 BookGroup 的 ID 轉換為 BookDao 可識別的查詢 ID (高度還原 Android 過濾)
-    int queryGroupId = _currentGroupId;
-    if (_currentGroupId == BookGroup.idAudio) {
-      queryGroupId = -2; // BookDao 中的音訊過濾 ID
-    } else if (_currentGroupId == BookGroup.idLocal) {
-      queryGroupId = -3; // BookDao 中的本地過濾 ID
-    } else if (_currentGroupId == BookGroup.idError) {
-      queryGroupId = -4; // BookDao 中的更新錯誤過濾 ID
+      _books = await _bookDao.getBookshelf(
+          groupId: queryGroupId, orderBy: _currentOrderBy);
+    });
+  }
+
+  /// 手動排序書籍
+  Future<void> reorderBook(int oldIndex, int newIndex) async {
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
     }
-
-    _books = await _bookDao.getBookshelf(
-        groupId: queryGroupId, orderBy: _currentOrderBy);
-
-    _isLoading = false;
+    final book = _books.removeAt(oldIndex);
+    _books.insert(newIndex, book);
     notifyListeners();
+
+    // 更新資料庫中的排序 (非同步執行，不阻塞 UI)
+    _updateAllBookOrder();
+  }
+
+  Future<void> _updateAllBookOrder() async {
+    for (int i = 0; i < _books.length; i++) {
+      _books[i].order = i;
+      await _bookDao.updateOrder(_books[i].bookUrl, i);
+    }
   }
 
   /// 檢查更新
   Future<void> refreshBookshelf() async {
     if (_books.isEmpty) return;
 
-    _isLoading = true;
-    notifyListeners();
+    await runTask(() async {
+      final sources = await _sourceDao.getAll();
+      final List<Future<void>> tasks = [];
 
-    final sources = await _sourceDao.getAll();
-    final List<Future<void>> tasks = [];
-
-    for (final book in _books) {
-      final source = sources.cast<BookSource?>().firstWhere(
-        (s) => s?.bookSourceUrl == book.origin,
-        orElse: () => null,
-      );
-      if (source != null) {
-        tasks.add(_refreshSingleBook(source, book));
+      for (final book in _books) {
+        final source = sources.cast<BookSource?>().firstWhere(
+          (s) => s?.bookSourceUrl == book.origin,
+          orElse: () => null,
+        );
+        if (source != null) {
+          tasks.add(_refreshSingleBook(source, book));
+        }
       }
-    }
 
-    await Future.wait(tasks);
-    await loadBooks(); // 重新加載以反映更新後的狀態
-
-    _isLoading = false;
-    notifyListeners();
+      await Future.wait(tasks);
+      await loadBooks(); // 重新加載以反映更新後的狀態
+    });
   }
 
   Future<void> _refreshSingleBook(BookSource source, Book book) async {
     try {
       final oldLastChapter = book.latestChapterTitle;
-      final updatedBook = await _service.getBookInfo(source, book);
+      final updatedBook = await _service.getBookInfo(source, book, cancelToken: cancelToken);
 
       if (updatedBook.latestChapterTitle != oldLastChapter) {
         // 有新章節
@@ -206,16 +253,13 @@ class BookshelfProvider extends ChangeNotifier {
 
   /// 匯入本地書籍
   Future<void> importLocalBook() async {
-    try {
+    await runTask(() async {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['txt', 'epub'],
       );
 
       if (result != null && result.files.single.path != null) {
-        _isLoading = true;
-        notifyListeners();
-
         final file = File(result.files.single.path!);
         final ext = result.files.single.extension?.toLowerCase() ?? '';
 
@@ -224,8 +268,6 @@ class BookshelfProvider extends ChangeNotifier {
         // 檢查是否已匯入
         final existingBook = await _bookDao.getByUrl(bookUrl);
         if (existingBook != null && existingBook.isInBookshelf) {
-          _isLoading = false;
-          notifyListeners();
           return;
         }
 
@@ -310,22 +352,14 @@ class BookshelfProvider extends ChangeNotifier {
           }
           book.totalChapterNum = chapters.length;
         } else {
-          _isLoading = false;
-          notifyListeners();
           return;
         }
 
         await _bookDao.insertOrUpdate(book);
         await chapterDao.insertChapters(bookChapters);
-        // 注意：這裡假設 chapterDao 有 insertContents 方法
-        // 實際開發中應檢查 chapter_dao.dart 是否有此方法
         
         await loadBooks();
       }
-    } catch (e) {
-      debugPrint("Import Error: $e");
-      _isLoading = false;
-      notifyListeners();
-    }
+    });
   }
 }

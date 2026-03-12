@@ -181,6 +181,7 @@ class BookSource implements BaseSource {
 // --- Rule Classes ---
 
 class SearchRule {
+  String? init;
   String? bookList;
   String? name;
   String? author;
@@ -193,25 +194,26 @@ class SearchRule {
   String? checkKeyWord;
 
   SearchRule({
-    this.bookList, this.name, this.author, this.kind, this.wordCount,
+    this.init, this.bookList, this.name, this.author, this.kind, this.wordCount,
     this.lastChapter, this.coverUrl, this.intro, this.bookUrl, this.checkKeyWord
   });
 
   factory SearchRule.fromJson(Map<String, dynamic> json) => SearchRule(
-    bookList: json['bookList'], name: json['name'], author: json['author'],
+    init: json['init'], bookList: json['bookList'], name: json['name'], author: json['author'],
     kind: json['kind'], wordCount: json['wordCount'], lastChapter: json['lastChapter'],
     coverUrl: json['coverUrl'], intro: json['intro'], bookUrl: json['bookUrl'],
     checkKeyWord: json['checkKeyWord'],
   );
 
   Map<String, dynamic> toJson() => {
-    'bookList': bookList, 'name': name, 'author': author, 'kind': kind,
+    'init': init, 'bookList': bookList, 'name': name, 'author': author, 'kind': kind,
     'wordCount': wordCount, 'lastChapter': lastChapter, 'coverUrl': coverUrl,
     'intro': intro, 'bookUrl': bookUrl, 'checkKeyWord': checkKeyWord,
   };
 }
 
 class ExploreRule {
+  String? init;
   String? bookList;
   String? name;
   String? author;
@@ -223,24 +225,25 @@ class ExploreRule {
   String? bookUrl;
 
   ExploreRule({
-    this.bookList, this.name, this.author, this.kind, this.wordCount,
+    this.init, this.bookList, this.name, this.author, this.kind, this.wordCount,
     this.lastChapter, this.coverUrl, this.intro, this.bookUrl
   });
 
   factory ExploreRule.fromJson(Map<String, dynamic> json) => ExploreRule(
-    bookList: json['bookList'], name: json['name'], author: json['author'],
+    init: json['init'], bookList: json['bookList'], name: json['name'], author: json['author'],
     kind: json['kind'], wordCount: json['wordCount'], lastChapter: json['lastChapter'],
     coverUrl: json['coverUrl'], intro: json['intro'], bookUrl: json['bookUrl'],
   );
 
   Map<String, dynamic> toJson() => {
-    'bookList': bookList, 'name': name, 'author': author, 'kind': kind,
+    'init': init, 'bookList': bookList, 'name': name, 'author': author, 'kind': kind,
     'wordCount': wordCount, 'lastChapter': lastChapter, 'coverUrl': coverUrl,
     'intro': intro, 'bookUrl': bookUrl,
   };
 }
 
 class BookInfoRule {
+  String? init;
   String? name;
   String? author;
   String? kind;
@@ -252,11 +255,12 @@ class BookInfoRule {
   bool? canReName;
 
   BookInfoRule({
-    this.name, this.author, this.kind, this.wordCount, this.lastChapter,
+    this.init, this.name, this.author, this.kind, this.wordCount, this.lastChapter,
     this.coverUrl, this.intro, this.tocUrl, this.canReName
   });
 
   factory BookInfoRule.fromJson(Map<String, dynamic> json) => BookInfoRule(
+    init: json['init'],
     name: json['name'], author: json['author'], kind: json['kind'],
     wordCount: json['wordCount'], lastChapter: json['lastChapter'],
     coverUrl: json['coverUrl'], intro: json['intro'], tocUrl: json['tocUrl'],
@@ -264,6 +268,7 @@ class BookInfoRule {
   );
 
   Map<String, dynamic> toJson() => {
+    'init': init,
     'name': name, 'author': author, 'kind': kind, 'wordCount': wordCount,
     'lastChapter': lastChapter, 'coverUrl': coverUrl, 'intro': intro,
     'tocUrl': tocUrl, 'canReName': canReName,
@@ -271,6 +276,7 @@ class BookInfoRule {
 }
 
 class TocRule {
+  String? init;
   String? chapterList;
   String? chapterName;
   String? chapterUrl;
@@ -282,11 +288,12 @@ class TocRule {
   String? preUpdateJs;
 
   TocRule({
-    this.chapterList, this.chapterName, this.chapterUrl, this.isVolume,
+    this.init, this.chapterList, this.chapterName, this.chapterUrl, this.isVolume,
     this.isVip, this.isPay, this.updateTime, this.nextTocUrl, this.preUpdateJs
   });
 
   factory TocRule.fromJson(Map<String, dynamic> json) => TocRule(
+    init: json['init'],
     chapterList: json['chapterList'], chapterName: json['chapterName'],
     chapterUrl: json['chapterUrl'], isVolume: json['isVolume'],
     isVip: json['isVip'], isPay: json['isPay'], updateTime: json['updateTime'],
@@ -294,6 +301,7 @@ class TocRule {
   );
 
   Map<String, dynamic> toJson() => {
+    'init': init,
     'chapterList': chapterList, 'chapterName': chapterName,
     'chapterUrl': chapterUrl, 'isVolume': isVolume, 'isVip': isVip,
     'isPay': isPay, 'updateTime': updateTime, 'nextTocUrl': nextTocUrl,
@@ -302,6 +310,7 @@ class TocRule {
 }
 
 class ContentRule {
+  String? init;
   String? content;
   String? nextContentUrl;
   String? webJs;
@@ -312,11 +321,12 @@ class ContentRule {
   String? payAction;
 
   ContentRule({
-    this.content, this.nextContentUrl, this.webJs, this.sourceRegex,
+    this.init, this.content, this.nextContentUrl, this.webJs, this.sourceRegex,
     this.replaceRegex, this.imageStyle, this.imageDecode, this.payAction
   });
 
   factory ContentRule.fromJson(Map<String, dynamic> json) => ContentRule(
+    init: json['init'],
     content: json['content'], nextContentUrl: json['nextContentUrl'],
     webJs: json['webJs'], sourceRegex: json['sourceRegex'],
     replaceRegex: json['replaceRegex'], imageStyle: json['imageStyle'],
@@ -324,6 +334,7 @@ class ContentRule {
   );
 
   Map<String, dynamic> toJson() => {
+    'init': init,
     'content': content, 'nextContentUrl': nextContentUrl, 'webJs': webJs,
     'sourceRegex': sourceRegex, 'replaceRegex': replaceRegex,
     'imageStyle': imageStyle, 'imageDecode': imageDecode, 'payAction': payAction,

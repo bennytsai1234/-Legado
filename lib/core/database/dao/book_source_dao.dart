@@ -10,6 +10,10 @@ class BookSourceDao {
   static const String tableName = 'book_sources';
   static final StreamController<void> _changeController = StreamController<void>.broadcast();
 
+  // 記憶體二級快取 (對標 Android Room L2 Cache 概念)
+  static final Map<String, BookSource> _fullCache = {};
+  static List<BookSource>? _partCache;
+
   // 輕量化投影欄位 (對標 Android book_sources_part)
   static const List<String> partColumns = [
     'bookSourceUrl',
@@ -26,6 +30,7 @@ class BookSourceDao {
   Future<Database> get _db async => await AppDatabase.database;
 
   void _notify() {
+    _partCache = null; // 清空清單快取
     _changeController.add(null);
   }
 
@@ -36,6 +41,8 @@ class BookSourceDao {
 
   /// 獲取所有書源 (輕量化投影)
   Future<List<BookSource>> getAllPart() async {
+    if (_partCache != null) return _partCache!;
+
     final db = await _db;
     final List<Map<String, dynamic>> maps = await db.query(
       tableName,
@@ -43,8 +50,20 @@ class BookSourceDao {
       orderBy: 'customOrder ASC, lastUpdateTime DESC',
     );
 
-    return List.generate(maps.length, (i) {
+    _partCache = List.generate(maps.length, (i) {
       return BookSource.fromJson(maps[i]);
+    });
+    return _partCache!;
+  }
+
+  /// 獲取所有書源 (完整版本)
+  Future<List<BookSource>> getAll() async {
+    final db = await _db;
+    final List<Map<String, dynamic>> maps = await db.query(tableName);
+    return List.generate(maps.length, (i) {
+      final map = Map<String, dynamic>.from(maps[i]);
+      _deserializeRules(map);
+      return BookSource.fromJson(map);
     });
   }
 
@@ -64,8 +83,27 @@ class BookSourceDao {
     });
   }
 
+  /// 獲取所有啟用的書源 (完整版本)
+  Future<List<BookSource>> getEnabled() async {
+    final db = await _db;
+    final List<Map<String, dynamic>> maps = await db.query(
+      tableName,
+      where: 'enabled = ?',
+      whereArgs: [1],
+      orderBy: 'customOrder ASC',
+    );
+
+    return List.generate(maps.length, (i) {
+      final map = Map<String, dynamic>.from(maps[i]);
+      _deserializeRules(map);
+      return BookSource.fromJson(map);
+    });
+  }
+
   /// 獲取完整書源 (包含所有規則)
   Future<BookSource?> getByUrl(String url) async {
+    if (_fullCache.containsKey(url)) return _fullCache[url];
+
     final db = await _db;
     final List<Map<String, dynamic>> maps = await db.query(
       tableName,
@@ -76,7 +114,9 @@ class BookSourceDao {
     if (maps.isEmpty) return null;
     final map = Map<String, dynamic>.from(maps.first);
     _deserializeRules(map);
-    return BookSource.fromJson(map);
+    final source = BookSource.fromJson(map);
+    _fullCache[url] = source;
+    return source;
   }
 
   /// 插入或更新書源
@@ -90,6 +130,7 @@ class BookSourceDao {
       map,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    _fullCache[source.bookSourceUrl] = source;
     _notify();
   }
 
@@ -105,6 +146,7 @@ class BookSourceDao {
           map,
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
+        _fullCache[source.bookSourceUrl] = source;
       }
     });
     _notify();
@@ -119,6 +161,9 @@ class BookSourceDao {
       where: 'bookSourceUrl IN (${urls.map((_) => '?').join(',')})',
       whereArgs: urls,
     );
+    for (var url in urls) {
+      _fullCache.remove(url);
+    }
     _notify();
   }
 
@@ -130,6 +175,9 @@ class BookSourceDao {
       where: 'bookSourceUrl IN (${urls.map((_) => '?').join(',')})',
       whereArgs: urls,
     );
+    for (var url in urls) {
+      _fullCache.remove(url);
+    }
     _notify();
   }
 

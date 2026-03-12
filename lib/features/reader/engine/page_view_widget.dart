@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
+import 'package:provider/provider.dart';
+import '../reader_provider.dart';
 import 'text_page.dart';
 import 'chapter_provider.dart';
 
@@ -29,7 +31,7 @@ class PageViewWidget extends StatelessWidget {
         contentStyle: contentStyle,
         titleStyle: titleStyle,
         currentTime: DateFormat('HH:mm').format(DateTime.now()),
-        batteryLevel: 100, // 暫時預設
+        batteryLevel: provider.batteryLevel,
         isAutoPaging: provider.isAutoPaging,
         autoPageProgress: provider.autoPageProgress,
         accentColor: Theme.of(context).colorScheme.primary,

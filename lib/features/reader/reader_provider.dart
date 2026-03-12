@@ -14,7 +14,6 @@ import '../../shared/theme/app_theme.dart';
 import 'engine/text_page.dart';
 import 'engine/chapter_provider.dart';
 import '../../core/database/dao/bookmark_dao.dart';
-import '../../core/database/app_database.dart';
 import '../../core/models/bookmark.dart';
 import '../../core/services/content_processor.dart';
 import '../../core/database/dao/http_tts_dao.dart';
@@ -73,8 +72,9 @@ class ReaderProvider extends ChangeNotifier {
   // 換源系統擴展 (高度還原 Android 單章換源)
   final Map<int, BookSource> _chapterSourceOverrides = {};
 
-  ReaderProvider({required this.book, int chapterIndex = 0}) {
+  ReaderProvider({required this.book, int chapterIndex = 0, int chapterPos = 0}) {
     _currentChapterIndex = chapterIndex;
+    _currentPageIndex = chapterPos;
     _init();
     // 朗讀翻頁連動 (高度還原 Android AudioPlayService)
     tts.onComplete = () {
@@ -109,6 +109,9 @@ class ReaderProvider extends ChangeNotifier {
   bool get isAutoPaging => _isAutoPaging;
   double get autoPageSpeed => _autoPageSpeed;
   double get autoPageProgress => _autoPageProgress;
+
+  // 暫時無法引進 battery_plus 套件，提供假數據 100 供 UI 顯示
+  int get batteryLevel => 100;
 
   bool get isBookmarked {
     return _bookmarks.any((b) =>
@@ -163,7 +166,7 @@ class ReaderProvider extends ChangeNotifier {
   }
 
   Future<void> _loadBookmarks() async {
-    _bookmarks = await _bookmarkDao.getByBook(book.name, book.author ?? "");
+    _bookmarks = await _bookmarkDao.getByBook(book.name, book.author);
     notifyListeners();
   }
 
@@ -184,7 +187,11 @@ class ReaderProvider extends ChangeNotifier {
   }
 
   void toggleAutoPage() {
-    if (_isAutoPaging) stopAutoPage(); else startAutoPage();
+    if (_isAutoPaging) {
+      stopAutoPage();
+    } else {
+      startAutoPage();
+    }
   }
 
   void startAutoPage() {
@@ -289,7 +296,9 @@ class ReaderProvider extends ChangeNotifier {
     } catch (e) {
       _content = "加載章節失敗: $e";
     } finally {
-      if (_viewSize != null) _doPaginate(); else { _isLoading = false; notifyListeners(); }
+      if (_viewSize != null) {
+        _doPaginate();
+      } else { _isLoading = false; notifyListeners(); }
       _preloadNextChapter(index + 1);
     }
   }
@@ -404,7 +413,7 @@ class ReaderProvider extends ChangeNotifier {
       }
       final newBm = Bookmark(
         time: DateTime.now().millisecondsSinceEpoch,
-        bookName: book.name, bookAuthor: book.author ?? "Unknown",
+        bookName: book.name, bookAuthor: book.author,
         chapterIndex: _currentChapterIndex, chapterPos: _currentPageIndex,
         chapterName: currentChapter?.title ?? "Unknown Chapter",
         bookUrl: book.bookUrl, content: snippet,
@@ -425,15 +434,21 @@ class ReaderProvider extends ChangeNotifier {
     final volume = prefs.getDouble('speech_volume') ?? 1.0;
 
     if (_ttsMode == 0) {
-      if (tts.isPlaying) tts.stop(); else {
+      if (tts.isPlaying) {
+        tts.stop();
+      } else {
         await tts.setRate(rate); await tts.setPitch(pitch); await tts.setVolume(volume);
         if (_pages.isNotEmpty && _currentPageIndex < _pages.length) {
           final currentText = _pages.skip(_currentPageIndex).map((p) => p.lines.map((l) => l.text).join()).join('\n');
           tts.speak(currentText.isNotEmpty ? currentText : _content);
-        } else tts.speak(_content);
+        } else {
+          tts.speak(_content);
+        }
       }
     } else {
-      if (httpTts.isPlaying) httpTts.stop(); else {
+      if (httpTts.isPlaying) {
+        httpTts.stop();
+      } else {
         if (_selectedHttpTtsId == null && _httpTtsEngines.isNotEmpty) _selectedHttpTtsId = _httpTtsEngines.first.id;
         final config = _httpTtsEngines.cast<HttpTTS?>().firstWhere((e) => e?.id == _selectedHttpTtsId, orElse: () => null);
         if (config != null) {
@@ -443,6 +458,30 @@ class ReaderProvider extends ChangeNotifier {
         }
       }
     }
+  }
+
+  /// 搜尋正文內容
+  Future<List<Map<String, dynamic>>> searchContent(String keyword) async {
+    final results = <Map<String, dynamic>>[];
+    for (int i = 0; i < chapters.length; i++) {
+      final content = await _chapterDao.getContent(book.bookUrl, i);
+      if (content != null && content.contains(keyword)) {
+        results.add({
+          'chapterIndex': i,
+          'chapterTitle': chapters[i].title,
+          'snippet': _getSnippet(content, keyword),
+        });
+      }
+    }
+    return results;
+  }
+
+  String _getSnippet(String content, String keyword) {
+    final index = content.indexOf(keyword);
+    if (index == -1) return '';
+    final start = (index - 20).clamp(0, content.length);
+    final end = (index + keyword.length + 20).clamp(0, content.length);
+    return '...${content.substring(start, end).replaceAll('\n', ' ')}...';
   }
 
   @override

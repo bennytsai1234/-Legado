@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 
 /// VerificationRequest - 驗證請求封裝
 class VerificationRequest {

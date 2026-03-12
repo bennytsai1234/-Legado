@@ -2,20 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'reader_provider.dart';
+import 'engine/page_view_widget.dart';
 import '../../core/models/book.dart';
 import '../../core/models/chapter.dart';
+import '../../core/models/bookmark.dart';
+import '../../core/database/dao/bookmark_dao.dart';
 import '../../core/services/dictionary_service.dart';
 import '../../shared/theme/app_theme.dart';
 import '../settings/font_manager_page.dart';
 import '../settings/settings_page.dart';
 import '../replace_rule/replace_rule_page.dart';
-import 'engine/page_view_widget.dart';
 
 class ReaderPage extends StatefulWidget {
   final Book book;
   final int chapterIndex;
+  final int chapterPos;
 
-  const ReaderPage({super.key, required this.book, this.chapterIndex = 0});
+  const ReaderPage({
+    super.key, 
+    required this.book, 
+    this.chapterIndex = 0,
+    this.chapterPos = 0,
+  });
 
   @override
   State<ReaderPage> createState() => _ReaderPageState();
@@ -30,7 +38,7 @@ class _ReaderPageState extends State<ReaderPage> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
+    _pageController = PageController(initialPage: widget.chapterPos);
     // 進入閱讀器時隱藏系統狀態列
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
@@ -60,6 +68,7 @@ class _ReaderPageState extends State<ReaderPage> {
           (_) => ReaderProvider(
             book: widget.book,
             chapterIndex: widget.chapterIndex,
+            chapterPos: widget.chapterPos,
           ),
       child: Consumer<ReaderProvider>(
         builder: (context, provider, child) {
@@ -205,7 +214,31 @@ class _ReaderPageState extends State<ReaderPage> {
               ],
             );
           },
-...
+          child: PageView.builder(
+            controller: _pageController,
+            physics: provider.showControls ? const NeverScrollableScrollPhysics() : const BouncingScrollPhysics(),
+            scrollDirection: isVertical ? Axis.vertical : Axis.horizontal,
+            itemCount: provider.pages.length,
+            onPageChanged: provider.onPageChanged,
+            itemBuilder: (context, index) {
+              return PageViewWidget(
+                page: provider.pages[index],
+                contentStyle: contentStyle,
+                titleStyle: titleStyle,
+              );
+            },
+          ),
+        ),
+        if (provider.brightness < 1.0)
+          IgnorePointer(
+            child: Container(
+              color: Colors.black.withValues(alpha: 1.0 - provider.brightness),
+            ),
+          ),
+      ]
+    );
+  }
+
   void _showAnnotationDialog(BuildContext context, ReaderProvider provider, String selectedText) {
     final controller = TextEditingController();
     showDialog(
@@ -235,7 +268,7 @@ class _ReaderPageState extends State<ReaderPage> {
               final bookmark = Bookmark(
                 time: DateTime.now().millisecondsSinceEpoch,
                 bookName: provider.book.name,
-                bookAuthor: provider.book.author ?? "",
+                bookAuthor: provider.book.author,
                 bookUrl: provider.book.bookUrl,
                 chapterIndex: provider.currentChapterIndex,
                 chapterPos: provider.currentPageIndex,
@@ -244,6 +277,7 @@ class _ReaderPageState extends State<ReaderPage> {
                 content: controller.text,
               );
               await BookmarkDao().insert(bookmark);
+              if (!context.mounted) return;
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('筆記已儲存')));
             },
@@ -251,30 +285,6 @@ class _ReaderPageState extends State<ReaderPage> {
           ),
         ],
       ),
-    );
-  }
-          child: PageView.builder(
-            controller: _pageController,
-            physics: provider.showControls ? const NeverScrollableScrollPhysics() : const BouncingScrollPhysics(),
-            scrollDirection: isVertical ? Axis.vertical : Axis.horizontal,
-            itemCount: provider.pages.length,
-            onPageChanged: provider.onPageChanged,
-            itemBuilder: (context, index) {
-              return PageViewWidget(
-                page: provider.pages[index],
-                contentStyle: contentStyle,
-                titleStyle: titleStyle,
-              );
-            },
-          ),
-        ),
-        if (provider.brightness < 1.0)
-          IgnorePointer(
-            child: Container(
-              color: Colors.black.withValues(alpha: 1.0 - provider.brightness),
-            ),
-          ),
-      ]
     );
   }
 
@@ -480,9 +490,13 @@ class _ReaderPageState extends State<ReaderPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _buildMiniFab(Icons.search, () => _showSearchDialog(context, provider)),
-                _buildMiniFab(Icons.auto_stories, () {
-                   // 暫未實作自動翻頁
-                }),
+                _buildMiniFab(
+                  provider.isAutoPaging ? Icons.pause_circle_filled : Icons.auto_stories, 
+                  () {
+                    provider.toggleAutoPage();
+                    provider.toggleControls(); // 關閉工具列以沉浸閱讀
+                  },
+                ),
                 _buildMiniFab(Icons.find_replace, () {
                   Navigator.push(
                     context,

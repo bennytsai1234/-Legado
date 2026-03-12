@@ -30,11 +30,11 @@ class BookDetailProvider extends ChangeNotifier {
     _book = Book(
       bookUrl: searchBook.bookUrl,
       name: searchBook.name,
-      author: searchBook.author,
-      coverUrl: searchBook.coverUrl,
-      intro: searchBook.intro,
+      author: searchBook.author ?? "",
+      coverUrl: searchBook.coverUrl ?? "",
+      intro: searchBook.intro ?? "",
       origin: searchBook.origin,
-      originName: searchBook.originName,
+      originName: searchBook.originName ?? "",
     );
     _checkBookshelf();
     _loadInitialData();
@@ -42,7 +42,7 @@ class BookDetailProvider extends ChangeNotifier {
 
   Future<void> _checkBookshelf() async {
     final existing = await _bookDao.getByUrl(_book.bookUrl);
-    _isInBookshelf = existing?.isInBookshelf ?? false;
+    _isInBookshelf = existing?.isInBookshelf == true;
     if (existing != null) {
       _book = existing;
     }
@@ -104,7 +104,7 @@ class BookDetailProvider extends ChangeNotifier {
   /// 搜尋所有可用書源中的同名書籍
   Future<List<SearchBook>> searchAlternativeSources() async {
     final sources = await _sourceDao.getEnabled();
-    return await _service.preciseSearch(sources, _book.name, _book.author ?? "");
+    return await _service.preciseSearch(sources, _book.name, _book.author);
   }
 
   /// 切換到選定的書源
@@ -126,14 +126,14 @@ class BookDetailProvider extends ChangeNotifier {
         final oldUrl = _book.bookUrl;
         _book.bookUrl = newSource.bookUrl;
         _book.origin = newSource.origin;
-        _book.originName = newSource.originName;
+        _book.originName = newSource.originName ?? "";
         
         await _bookDao.delete(oldUrl); // 刪除舊紀錄
         await _bookDao.insertOrUpdate(_book); // 插入新紀錄
       } else {
         _book.bookUrl = newSource.bookUrl;
         _book.origin = newSource.origin;
-        _book.originName = newSource.originName;
+        _book.originName = newSource.originName ?? "";
       }
 
       _currentSource = source;

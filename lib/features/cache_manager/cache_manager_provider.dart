@@ -52,7 +52,7 @@ class CacheManagerProvider extends ChangeNotifier {
       start.clamp(0, _chapters.length),
       end.clamp(0, _chapters.length),
     );
-    await downloadService.addDownloadTasks(book, toDownload);
+    await downloadService.addDownloadTask(book, toDownload);
   }
 
   Future<void> clearCache() async {

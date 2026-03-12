@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'replace_rule.dart';
-import '../../services/chinese_utils.dart';
+import '../services/chinese_utils.dart';
 
 /// BookChapter - 章節模型
 /// 對應 Android: data/entities/BookChapter.kt

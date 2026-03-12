@@ -1,18 +1,5 @@
 import 'dart:convert';
-
-/// BookType - 書籍類型遮罩 (對標 Android constant/BookType.kt)
-class BookType {
-  static const int text = 1; // 文本
-  static const int audio = 2; // 音訊
-  static const int image = 4; // 圖片
-  static const int file = 8; // 文件
-  static const int local = 16; // 本地
-  static const int updateError = 32; // 更新錯誤
-  static const int notShelf = 64; // 不在書架 (例如搜尋結果)
-  
-  static const String localTag = "local";
-  static const String webDavTag = "webdav";
-}
+export '../constant/book_type.dart';
 
 /// Book - 書籍模型
 /// 對應 Android: data/entities/Book.kt
@@ -114,6 +101,13 @@ class Book {
     newBook.durChapterTime = durChapterTime;
   }
 
+  static int _toInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
+  }
+
   factory Book.fromJson(Map<String, dynamic> json) {
     return Book(
       bookUrl: json['bookUrl'] ?? "",
@@ -129,24 +123,24 @@ class Book {
       intro: json['intro'],
       customIntro: json['customIntro'],
       charset: json['charset'],
-      type: json['type'] ?? 0,
-      group: json['group'] is String ? int.tryParse(json['group']) ?? 0 : (json['group'] ?? 0),
+      type: _toInt(json['type']),
+      group: _toInt(json['group']),
       latestChapterTitle: json['latestChapterTitle'],
-      latestChapterTime: json['latestChapterTime'] ?? 0,
-      lastCheckTime: json['lastCheckTime'] ?? 0,
-      lastCheckCount: json['lastCheckCount'] ?? 0,
-      totalChapterNum: json['totalChapterNum'] ?? 0,
+      latestChapterTime: _toInt(json['latestChapterTime']),
+      lastCheckTime: _toInt(json['lastCheckTime']),
+      lastCheckCount: _toInt(json['lastCheckCount']),
+      totalChapterNum: _toInt(json['totalChapterNum']),
       durChapterTitle: json['durChapterTitle'],
-      durChapterIndex: json['durChapterIndex'] ?? 0,
-      durChapterPos: json['durChapterPos'] ?? 0,
-      durChapterTime: json['durChapterTime'] ?? 0,
+      durChapterIndex: _toInt(json['durChapterIndex']),
+      durChapterPos: _toInt(json['durChapterPos']),
+      durChapterTime: _toInt(json['durChapterTime']),
       wordCount: json['wordCount'],
       canUpdate: json['canUpdate'] == 1 || json['canUpdate'] == true,
-      order: json['order'] ?? 0,
-      originOrder: json['originOrder'] ?? 0,
+      order: _toInt(json['order']),
+      originOrder: _toInt(json['originOrder']),
       variable: json['variable'],
       readConfig: json['readConfig'] != null ? ReadConfig.fromJson(json['readConfig'] is String ? jsonDecode(json['readConfig']) : json['readConfig']) : null,
-      syncTime: json['syncTime'] ?? 0,
+      syncTime: _toInt(json['syncTime']),
       isInBookshelf: json['isInBookshelf'] == 1 || json['isInBookshelf'] == true,
     );
   }
@@ -187,6 +181,22 @@ class Book {
       'isInBookshelf': isInBookshelf ? 1 : 0,
     };
   }
+}
+
+/// Book 位元運算擴展 (高度還原 Android BookExtensions.kt)
+extension BookBitwiseExtension on Book {
+  // --- 類型相關 ---
+  bool isType(int typeMask) => (type & typeMask) != 0;
+  void addType(int typeMask) => type |= typeMask;
+  void removeType(int typeMask) => type &= ~typeMask;
+
+  // --- 分組相關 ---
+  bool hasGroup(int groupIdMask) {
+    if (groupIdMask <= 0) return true; // 特殊分組如 IdAll 處理
+    return (group & groupIdMask) != 0;
+  }
+  void addGroup(int groupIdMask) => group |= groupIdMask;
+  void removeGroup(int groupIdMask) => group &= ~groupIdMask;
 }
 
 /// ReadConfig - 閱讀設置模型 (內嵌於 Book)

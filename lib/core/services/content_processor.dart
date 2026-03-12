@@ -1,17 +1,14 @@
 import '../models/chapter.dart';
 import '../models/book.dart';
 import '../models/replace_rule.dart';
+import '../constant/app_pattern.dart';
 import 'chinese_utils.dart';
-// import '../models/rule_data_interface.dart';
-// import '../../services/app_config.dart';
 
 /// ContentProcessor - 內容處理器
 /// 負責過濾標題、繁簡轉換、文字排版整理等
 /// 對應 Android: help/book/ContentProcessor.kt
 class ContentProcessor {
   ContentProcessor._();
-
-  static final RegExp _spaceRegex = RegExp(r'\s+');
 
   /// 處理正文內容
   static String processContent(
@@ -33,7 +30,7 @@ class ContentProcessor {
       final nameStr = _escapeRegex(book.name);
       final titleStr = _escapeRegex(
         chapter.title,
-      ).replaceAll(_spaceRegex, r'\s*');
+      ).replaceAll(AppPattern.spaceRegex, r'\s*');
       final pattern = RegExp(
         '^(\\s|\\p{P}|$nameStr)*$titleStr(\\s)*',
         unicode: true,
@@ -43,14 +40,12 @@ class ContentProcessor {
       if (match != null) {
         mContent = mContent.substring(match.end);
       }
-      // Note: Android also checks against replaced chapter title here
-      // This can be expanded when ReplaceRule logic is fully ported
     } catch (e) {
       // Ignore regex error
     }
 
     // 2. 重新分段
-    if (reSegment && (book.getReSegment() ?? true)) {
+    if (reSegment) {
       mContent = _reSegment(mContent, chapter.title);
     }
 
@@ -60,7 +55,7 @@ class ContentProcessor {
     }
 
     // 4. 執行取代規則
-    if (useReplace && (book.getUseReplaceRule() ?? true)) {
+    if (useReplace) {
       mContent = mContent.split('\n').map((e) => e.trim()).join('\n');
       if (rules != null && rules.isNotEmpty) {
         mContent = _applyReplaceRules(mContent, book.name, book.origin, rules);
@@ -106,7 +101,7 @@ class ContentProcessor {
   }
 
   static String _escapeRegex(String text) {
-    return text.replaceAll(RegExp(r'[.*+?^${}()|[\]\\]'), r'\$&');
+    return text.replaceAll(AppPattern.regexCharRegex, r'\$&');
   }
 
   static String _applyReplaceRules(
@@ -115,22 +110,26 @@ class ContentProcessor {
     String bookOrigin,
     List<ReplaceRule> rules,
   ) {
-    var result = content;
+    String result = content;
     for (final rule in rules) {
       if (!rule.isEnabled) continue;
-      // Check scope
+      // 簡單的範圍判斷 (原版包含正則匹配書名、書源)
       if (rule.scope != null && rule.scope!.isNotEmpty) {
-        final scopeContent = rule.scopeContent ?? "";
-        if (rule.scope == "1") { // Book Name
-          if (!scopeContent.contains(bookName)) continue;
-        } else if (rule.scope == "2") { // Source URL
-          if (!scopeContent.contains(bookOrigin)) continue;
+        if (!rule.scope!.contains(bookName) && !rule.scope!.contains(bookOrigin)) {
+          continue;
+        }
+      }
+      if (rule.excludeScope != null && rule.excludeScope!.isNotEmpty) {
+        if (rule.excludeScope!.contains(bookName) || rule.excludeScope!.contains(bookOrigin)) {
+          continue;
         }
       }
 
+      if (!rule.scopeContent) continue;
+
       try {
         if (rule.isRegex) {
-          final pattern = RegExp(rule.pattern, multiLine: true, dotAll: true);
+          final pattern = RegExp(rule.pattern, caseSensitive: false);
           result = result.replaceAll(pattern, rule.replacement);
         } else {
           result = result.replaceAll(rule.pattern, rule.replacement);

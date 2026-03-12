@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../core/database/app_database.dart';
+import '../../core/constant/prefer_key.dart';
 
 class SettingsProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
@@ -27,23 +28,23 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    final mode = prefs.getString('theme_mode') ?? 'system';
+    final mode = prefs.getString(PreferKey.themeMode) ?? 'system';
     _themeMode = _parseThemeMode(mode);
 
-    _webdavUrl = prefs.getString('webdav_url') ?? '';
-    _webdavUser = prefs.getString('webdav_user') ?? '';
-    _webdavPassword = prefs.getString('webdav_password') ?? '';
-    _webdavEnabled = prefs.getBool('webdav_enabled') ?? false;
+    _webdavUrl = prefs.getString(PreferKey.webDavUrl) ?? '';
+    _webdavUser = prefs.getString(PreferKey.webDavAccount) ?? '';
+    _webdavPassword = prefs.getString(PreferKey.webDavPassword) ?? '';
+    _webdavEnabled = _webdavUrl.isNotEmpty && _webdavUser.isNotEmpty;
 
     ignoreAudioFocusAloud = prefs.getBool('ignore_audio_focus_aloud') ?? false;
     pauseReadAloudWhilePhoneCalls = prefs.getBool('pause_read_aloud_while_phone_calls') ?? false;
     readAloudWakeLock = prefs.getBool('read_aloud_wake_lock') ?? false;
     systemMediaControlCompatibilityChange = prefs.getBool('system_media_control_compatibility_change') ?? false;
     mediaButtonPerNext = prefs.getBool('media_button_per_next') ?? false;
-    readAloudByPage = prefs.getBool('read_aloud_by_page') ?? false;
+    readAloudByPage = prefs.getBool(PreferKey.readAloudByPage) ?? false;
     streamReadAloudAudio = prefs.getBool('stream_read_aloud_audio') ?? false;
 
-    speechRate = prefs.getDouble('speech_rate') ?? 0.5;
+    speechRate = prefs.getDouble(PreferKey.ttsSpeechRate) ?? 0.5;
     speechPitch = prefs.getDouble('speech_pitch') ?? 1.0;
     speechVolume = prefs.getDouble('speech_volume') ?? 1.0;
 

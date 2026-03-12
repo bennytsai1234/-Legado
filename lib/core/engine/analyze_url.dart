@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'rule_analyzer.dart';
 import 'analyze_rule.dart';
+import '../models/base_source.dart';
 import '../services/http_client.dart';
 import '../services/cookie_store.dart';
 import '../services/backstage_webview.dart';
@@ -303,7 +304,7 @@ class AnalyzeUrl {
     }
   }
 
-  Future<Uint8List?> getByteArray() async {
+  Future<Uint8List?> getByteArray({CancelToken? cancelToken}) async {
     // 1. 處理 data: 協議 (高度還原 Android)
     if (url.startsWith('data:')) {
       try {
@@ -341,9 +342,14 @@ class AnalyzeUrl {
             requestUrl,
             data: requestData,
             options: options,
+            cancelToken: cancelToken,
           );
         } else {
-          response = await dio.request(requestUrl, options: options);
+          response = await dio.request(
+            requestUrl,
+            options: options,
+            cancelToken: cancelToken,
+          );
         }
 
         if (response.realUri.toString() != requestUrl) {
@@ -353,13 +359,13 @@ class AnalyzeUrl {
         final List<int> responseBytes = response.data as List<int>;
         return Uint8List.fromList(responseBytes);
       } catch (e) {
-        return null;
+        rethrow; // Let caller handle it (e.g. BaseProvider)
       }
     });
   }
 
   /// Execute the HTTP request and return response body
-  Future<String> getResponseBody() async {
+  Future<String> getResponseBody({CancelToken? cancelToken}) async {
     if (useWebView) {
       final requestUrl = encodedQuery != null ? "$url?$encodedQuery" : url;
       final webView = BackstageWebView(
@@ -372,7 +378,7 @@ class AnalyzeUrl {
       return wvResponse['body']?.toString() ?? "";
     }
 
-    final bytes = await getByteArray();
+    final bytes = await getByteArray(cancelToken: cancelToken);
     if (bytes == null) return '';
 
     try {

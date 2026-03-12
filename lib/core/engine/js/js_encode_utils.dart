@@ -7,10 +7,18 @@ import 'package:pointycastle/block/des_base.dart';
 import 'package:pointycastle/block/desede_engine.dart';
 import 'package:fast_gbk/fast_gbk.dart';
 import 'package:pointycastle/export.dart' as pc;
+import 'package:archive/archive.dart';
 
 /// JsEncodeUtils - JS 加解密工具類
 /// 對應 Android: help/JsEncodeUtils.kt
 class JsEncodeUtils {
+  // --- Android Base64 Flags ---
+  static const int base64Default = 0;
+  static const int base64NoPadding = 1;
+  static const int base64NoWrap = 2;
+  static const int base64Crlf = 4;
+  static const int base64UrlSafe = 8;
+
   /// MD5 加密 (32位)
   static String md5Encode(String str) {
     return md5.convert(utf8.encode(str)).toString();
@@ -21,15 +29,40 @@ class JsEncodeUtils {
     return md5Encode(str).substring(8, 24);
   }
 
-  /// Base64 編碼
-  static String base64Encode(String str, {int flags = 0}) {
-    // Note: flags are ignored in standard Dart base64
-    return base64.encode(utf8.encode(str));
+  /// Base64 編碼 (支援 Flags)
+  static String base64Encode(dynamic data, {int flags = 0}) {
+    final bytes = _toBytes(data);
+    String result;
+    
+    if ((flags & base64UrlSafe) != 0) {
+      result = base64Url.encode(bytes);
+    } else {
+      result = base64.encode(bytes);
+    }
+
+    if ((flags & base64NoPadding) != 0) {
+      result = result.replaceAll('=', '');
+    }
+    
+    // Dart base64.encode doesn't wrap by default, so NO_WRAP is implicit.
+    // CRLF is not typically used in JS book sources, skipping for now.
+    
+    return result;
   }
 
   /// Base64 解碼
-  static String base64Decode(String str, {String charset = 'UTF-8'}) {
-    final bytes = base64.decode(str.replaceAll(RegExp(r'\s+'), ''));
+  static String base64Decode(String str, {String charset = 'UTF-8', int flags = 0}) {
+    final cleanStr = str.replaceAll(RegExp(r'\s+'), '');
+    // 補齊 Padding
+    String paddedStr = cleanStr;
+    if (cleanStr.length % 4 != 0) {
+      paddedStr = cleanStr.padRight(cleanStr.length + (4 - cleanStr.length % 4), '=');
+    }
+
+    final bytes = (flags & base64UrlSafe) != 0 
+        ? base64Url.decode(paddedStr)
+        : base64.decode(paddedStr);
+
     if (charset.toUpperCase() == 'UTF-8') {
       return utf8.decode(bytes);
     } else if (charset.toUpperCase().contains('GBK') ||
@@ -40,8 +73,42 @@ class JsEncodeUtils {
     }
   }
 
-  static Uint8List base64DecodeToBytes(String str) {
-    return base64.decode(str.replaceAll(RegExp(r'\s+'), ''));
+  static Uint8List base64DecodeToBytes(String str, {int flags = 0}) {
+    final cleanStr = str.replaceAll(RegExp(r'\s+'), '');
+    String paddedStr = cleanStr;
+    if (cleanStr.length % 4 != 0) {
+      paddedStr = cleanStr.padRight(cleanStr.length + (4 - cleanStr.length % 4), '=');
+    }
+    return (flags & base64UrlSafe) != 0 
+        ? base64Url.decode(paddedStr)
+        : base64.decode(paddedStr);
+  }
+
+  /// CRC32 校驗 (高度還原 java.util.zip.CRC32)
+  static String crc32(dynamic data) {
+    final bytes = _toBytes(data);
+    final crcValue = getCrc32(bytes);
+    return crcValue.toRadixString(16);
+  }
+
+  /// 十六進位解碼為位元組陣列
+  static Uint8List hexDecodeToByteArray(String hexStr) {
+    return Uint8List.fromList(hex.decode(hexStr));
+  }
+
+  /// 十六進位解碼為字串
+  static String hexDecodeToString(String hexStr, {String charset = 'UTF-8'}) {
+    final bytes = hex.decode(hexStr);
+    if (charset.toUpperCase() == 'UTF-8') {
+      return utf8.decode(bytes);
+    } else {
+      return gbk.decode(bytes);
+    }
+  }
+
+  /// 字串轉十六進位
+  static String hexEncodeToString(String str) {
+    return hex.encode(utf8.encode(str));
   }
 
   /// 對稱加密/解密 (底層方法)

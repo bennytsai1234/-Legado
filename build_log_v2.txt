@@ -1,0 +1,42 @@
+Launching lib\main.dart on ASUS Z01RD in debug mode...
+Running Gradle task 'assembleDebug'...                             15.3s
+√ Built build\app\outputs\flutter-apk\app-debug.apk
+Installing build\app\outputs\flutter-apk\app-debug.apk...           7.2s
+I/flutter (23114): [IMPORTANT:flutter/shell/platform/android/android_context_vk_impeller.cc(60)] Using the Impeller rendering backend (Vulkan).
+Syncing files to device ASUS Z01RD...                              137ms
+
+Flutter run key commands.
+r Hot reload. 
+R Hot restart.
+h List all available interactive commands.
+d Detach (terminate "flutter run" but leave application running).
+c Clear the screen
+q Quit (terminate the application on the device).
+
+A Dart VM Service on ASUS Z01RD is available at: http://127.0.0.1:55986/kq_gRun5kKM=/
+I/Choreographer(23114): Skipped 160 frames!  The application may be doing too much work on its main thread.
+I/AdrenoGLES(23114): QUALCOMM build                   : 1491fa0, I2dae80b508
+I/AdrenoGLES(23114): Build Date                       : 10/22/19
+I/AdrenoGLES(23114): OpenGL ES Shader Compiler Version: EV031.27.05.02
+I/AdrenoGLES(23114): Local Branch                     : 
+I/AdrenoGLES(23114): Remote Branch                    : quic/gfx-adreno.lnx.1.0.r72-rel
+I/AdrenoGLES(23114): Remote Branch                    : NONE
+I/AdrenoGLES(23114): Reconstruct Branch               : NOTHING
+I/AdrenoGLES(23114): Build Config                     : S P 8.0.11 AArch64
+I/AdrenoGLES(23114): PFP: 0x016ee187, ME: 0x00000000
+W/AdrenoUtils(23114): <ReadGpuID_from_sysfs:194>: Failed to open /sys/class/kgsl/kgsl-3d0/gpu_model
+W/RenderThread(23114): type=1400 audit(0.0:9867824): avc: denied { search } for name="kgsl-3d0" dev="sysfs" ino=45561 scontext=u:r:untrusted_app:s0:c204,c256,c512,c768 tcontext=u:object_r:sysfs_kgsl:s0 tclass=dir permissive=0
+W/AdrenoUtils(23114): <ReadGpuID:218>: Failed to read chip ID from gpu_model. Fallback to use the GSL path
+W/Gralloc3(23114): mapper 3.x is not supported
+The Flutter DevTools debugger and profiler on ASUS Z01RD is available at: http://127.0.0.1:9103?uri=http://127.0.0.1:55986/kq_gRun5kKM=/
+I/TextToSpeech(23114): Connected to ComponentInfo{com.google.android.tts/com.google.android.apps.speech.tts.googletts.service.GoogleTtsService}
+I/TextToSpeech(23114): Set up connection to ComponentInfo{com.google.android.tts/com.google.android.apps.speech.tts.googletts.service.GoogleTtsService}
+I/Choreographer(23114): Skipped 87 frames!  The application may be doing too much work on its main thread.
+I/OpenGLRenderer(23114): Davey! duration=1472ms; Flags=1, IntendedVsync=8032084289568560, Vsync=8032085739568502, OldestInputEvent=9223372036854775807, NewestInputEvent=0, HandleInputStart=8032085739896366, AnimationStart=8032085740150428, PerformTraversalsStart=8032085740153814, DrawStart=8032085745983918, SyncQueued=8032085746766522, SyncStart=8032085747192668, IssueDrawCommandsStart=8032085747364595, SwapBuffers=8032085760595168, FrameCompleted=8032085762079751, DequeueBufferDuration=1737000, QueueBufferDuration=713000, 
+I/flutter (23114): Explore: Found ${_sources.length} enabled sources.
+E/AppPinner(23114): Failed to pin /data/app/com.legado.legado_reader-FDPFpCR-sl_7EO-vUKWatw==/base.apk
+D/ProfileInstaller(23114): Installing profile for com.legado.legado_reader
+E/flutter (23114): [ERROR:flutter/impeller/renderer/backend/vulkan/pipeline_cache_data_vk.cc(42)] Break on 'ImpellerValidationBreak' to inspect point of failure: Could not copy pipeline cache data.
+D/FilePickerUtils(23114): Custom file types are [txt, epub]. The mime types were detected as [text/plain, application/epub+zip].
+E/flutter (23114): [ERROR:flutter/impeller/renderer/backend/vulkan/pipeline_cache_data_vk.cc(42)] Break on 'ImpellerValidationBreak' to inspect point of failure: Could not copy pipeline cache data.
+E/flutter (23114): [ERROR:flutter/impeller/renderer/backend/vulkan/pipeline_cache_data_vk.cc(42)] Break on 'ImpellerValidationBreak' to inspect point of failure: Could not copy pipeline cache data.

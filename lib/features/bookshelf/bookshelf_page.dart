@@ -36,10 +36,24 @@ class BookshelfPage extends StatelessWidget {
                       icon: const Icon(Icons.sort),
                       onSelected: provider.setSortType,
                       itemBuilder: (context) => [
-                        const PopupMenuItem(value: 0, child: Text('自訂排序')),
+                        PopupMenuItem(
+                          value: 0, 
+                          child: Row(
+                            children: [
+                              Icon(Icons.reorder, color: provider.sortType == 0 ? Colors.blue : null, size: 18),
+                              const SizedBox(width: 8),
+                              const Text('自訂排序'),
+                            ],
+                          )
+                        ),
                         const PopupMenuItem(value: 1, child: Text('最近更新')),
                         const PopupMenuItem(value: 2, child: Text('最近閱讀')),
                       ],
+                    ),
+                    IconButton(
+                      icon: Icon(provider.isGridLayout ? Icons.view_list : Icons.grid_view),
+                      tooltip: '切換佈局',
+                      onPressed: provider.toggleLayout,
                     ),
                     IconButton(
                       icon: const Icon(Icons.file_upload),
@@ -114,22 +128,89 @@ class BookshelfPage extends StatelessWidget {
     if (provider.books.isEmpty) {
       return _buildEmptyView(context, provider);
     }
+
+    if (!provider.isGridLayout && provider.sortType == 0 && !provider.isBatchMode) {
+      // 僅在清單模式且自訂排序時支援拖曳排序 (Flutter 限制)
+      return RefreshIndicator(
+        onRefresh: provider.refreshBookshelf,
+        child: ReorderableListView.builder(
+          padding: const EdgeInsets.all(8),
+          itemCount: provider.books.length,
+          onReorder: provider.reorderBook,
+          itemBuilder: (context, index) {
+            final book = provider.books[index];
+            return _buildBookListItem(context, provider, book, key: ValueKey(book.bookUrl));
+          },
+        ),
+      );
+    }
+
     return RefreshIndicator(
       onRefresh: provider.refreshBookshelf,
-      child: GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          childAspectRatio: 0.65,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
+      child: provider.isGridLayout 
+        ? GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              childAspectRatio: 0.65,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+            ),
+            itemCount: provider.books.length,
+            itemBuilder: (context, index) {
+              final book = provider.books[index];
+              return _buildBookItem(context, provider, book);
+            },
+          )
+        : ListView.builder(
+            padding: const EdgeInsets.all(8),
+            itemCount: provider.books.length,
+            itemBuilder: (context, index) {
+              final book = provider.books[index];
+              return _buildBookListItem(context, provider, book);
+            },
+          ),
+    );
+  }
+
+  Widget _buildBookListItem(BuildContext context, BookshelfProvider provider, dynamic book, {Key? key}) {
+    bool isSelected = provider.selectedBookUrls.contains(book.bookUrl);
+    return ListTile(
+      key: key,
+      leading: SizedBox(
+        width: 40,
+        height: 60,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(2),
+          child: book.coverUrl != null && book.coverUrl!.isNotEmpty
+              ? CachedNetworkImage(
+                  imageUrl: book.coverUrl!,
+                  fit: BoxFit.cover,
+                  errorWidget: (context, url, error) => _buildCoverPlaceholder(),
+                )
+              : _buildCoverPlaceholder(),
         ),
-        itemCount: provider.books.length,
-        itemBuilder: (context, index) {
-          final book = provider.books[index];
-          return _buildBookItem(context, provider, book);
-        },
       ),
+      title: Text(book.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: Text(book.durChapterTitle ?? '未開始閱讀', maxLines: 1, overflow: TextOverflow.ellipsis),
+      trailing: provider.isBatchMode 
+          ? Icon(isSelected ? Icons.check_circle : Icons.radio_button_unchecked, color: isSelected ? Colors.blue : null)
+          : (book.lastCheckCount > 0 ? const Icon(Icons.fiber_new, color: Colors.red) : null),
+      onTap: () {
+        if (provider.isBatchMode) {
+          provider.toggleSelect(book.bookUrl);
+        } else {
+          Navigator.push(
+            context, MaterialPageRoute(builder: (context) => ReaderPage(book: book, chapterIndex: book.durChapterIndex)),
+          );
+        }
+      },
+      onLongPress: () {
+        if (!provider.isBatchMode) {
+          provider.toggleBatchMode();
+          provider.toggleSelect(book.bookUrl);
+        }
+      },
     );
   }
 

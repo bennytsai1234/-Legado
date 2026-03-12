@@ -46,4 +46,9 @@ class HttpTtsDao {
       return HttpTTS.fromJson(map);
     }).toList();
   }
+
+  Future<void> delete(int id) async {
+    final db = await _db;
+    await db.delete(tableName, where: 'id = ?', whereArgs: [id]);
+  }
 }

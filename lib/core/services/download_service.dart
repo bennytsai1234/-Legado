@@ -1,14 +1,14 @@
 import 'dart:async';
-import 'dart:collection';
 import 'package:flutter/foundation.dart';
 import '../models/book.dart';
 import '../models/chapter.dart';
-import '../models/book_source.dart';
 import '../models/download_task.dart';
+import '../database/dao/book_dao.dart';
 import '../database/dao/book_source_dao.dart';
 import '../database/dao/chapter_dao.dart';
 import '../database/dao/download_dao.dart';
 import 'book_source_service.dart';
+import 'event_bus.dart';
 
 /// DownloadService - 書籍離線快取服務
 /// 對應 Android: service/CacheBookService.kt
@@ -16,15 +16,16 @@ class DownloadService extends ChangeNotifier {
   static final DownloadService _instance = DownloadService._internal();
   factory DownloadService() => _instance;
 
-  final BookSourceService _sourceService = BookSourceService();
+  final BookDao _bookDao = BookDao();
   final BookSourceDao _sourceDao = BookSourceDao();
   final ChapterDao _chapterDao = ChapterDao();
   final DownloadDao _downloadDao = DownloadDao();
+  final BookSourceService _sourceService = BookSourceService();
 
   final List<DownloadTask> _tasks = [];
   bool _isDownloading = false;
-  int _maxConcurrent = 3; // 最大併發書籍數
-  int _maxChapterConcurrent = 5; // 每本書最大併發章節數
+  final int _maxConcurrent = 3; // 最大併發書籍數
+  final int _maxChapterConcurrent = 5; // 每本書最大併發章節數
 
   DownloadService._internal() {
     _loadTasks();
@@ -32,6 +33,30 @@ class DownloadService extends ChangeNotifier {
 
   List<DownloadTask> get tasks => _tasks;
   bool get isDownloading => _isDownloading;
+
+  /// 獲取總體下載進度 (0.0 - 1.0)
+  double get progress {
+    if (_tasks.isEmpty) return 0.0;
+    int total = 0;
+    int success = 0;
+    for (var task in _tasks) {
+      total += task.totalCount;
+      success += task.successCount;
+    }
+    return total == 0 ? 0.0 : success / total;
+  }
+
+  /// 取消所有下載
+  void cancelDownloads() {
+    _isDownloading = false;
+    for (var task in _tasks) {
+      if (task.status == 0 || task.status == 1) {
+        task.status = 2; // Paused
+        _downloadDao.updateProgress(task.bookUrl, status: 2);
+      }
+    }
+    notifyListeners();
+  }
 
   /// 從資料庫恢復任務
   Future<void> _loadTasks() async {
@@ -104,16 +129,20 @@ class DownloadService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final bookSource = await _sourceDao.getByUrl(task.bookUrl); // 這裡簡化處理，實際應從 Book 獲取源 URL
-      // 注意：實際邏輯需先根據 bookUrl 找到 Book 及其對應的 BookSource
-      // 這裡暫定能獲取到必要的解析器
+      final book = await _bookDao.getByUrl(task.bookUrl);
+      if (book == null) throw Exception("書籍不存在");
+      
+      final source = await _sourceDao.getByUrl(book.origin);
+      if (source == null) throw Exception("書源不存在");
       
       final chapters = await _chapterDao.getChapters(task.bookUrl);
       final toDownload = chapters.where((c) => c.index >= task.startChapterIndex && c.index <= task.endChapterIndex).toList();
 
       int poolCount = 0;
       for (var chapter in toDownload) {
-        // 檢查是否已快取 (簡化判斷)
+        if (!_isDownloading || task.status == 2) break; // Check for pause/cancel
+        
+        // 檢查是否已快取
         if (await _chapterDao.hasContent(task.bookUrl, chapter.index)) {
           task.successCount++;
           continue;
@@ -125,7 +154,7 @@ class DownloadService extends ChangeNotifier {
         }
 
         poolCount++;
-        _downloadChapter(task, chapter).then((success) {
+        _downloadChapter(book, source, task, chapter).then((success) {
           if (success) {
             task.successCount++;
           } else {
@@ -147,19 +176,33 @@ class DownloadService extends ChangeNotifier {
         await Future.delayed(const Duration(seconds: 1));
       }
 
-      task.status = 3; // 已完成
-      await _downloadDao.updateProgress(task.bookUrl, status: 3);
+      if (task.status != 2) {
+        task.status = 3; // 已完成
+        await _downloadDao.updateProgress(task.bookUrl, status: 3);
+        
+        // 觸發書架刷新 (對標 Android 任務結束後的通知)
+        AppEventBus().fire(AppEvent(AppEventBus.upBookshelf, data: task.bookUrl));
+      }
     } catch (e) {
-      task.status = 4; // 失敗
-      await _downloadDao.updateProgress(task.bookUrl, status: 4);
+      if (task.status != 2) {
+        task.status = 4; // 失敗
+        await _downloadDao.updateProgress(task.bookUrl, status: 4);
+      }
     }
     notifyListeners();
   }
 
-  Future<bool> _downloadChapter(DownloadTask task, BookChapter chapter) async {
-    // 實際下載邏輯：調用 _sourceService.getContent
-    // 這裡需要獲取正確的 BookSource，此處為簡化演示
-    return true; 
+  Future<bool> _downloadChapter(Book book, dynamic source, DownloadTask task, BookChapter chapter) async {
+    try {
+      final content = await _sourceService.getContent(source, book, chapter);
+      if (content.isNotEmpty) {
+        await _chapterDao.saveContent(book.bookUrl, chapter.index, content);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
   }
 
   void pauseTask(String bookUrl) {
@@ -177,3 +220,4 @@ class DownloadService extends ChangeNotifier {
     notifyListeners();
   }
 }
+
