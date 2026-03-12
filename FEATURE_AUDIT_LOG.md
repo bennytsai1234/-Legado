@@ -49,6 +49,14 @@
 | **16.3 搜尋結果定位** | `SearchContentActivity.kt`: L202 (openSearchResult) | `reader_page.dart`: L335 (onTap) | **Matched** | 均支援點擊搜尋結果後自動跳轉至對應章節。 |
 | **16.4 替換規則套用** | `SearchContentActivity.kt`: L88 (menu_enable_replace) | - | **Logic Gap** | Android 可切換搜尋時是否套用正則替換規則；iOS 目前僅對加載後的內容套用規則，搜尋時使用的是原始快取文本。 |
 | **16.5 下一處/上一處定位** | `SearchContentActivity.kt`: L112 (ivSearchContentTop/Bottom) | - | **Logic Gap** | Android 提供快速跳轉至首個/最後一個結果的按鈕；iOS 僅提供列表捲動。 |
+| **17.1 多維度書源導入** | `BookSourceActivity.kt`: L120 (importDoc) | `source_manager_page.dart`: L220 (_scanQrCode) | **Matched** | 均支援掃碼、網路 URL、本地文件/剪貼簿導入書源。 |
+| **17.2 書源校驗機制** | `CheckSource.kt` | `source_manager_page.dart`: L80 (checkService) | **Matched** | 均具備背景校驗書源有效性、紀錄響應時間並顯示進度的功能。 |
+| **17.3 批量操作與管理** | `BookSourceActivity.kt`: L385 (SelectActionBar) | `source_manager_page.dart`: L185 (_buildBatchBottomBar) | **Matched** | 均支援進入批量模式進行校驗、匯出、刪除與啟用/禁用。 |
+| **17.4 分組過濾與語法** | `BookSourceActivity.kt`: L285 (searchKey) | `source_manager_page.dart`: L115 (_buildGroupFilter) | **Equivalent** | Android 支援 `group:` 語法與多種預設分組；iOS 提供水平滑動的 FilterChip 進行分組切換。 |
+| **17.5 高級排序演算法** | `BookSourceActivity.kt`: L295 (BookSourceSort) | - | **Logic Gap** | Android 支援按權重、URL、響應時間、更新時間等多維度排序；iOS 目前僅有默認排序。 |
+| **17.6 域名聚合顯示** | `BookSourceActivity.kt`: L180 (groupSourcesByDomain) | - | **Logic Gap** | Android 支援按 Domain 聚合顯示書源以優化同站管理；iOS 尚未實作此視圖。 |
+| **17.7 拖拽排序與持久化** | `ItemTouchCallback.kt` | - | **Logic Gap** | Android 支援手動拖拽調整書源權重順序；iOS 目前列表順序固定。 |
+
 
 
 
