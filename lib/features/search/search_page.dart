@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'search_provider.dart';
 import '../book_detail/book_detail_page.dart';
-import '../../core/models/search_book.dart';
 import '../../core/models/book_source.dart';
 
 class SearchPage extends StatefulWidget {

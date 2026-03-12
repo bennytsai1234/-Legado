@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:fast_gbk/fast_gbk.dart';
 
 /// TxtParser - 高性能 TXT 解析器

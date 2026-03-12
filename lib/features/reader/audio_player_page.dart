@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:provider/provider.dart';
 import '../../core/models/book.dart';
 import '../../core/models/chapter.dart';
 import '../../core/models/book_source.dart';
-import '../../core/models/search_book.dart';
 import '../../core/services/book_source_service.dart';
 import '../../core/services/audio_play_service.dart';
 import '../../core/database/dao/book_source_dao.dart';

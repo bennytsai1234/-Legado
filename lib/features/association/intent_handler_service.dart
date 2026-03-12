@@ -188,12 +188,18 @@ class IntentHandlerService {
         content: Text('偵測到外部內容：\n${isFile ? src.split('/').last : src}\n\n辨識類型：$type\n請選擇操作：'),
         actions: [
           _buildImportButton(ctx, '書源', () {
-            if (isFile && jsonData != null) context.read<SourceManagerProvider>().importFromJson(jsonData);
-            else context.read<SourceManagerProvider>().importFromUrl(src);
+            if (isFile && jsonData != null) {
+              context.read<SourceManagerProvider>().importFromJson(jsonData);
+            } else {
+              context.read<SourceManagerProvider>().importFromUrl(src);
+            }
           }),
           _buildImportButton(ctx, 'RSS', () {
-            if (isFile && jsonData != null) context.read<RssSourceProvider>().importFromJson(jsonData);
-            else context.read<RssSourceProvider>().importFromUrl(src);
+            if (isFile && jsonData != null) {
+              context.read<RssSourceProvider>().importFromJson(jsonData);
+            } else {
+              context.read<RssSourceProvider>().importFromUrl(src);
+            }
           }),
           if (type == 'replaceRule' || type == 'auto')
             _buildImportButton(ctx, '替換規則', () {

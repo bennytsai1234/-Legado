@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import '../../core/models/book.dart';
 import '../../core/models/chapter.dart';
 import '../../core/models/book_source.dart';
@@ -35,7 +34,7 @@ class _MangaReaderPageState extends State<MangaReaderPage> with WidgetsBindingOb
   int _readingMode = 0; 
   Timer? _autoScrollTimer;
   bool _isAutoScrolling = false;
-  double _autoScrollSpeed = 2.0;
+  final double _autoScrollSpeed = 2.0;
 
   final PageController _pageController = PageController();
   final ScrollController _scrollController = ScrollController();

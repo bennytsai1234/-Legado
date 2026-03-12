@@ -175,8 +175,11 @@ class ReaderProvider extends ChangeNotifier {
   Future<void> setTtsMode(int mode) async { _ttsMode = mode; saveSetting('tts_mode', mode); }
   Future<void> setSelectedHttpTts(int? id) async {
     _selectedHttpTtsId = id;
-    if (id != null) saveSetting('selected_http_tts_id', id);
-    else (await SharedPreferences.getInstance()).remove('reader_selected_http_tts_id');
+    if (id != null) {
+      saveSetting('selected_http_tts_id', id);
+    } else {
+      (await SharedPreferences.getInstance()).remove('reader_selected_http_tts_id');
+    }
     notifyListeners();
   }
 
@@ -239,8 +242,11 @@ class ReaderProvider extends ChangeNotifier {
   }
 
   void nextPage() {
-    if (_currentPageIndex < _pages.length - 1) onPageChanged(_currentPageIndex + 1);
-    else nextChapter();
+    if (_currentPageIndex < _pages.length - 1) {
+      onPageChanged(_currentPageIndex + 1);
+    } else {
+      nextChapter();
+    }
   }
 
   Future<void> _loadChapters() async {
@@ -293,21 +299,26 @@ class ReaderProvider extends ChangeNotifier {
     try {
       String? cachedContent = await _chapterDao.getContent(book.bookUrl, index);
       String rawContent = "";
-      if (_chapterSourceOverrides.containsKey(index)) rawContent = await _service.getContent(_chapterSourceOverrides[index]!, book, _chapters[index]);
-      else if (cachedContent != null && cachedContent.isNotEmpty) rawContent = cachedContent;
+      if (_chapterSourceOverrides.containsKey(index)) {
+        rawContent = await _service.getContent(_chapterSourceOverrides[index]!, book, _chapters[index]);
+      } else if (cachedContent != null && cachedContent.isNotEmpty) rawContent = cachedContent;
       else {
         if (_source == null) await _loadSource();
         if (_source != null) {
           rawContent = await _service.getContent(_source!, book, _chapters[index]);
           await _chapterDao.saveContent(book.bookUrl, index, rawContent);
-        } else rawContent = book.origin == "local" ? "缺失內容" : "找不到書源";
+        } else {
+          rawContent = book.origin == "local" ? "缺失內容" : "找不到書源";
+        }
       }
       rawContent = _processContent(rawContent, _chapters[index].title);
       final enabledRules = await _replaceDao.getEnabled();
       _content = ContentProcessor.processContent(book, _chapters[index], rawContent, chineseConvert: _chineseConvert, rules: enabledRules);
       await _bookDao.updateProgress(book.bookUrl, index, 0, _chapters[index].title);
     } catch (e) { _content = "加載失敗: $e"; }
-    finally { if (_viewSize != null) _doPaginate(); else { _isLoading = false; notifyListeners(); } _preloadNextChapter(index + 1); }
+    finally { if (_viewSize != null) {
+      _doPaginate();
+    } else { _isLoading = false; notifyListeners(); } _preloadNextChapter(index + 1); }
   }
 
   String _processContent(String raw, String title) {
@@ -348,15 +359,19 @@ class ReaderProvider extends ChangeNotifier {
   void setChineseConvert(bool v) { _chineseConvert = v; saveSetting('chinese_convert', _chineseConvert); loadChapter(_currentChapterIndex); }
   void setFontFamily(String? f) {
     _fontFamily = f;
-    if (f == null) SharedPreferences.getInstance().then((p) => p.remove('reader_font_family'));
-    else saveSetting('font_family', f);
+    if (f == null) {
+      SharedPreferences.getInstance().then((p) => p.remove('reader_font_family'));
+    } else {
+      saveSetting('font_family', f);
+    }
     _doPaginate();
   }
 
   Future<void> toggleBookmark() async {
     final existing = _bookmarks.cast<Bookmark?>().firstWhere((b) => b?.chapterIndex == _currentChapterIndex && b?.chapterPos == _currentPageIndex, orElse: () => null);
-    if (existing != null) await _bookmarkDao.delete(existing);
-    else {
+    if (existing != null) {
+      await _bookmarkDao.delete(existing);
+    } else {
       String snip = "空白書籤";
       if (_pages.isNotEmpty && _currentPageIndex < _pages.length) {
         snip = _pages[_currentPageIndex].lines.map((l) => l.text).join().replaceAll("\n", " ");
@@ -377,15 +392,17 @@ class ReaderProvider extends ChangeNotifier {
     final pitch = prefs.getDouble('speech_pitch') ?? 1.0;
     final volume = prefs.getDouble('speech_volume') ?? 1.0;
     if (_ttsMode == 0) {
-      if (tts.isPlaying) tts.stop();
-      else {
+      if (tts.isPlaying) {
+        tts.stop();
+      } else {
         await tts.setRate(rate); await tts.setPitch(pitch); await tts.setVolume(volume);
         final txt = _pages.isNotEmpty && _currentPageIndex < _pages.length ? _pages.skip(_currentPageIndex).map((p) => p.lines.map((l) => l.text).join()).join('\n') : _content;
         tts.speak(txt);
       }
     } else {
-      if (httpTts.isPlaying) httpTts.stop();
-      else {
+      if (httpTts.isPlaying) {
+        httpTts.stop();
+      } else {
         if (_selectedHttpTtsId == null && _httpTtsEngines.isNotEmpty) _selectedHttpTtsId = _httpTtsEngines.first.id;
         final config = _httpTtsEngines.cast<HttpTTS?>().firstWhere((e) => e?.id == _selectedHttpTtsId, orElse: () => null);
         if (config != null) {

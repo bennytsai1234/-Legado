@@ -31,7 +31,6 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
       if (key == null || key.currentContext == null) continue;
 
       final box = key.currentContext!.findRenderObject() as RenderBox;
-      final position = box.localToGlobal(Offset.zero);
       final size = box.size;
       
       // 使用 HitTest 邏輯判斷手指是否在該 Item 範圍內

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'local_book_provider.dart';
+import '../bookshelf/bookshelf_provider.dart';
 
 class SmartScanPage extends StatefulWidget {
   const SmartScanPage({super.key});
@@ -14,154 +15,107 @@ class SmartScanPage extends StatefulWidget {
 }
 
 class _SmartScanPageState extends State<SmartScanPage> {
-  String? _rootPath;
   String? _currentPath;
-  List<FileSystemEntity> _displayItems = [];
-  final Set<String> _selectedPaths = {};
+  List<FileSystemEntity> _files = [];
   bool _isScanning = false;
-  bool _isHierarchicalMode = false; // 是否為層級導航模式
+  final Set<String> _selectedPaths = {};
 
   @override
   void initState() {
     super.initState();
+    _loadLastPath();
   }
 
-  Future<void> _selectFolder() async {
-    String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
-    if (selectedDirectory != null) {
-      setState(() {
-        _rootPath = selectedDirectory;
-        _currentPath = selectedDirectory;
-        _isHierarchicalMode = true;
-      });
-      _loadCurrentDirectory();
+  Future<void> _loadLastPath() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastPath = prefs.getString('last_scan_path');
+    if (lastPath != null && await Directory(lastPath).exists()) {
+      if (mounted) {
+        setState(() => _currentPath = lastPath);
+        _scanDirectory(lastPath);
+      }
     }
   }
 
-  void _loadCurrentDirectory() {
-    if (_currentPath == null) return;
-    final dir = Directory(_currentPath!);
-    try {
-      final items = dir.listSync().where((item) {
-        if (item is Directory) return !p.basename(item.path).startsWith('.');
-        final ext = p.extension(item.path).toLowerCase();
-        return ext == '.txt' || ext == '.epub';
-      }).toList();
-      
-      // 排序：資料夾在前，書籍在後
-      items.sort((a, b) {
-        if (a is Directory && b is! Directory) return -1;
-        if (a is! Directory && b is Directory) return 1;
-        return a.path.toLowerCase().compareTo(b.path.toLowerCase());
-      });
-
-      setState(() {
-        _displayItems = items;
-        _isScanning = false;
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('讀取目錄失敗: $e')));
+  Future<void> _pickDirectory() async {
+    String? result = await FilePicker.platform.getDirectoryPath();
+    if (result != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('last_scan_path', result);
+      if (mounted) {
+        setState(() => _currentPath = result);
+        _scanDirectory(result);
+      }
     }
   }
 
-  Future<void> _fullScan() async {
-    if (_rootPath == null) return;
+  Future<void> _scanDirectory(String path) async {
     setState(() {
       _isScanning = true;
-      _isHierarchicalMode = false;
-      _displayItems = [];
+      _files = [];
+      _selectedPaths.clear();
     });
 
-    final List<File> found = [];
     try {
-      final dir = Directory(_rootPath!);
+      final dir = Directory(path);
+      final List<FileSystemEntity> entities = [];
       await for (var entity in dir.list(recursive: true, followLinks: false)) {
         if (entity is File) {
           final ext = p.extension(entity.path).toLowerCase();
           if (ext == '.txt' || ext == '.epub') {
-            found.add(entity);
+            entities.add(entity);
           }
         }
       }
-      setState(() {
-        _displayItems = found;
-        _isScanning = false;
-      });
+      if (mounted) {
+        setState(() {
+          _files = entities;
+          _isScanning = false;
+        });
+      }
     } catch (e) {
-      setState(() => _isScanning = false);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('掃描出錯: $e')));
+      if (mounted) {
+        setState(() => _isScanning = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('掃描失敗: $e')));
+      }
     }
   }
 
-  void _navigateUp() {
-    if (_currentPath == null || _currentPath == _rootPath) return;
+  void _toggleSelect(String path) {
     setState(() {
-      _currentPath = p.dirname(_currentPath!);
+      if (_selectedPaths.contains(path)) {
+        _selectedPaths.remove(path);
+      } else {
+        _selectedPaths.add(path);
+      }
     });
-    _loadCurrentDirectory();
-  }
-
-  void _navigateDown(Directory dir) {
-    setState(() {
-      _currentPath = dir.path;
-    });
-    _loadCurrentDirectory();
   }
 
   Future<void> _importSelected() async {
     if (_selectedPaths.isEmpty) return;
+
     final provider = context.read<LocalBookProvider>();
-    
-    int count = 0;
+    int successCount = 0;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(child: CircularProgressIndicator()),
+    );
+
     for (var path in _selectedPaths) {
-      final success = await provider.importFile(path);
-      if (success) count++;
+      try {
+        await context.read<BookshelfProvider>().importLocalBookPath(path);
+        successCount++;
+      } catch (e) {
+        debugPrint('匯入 $path 失敗: $e');
+      }
     }
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('成功匯入 $count 本書籍')));
-      Navigator.pop(context);
-    }
-  }
-
-  void _showJsSettingDialog() async {
-    final prefs = await SharedPreferences.getInstance();
-    final controller = TextEditingController(text: prefs.getString('book_import_file_name_js') ?? '');
-    
-    if (mounted) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('檔名解析 JS'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('使用變數 src (檔名)，賦值給 name 與 author。', style: TextStyle(fontSize: 12, color: Colors.grey)),
-              const SizedBox(height: 8),
-              TextField(
-                controller: controller,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  hintText: 'const p = src.split("_");\\nname = p[0]; author = p[1];',
-                  border: OutlineInputBorder(),
-                ),
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-            ElevatedButton(
-              onPressed: () async {
-                await prefs.setString('book_import_file_name_js', controller.text);
-                if (mounted) Navigator.pop(ctx);
-              },
-              child: const Text('儲存'),
-            ),
-          ],
-        ),
-      );
+      Navigator.pop(context); // 關閉 Loading
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('成功匯入 $successCount 本書籍')));
+      Navigator.pop(context); // 返回書架
     }
   }
 
@@ -169,165 +123,67 @@ class _SmartScanPageState extends State<SmartScanPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('導入本地書籍'),
+        title: const Text('智慧掃描'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.javascript),
-            tooltip: '檔名解析設定',
-            onPressed: _showJsSettingDialog,
+            icon: const Icon(Icons.folder_open),
+            onPressed: _pickDirectory,
+            tooltip: '選擇目錄',
           ),
-          if (_displayItems.isNotEmpty)
-            TextButton(
-              onPressed: _importSelected,
-              child: Text('匯入(${_selectedPaths.length})', style: const TextStyle(color: Colors.blue)),
-            ),
         ],
       ),
       body: Column(
         children: [
-          _buildTopActions(),
-          if (_isHierarchicalMode) _buildBreadcrumbs(),
+          if (_currentPath != null)
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Row(
+                children: [
+                  const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(_currentPath!, style: const TextStyle(fontSize: 12, color: Colors.grey), overflow: TextOverflow.ellipsis)),
+                ],
+              ),
+            ),
+          const Divider(height: 1),
           Expanded(
             child: _isScanning
-                ? const Center(child: CircularProgressIndicator())
-                : _displayItems.isEmpty
-                    ? _buildEmptyState()
-                    : _buildFileList(),
+                ? const Center(child: Column(mainAxisSize: MainAxisSize.min, children: [CircularProgressIndicator(), SizedBox(height: 16), Text('正在搜尋電子書...')]))
+                : _files.isEmpty
+                    ? Center(child: Text(_currentPath == null ? '請點擊右上角圖示選擇掃描目錄' : '此目錄下未找到 txt 或 epub 檔案'))
+                    : ListView.builder(
+                        itemCount: _files.length,
+                        itemBuilder: (context, index) {
+                          final file = _files[index] as File;
+                          final isSelected = _selectedPaths.contains(file.path);
+                          return CheckboxListTile(
+                            value: isSelected,
+                            onChanged: (_) => _toggleSelect(file.path),
+                            title: Text(p.basename(file.path)),
+                            subtitle: Text(_formatSize(file)),
+                            secondary: Icon(p.extension(file.path).toLowerCase() == '.epub' ? Icons.book : Icons.description, color: Colors.blueGrey),
+                          );
+                        },
+                      ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildTopActions() {
-    return Padding(
-      padding: const EdgeInsets.all(12.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.folder_open),
-              label: Text(_rootPath == null ? '選取路徑' : '更換路徑'),
-              onPressed: _selectFolder,
-            ),
-          ),
-          if (_rootPath != null) ...[
-            const SizedBox(width: 8),
-            IconButton(
-              icon: Icon(_isHierarchicalMode ? Icons.manage_search : Icons.account_tree_outlined),
-              tooltip: _isHierarchicalMode ? '切換至全量掃描' : '切換至層級導航',
-              onPressed: () {
-                if (_isHierarchicalMode) {
-                  _fullScan();
-                } else {
-                  setState(() {
-                    _currentPath = _rootPath;
-                    _isHierarchicalMode = true;
-                  });
-                  _loadCurrentDirectory();
-                }
-              },
-            ),
-          ]
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBreadcrumbs() {
-    if (_currentPath == null) return const SizedBox();
-    final relative = p.relative(_currentPath!, from: p.dirname(_rootPath!));
-    final parts = p.split(relative);
-
-    return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      alignment: Alignment.centerLeft,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: parts.length,
-        separatorBuilder: (_, __) => const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
-        itemBuilder: (ctx, index) {
-          final isLast = index == parts.length - 1;
-          return GestureDetector(
-            onTap: isLast ? null : () {
-              // 深度還原：麵包屑導航點擊跳轉
-              String target = _rootPath!;
-              // 邏輯需精確計算 target，此處簡化處理回退上級
-              _navigateUp(); 
-            },
-            child: Text(
-              parts[index],
-              style: TextStyle(
-                color: isLast ? Colors.black : Colors.blue,
-                fontWeight: isLast ? FontWeight.bold : FontWeight.normal,
+      bottomNavigationBar: _selectedPaths.isNotEmpty
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: ElevatedButton(
+                  onPressed: _importSelected,
+                  style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+                  child: Text('匯入已選 (${_selectedPaths.length})'),
+                ),
               ),
-            ),
-          );
-        },
-      ),
+            )
+          : null,
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.library_books_outlined, size: 64, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          const Text('請先選取包含電子書的資料夾'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFileList() {
-    return ListView.builder(
-      itemCount: _displayItems.length,
-      itemBuilder: (context, index) {
-        final item = _displayItems[index];
-        final isDir = item is Directory;
-        final name = p.basename(item.path);
-        final isSelected = _selectedPaths.contains(item.path);
-
-        return ListTile(
-          leading: Icon(isDir ? Icons.folder : Icons.insert_drive_file, color: isDir ? Colors.orange : Colors.blue),
-          title: Text(name),
-          subtitle: isDir ? null : Text(_getFileSize(item as File)),
-          trailing: isDir 
-            ? const Icon(Icons.chevron_right)
-            : Checkbox(
-                value: isSelected,
-                onChanged: (val) {
-                  setState(() {
-                    if (val == true) {
-                      _selectedPaths.add(item.path);
-                    } else {
-                      _selectedPaths.remove(item.path);
-                    }
-                  });
-                },
-              ),
-          onTap: () {
-            if (isDir) {
-              _navigateDown(item as Directory);
-            } else {
-              setState(() {
-                if (isSelected) {
-                  _selectedPaths.remove(item.path);
-                } else {
-                  _selectedPaths.add(item.path);
-                }
-              });
-            }
-          },
-        );
-      },
-    );
-  }
-
-  String _getFileSize(File file) {
+  String _formatSize(File file) {
     final bytes = file.lengthSync();
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';

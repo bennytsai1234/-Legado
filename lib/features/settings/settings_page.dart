@@ -7,7 +7,6 @@ import 'theme_settings_page.dart';
 import 'font_manager_page.dart';
 import 'other_settings_page.dart';
 import 'aloud_settings_page.dart';
-import 'http_tts_manager_page.dart';
 import '../about/about_page.dart';
 
 class SettingsPage extends StatelessWidget {

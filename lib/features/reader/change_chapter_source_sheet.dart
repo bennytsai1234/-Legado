@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/book.dart';
 import '../../core/models/book_source.dart';
-import '../../core/models/chapter.dart';
 import '../../core/models/search_book.dart';
 import '../../core/services/book_source_service.dart';
 import '../../core/database/dao/book_source_dao.dart';

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../core/models/book_source.dart';
 import '../../core/models/search_book.dart';
 import 'explore_provider.dart';
 import '../book_detail/book_detail_page.dart';
