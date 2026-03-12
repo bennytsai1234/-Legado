@@ -12,7 +12,7 @@
 | 模組 | 完成度 | 狀態 | 優先級 |
 |------|--------|------|--------|
 | [01. 主框架 (Main)](#01-主框架-main) | 90% | ✅ 高度還原 | P3 |
-| [02. 關於 (About)](#02-關於-about) | 20% | 🚨 需大量補強 | P1 |
+| [02. 關於 (About)](#02-關於-about) | 65% | ⚠️ ReadRecordPage 已實作，日誌/更新待補 | P2 |
 | [03. 外部檔案關聯 (Association)](#03-外部檔案關聯-association) | 10% | 🚨 需要新增 | P2 |
 | [04. 有聲書 (Audio)](#04-有聲書-audio) | 40% | ⚠️ 深度不足 | P2 |
 | [05. 全域書籤 (Bookmark)](#05-全域書籤-bookmark) | 70% | ⚠️ 需要補強 | P2 |
@@ -97,11 +97,15 @@
 **Flutter (iOS) 對應檔案**：
 - `lib/features/about/about_page.dart`（僅骨架）
 
-**完成度：20%**
+**完成度：65%** *(2026-03-12 更新：ReadRecordPage 已完整實作)*
 
-**狀態：🚨 大量功能缺失**
+**狀態：⚠️ 部分完成，日誌與更新待補**
 
-**不足之處與後續改進計劃**：
+**已完成項目 ✅**：
+- ✅ `ReadRecordPage`：完整實作，支援搜尋、三種排序（書名/閱讀時長/最後閱讀）、刪除單筆、清除全部記錄，接入 `ReadRecordDao`，顯示累計閱讀時長。
+- ✅ `AboutPage`：UI 已美化，包含版本號、GitHub 連結、閱讀統計入口。
+
+**仍需完成**：
 - [ ] `about_page.dart` 僅有基礎骨架，需補上版本號顯示（`package_info_plus` 套件）、GitHub 連結按鈕、開源協議查看。
 - [ ] 缺少 `AppLogPage`：讀取並顯示本機產生的 debug 日誌。
 - [ ] 缺少 `CrashLogPage`：顯示 Flutter 的 crash 記錄（需搭配 `lib/core/services/` 中的日誌服務）。
