@@ -5,13 +5,6 @@ import '../../core/models/book_source.dart';
 import '../../core/models/search_book.dart';
 import '../../core/services/book_source_service.dart';
 
-class AggregatedSearchBook {
-  final SearchBook book;
-  final List<String> sources; // 來源名稱列表
-
-  AggregatedSearchBook({required this.book, required this.sources});
-}
-
 class SearchProvider extends ChangeNotifier {
   final BookSourceDao _sourceDao = BookSourceDao();
   final SearchHistoryDao _historyDao = SearchHistoryDao();
@@ -23,13 +16,40 @@ class SearchProvider extends ChangeNotifier {
   int _searchCount = 0;
   int _totalSources = 0;
 
+  // 搜尋範圍與熱搜詞
+  List<String> _sourceGroups = ['全部'];
+  String _selectedGroup = '全部';
+  final List<String> _hotKeywords = ['劍來', '道詭異仙', '靈境行者', '深海餘燼', '赤心巡天', '大奉打更人']; // 模擬熱搜詞
+
   List<String> get history => _history;
   List<AggregatedSearchBook> get results => _results;
   bool get isSearching => _isSearching;
   double get progress => _totalSources == 0 ? 0 : _searchCount / _totalSources;
+  
+  List<String> get sourceGroups => _sourceGroups;
+  String get selectedGroup => _selectedGroup;
+  List<String> get hotKeywords => _hotKeywords;
 
   SearchProvider() {
     loadHistory();
+    _loadGroups();
+  }
+
+  Future<void> _loadGroups() async {
+    final sources = await _sourceDao.getAll();
+    final Set<String> groups = {};
+    for (var s in sources) {
+      if (s.bookSourceGroup != null && s.bookSourceGroup!.isNotEmpty) {
+        groups.addAll(s.bookSourceGroup!.split(',').map((e) => e.trim()));
+      }
+    }
+    _sourceGroups = ['全部', ...groups.toList()..sort()];
+    notifyListeners();
+  }
+
+  void setGroup(String group) {
+    _selectedGroup = group;
+    notifyListeners();
   }
 
   Future<void> loadHistory() async {
@@ -55,7 +75,16 @@ class SearchProvider extends ChangeNotifier {
     await _historyDao.add(keyword);
     await loadHistory();
 
-    final enabledSources = await _sourceDao.getEnabled();
+    var enabledSources = await _sourceDao.getEnabled();
+    
+    // 套用搜尋範圍 (SearchScope) 過濾
+    if (_selectedGroup != '全部') {
+      enabledSources = enabledSources.where((s) {
+        final g = s.bookSourceGroup ?? "";
+        return g.split(',').map((e) => e.trim()).contains(_selectedGroup);
+      }).toList();
+    }
+
     _totalSources = enabledSources.length;
     if (_totalSources == 0) {
       _isSearching = false;

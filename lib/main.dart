@@ -103,25 +103,61 @@ class _SplashPageState extends State<SplashPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: _error != null
-            ? SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    '啟動失敗:\n$_error', 
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                ),
-              )
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: 16),
-                  Text(_status),
-                ],
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 背景圖 (對應 Android WelcomeActivity)
+          Image.asset(
+            'assets/welcome_bg.png',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              child: const Center(
+                child: Icon(Icons.library_books, size: 100, color: Colors.blue),
               ),
+            ),
+          ),
+          // 漸層遮罩
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, Colors.black.withValues(alpha: 0.8)],
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 80,
+            left: 0,
+            right: 0,
+            child: _error != null
+                ? Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text('啟動失敗: $_error', style: const TextStyle(color: Colors.redAccent)),
+                  )
+                : Column(
+                    children: [
+                      const Text(
+                        'Legado Reader',
+                        style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 2),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        '「 讀萬卷書，行萬里路 」',
+                        style: TextStyle(color: Colors.white70, fontSize: 16, fontStyle: FontStyle.italic),
+                      ),
+                      const SizedBox(height: 40),
+                      Text(_status, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                      const SizedBox(height: 16),
+                      const SizedBox(
+                        width: 120,
+                        child: LinearProgressIndicator(minHeight: 2, backgroundColor: Colors.white10),
+                      ),
+                    ],
+                  ),
+          ),
+        ],
       ),
     );
   }

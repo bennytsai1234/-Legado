@@ -24,10 +24,13 @@ class LocalBookProvider extends ChangeNotifier {
 
     if (result == null || result.files.single.path == null) return false;
 
+    return await importFile(result.files.single.path!);
+  }
+
+  Future<bool> importFile(String path) async {
     _isImporting = true;
     notifyListeners();
 
-    final path = result.files.single.path!;
     final file = File(path);
     final ext = p.extension(path).toLowerCase();
 
@@ -39,7 +42,7 @@ class LocalBookProvider extends ChangeNotifier {
       }
       return true;
     } catch (e) {
-      debugPrint('匯入本地書籍失敗: $e');
+      debugPrint('匯入本地書籍失敗 ($path): $e');
       return false;
     } finally {
       _isImporting = false;

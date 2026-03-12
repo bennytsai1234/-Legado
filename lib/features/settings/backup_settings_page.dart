@@ -150,6 +150,12 @@ class _BackupSettingsPageState extends State<BackupSettingsPage> {
                 value: settings.autoCheckNewBackup,
                 onChanged: (v) => settings.setAutoCheckNewBackup(v),
               ),
+              SwitchListTile(
+                title: const Text('自動備份'),
+                subtitle: const Text('退出 APP 或特定操作時自動上傳備份至 WebDAV (概念實作)'),
+                value: settings.autoBackup,
+                onChanged: (v) => settings.setAutoBackup(v),
+              ),
             ],
           );
         },

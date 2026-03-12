@@ -71,3 +71,10 @@ class SearchBook {
     'variable': variable,
   };
 }
+
+class AggregatedSearchBook {
+  final SearchBook book;
+  final List<String> sources;
+
+  AggregatedSearchBook({required this.book, required this.sources});
+}

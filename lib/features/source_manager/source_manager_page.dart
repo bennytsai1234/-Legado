@@ -5,6 +5,7 @@ import 'source_manager_provider.dart';
 import 'source_editor_page.dart';
 import 'source_login_page.dart';
 import 'qr_scan_page.dart';
+import 'explore_sources_page.dart';
 import '../../core/models/book_source.dart';
 
 class SourceManagerPage extends StatefulWidget {
@@ -66,6 +67,13 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
                               builder: (context) => const SourceEditorPage(),
                             ),
                           );
+                        } else if (value == 'explore') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ExploreSourcesPage(),
+                            ),
+                          );
                         }
                       },
                       itemBuilder: (context) => [
@@ -73,6 +81,7 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
                         const PopupMenuItem(
                             value: 'clipboard', child: Text('剪貼簿匯入')),
                         const PopupMenuItem(value: 'qr', child: Text('掃碼匯入')),
+                        const PopupMenuItem(value: 'explore', child: Text('網路書源庫搜尋')),
                         const PopupMenuItem(value: 'new', child: Text('新建書源')),
                       ],
                       icon: const Icon(Icons.add),

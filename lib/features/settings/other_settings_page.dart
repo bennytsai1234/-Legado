@@ -78,6 +78,11 @@ class OtherSettingsPage extends StatelessWidget {
                 onTap: () => _showComingSoon(context),
               ),
               ListTile(
+                title: const Text('全域封面規則'),
+                subtitle: Text(settings.globalCoverRule.isEmpty ? '未設定' : '已設定 (點擊編輯)'),
+                onTap: () => _showGlobalCoverRuleDialog(context, settings),
+              ),
+              ListTile(
                 title: const Text('直鏈上傳規則'),
                 onTap: () => _showComingSoon(context),
               ),
@@ -155,7 +160,8 @@ class OtherSettingsPage extends StatelessWidget {
               ),
               ListTile(
                 title: const Text('執行緒數量'),
-                onTap: () => _showComingSoon(context),
+                subtitle: Text('${settings.threadCount} (併發請求數量)'),
+                onTap: () => _showThreadCountDialog(context, settings),
               ),
               SwitchListTile(
                 title: const Text('加入系統文字選擇選單'),
@@ -200,6 +206,70 @@ class OtherSettingsPage extends StatelessWidget {
   void _showComingSoon(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('功能開發中 (Work in Progress)')),
+    );
+  }
+
+  void _showThreadCountDialog(BuildContext context, SettingsProvider settings) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        double currentVal = settings.threadCount.toDouble();
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text('設定執行緒數量: ${currentVal.toInt()}'),
+              content: Slider(
+                value: currentVal,
+                min: 1,
+                max: 32,
+                divisions: 31,
+                onChanged: (val) {
+                  setState(() {
+                    currentVal = val;
+                  });
+                },
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+                TextButton(
+                  onPressed: () {
+                    settings.setThreadCount(currentVal.toInt());
+                    Navigator.pop(context);
+                  },
+                  child: const Text('確定'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showGlobalCoverRuleDialog(BuildContext context, SettingsProvider settings) {
+    final controller = TextEditingController(text: settings.globalCoverRule);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('全域封面規則'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(hintText: '輸入 JSON 格式的封面覆蓋規則'),
+            maxLines: 5,
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+            TextButton(
+              onPressed: () {
+                settings.setGlobalCoverRule(controller.text);
+                Navigator.pop(context);
+              },
+              child: const Text('儲存'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

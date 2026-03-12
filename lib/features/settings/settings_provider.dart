@@ -253,11 +253,20 @@ class SettingsProvider extends ChangeNotifier {
   bool syncBookProgressPlus = false;
   bool onlyLatestBackup = true;
   bool autoCheckNewBackup = true;
+  bool autoBackup = false;
 
   Future<void> setSyncBookProgress(bool v) async { syncBookProgress = v; _save('sync_book_progress', v); notifyListeners(); }
   Future<void> setSyncBookProgressPlus(bool v) async { syncBookProgressPlus = v; _save('sync_book_progress_plus', v); notifyListeners(); }
   Future<void> setOnlyLatestBackup(bool v) async { onlyLatestBackup = v; _save('only_latest_backup', v); notifyListeners(); }
   Future<void> setAutoCheckNewBackup(bool v) async { autoCheckNewBackup = v; _save('auto_check_new_backup', v); notifyListeners(); }
+  Future<void> setAutoBackup(bool v) async { autoBackup = v; _save('auto_backup', v); notifyListeners(); }
+
+  // Performance & Advanced Rules
+  int threadCount = 8;
+  String globalCoverRule = '';
+
+  Future<void> setThreadCount(int v) async { threadCount = v; _save('thread_count', v); notifyListeners(); }
+  Future<void> setGlobalCoverRule(String v) async { globalCoverRule = v; _save('global_cover_rule', v); notifyListeners(); }
 
   /// 資料庫備份
   Future<String?> backupDatabase() async {

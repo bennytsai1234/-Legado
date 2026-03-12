@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/database/dao/replace_rule_dao.dart';
 import '../../core/models/replace_rule.dart';
 
@@ -64,4 +66,36 @@ class ReplaceRuleProvider extends ChangeNotifier {
       await _dao.updateOrder(_rules[i].id, i);
     }
   }
+
+  // --- 導入導出擴展 ---
+  Future<int> importFromText(String jsonStr) async {
+    int count = 0;
+    try {
+      final List<dynamic> list = jsonDecode(jsonStr);
+      for (var item in list) {
+        if (item is Map<String, dynamic>) {
+          final rule = ReplaceRule.fromJson(item);
+          await _dao.insertOrUpdate(rule);
+          count++;
+        }
+      }
+      if (count > 0) {
+        await loadRules();
+      }
+    } catch (e) {
+      debugPrint('匯入規則失敗: $e');
+    }
+    return count;
+  }
+
+  Future<void> exportToClipboard() async {
+    try {
+      final list = _rules.map((e) => e.toJson()).toList();
+      final jsonStr = jsonEncode(list);
+      await Clipboard.setData(ClipboardData(text: jsonStr));
+    } catch (e) {
+      debugPrint('導出規則失敗: $e');
+    }
+  }
 }
+

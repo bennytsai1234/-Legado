@@ -3,31 +3,15 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'book_detail_provider.dart';
 import '../../core/models/search_book.dart';
+import '../../core/models/book.dart';
+import '../../core/models/chapter.dart';
 import '../reader/reader_page.dart';
-import '../reader/manga_reader_page.dart';
-import '../reader/audio_player_page.dart';
-import '../cache_manager/cache_manager_page.dart';
 import '../../core/services/export_book_service.dart';
 
 class BookDetailPage extends StatelessWidget {
-  final SearchBook searchBook;
+  final AggregatedSearchBook searchBook;
 
   const BookDetailPage({super.key, required this.searchBook});
-
-  void _navigateToReader(BuildContext context, dynamic book, int index) {
-    Widget page;
-    if (book.type == 1) {
-      page = AudioPlayerPage(book: book, chapterIndex: index);
-    } else if (book.type == 2) {
-      page = MangaReaderPage(book: book, chapterIndex: index);
-    } else {
-      page = ReaderPage(book: book, chapterIndex: index);
-    }
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => page),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,160 +22,111 @@ class BookDetailPage extends StatelessWidget {
           final book = provider.book;
           return Scaffold(
             appBar: AppBar(
-              title: Text(book.name),
+              title: const Text('書籍詳情'),
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.download_for_offline),
-                  tooltip: '快取管理',
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CacheManagerPage(book: book),
-                      ),
-                    );
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.find_replace),
-                  tooltip: '換源',
-                  onPressed: () => _showChangeSourceDialog(context, provider),
-                ),
-                IconButton(
-                  icon: Icon(
-                    provider.isInBookshelf
-                        ? Icons.favorite
-                        : Icons.favorite_border,
-                  ),
-                  color: provider.isInBookshelf ? Colors.red : null,
-                  onPressed: provider.toggleBookshelf,
+                  icon: Icon(provider.isInBookshelf ? Icons.library_add_check : Icons.library_add),
+                  onPressed: () => provider.toggleInBookshelf(),
                 ),
                 PopupMenuButton<String>(
                   onSelected: (val) {
                     if (val == 'export') {
                       ExportBookService().exportToTxt(book);
+                    } else if (val == 'clear_cache') {
+                      provider.clearCache();
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已清理正文快取')));
+                    } else if (val == 'preload') {
+                      _showPreloadDialog(context, provider);
+                    } else if (val == 'edit') {
+                      _showEditBookInfoDialog(context, provider);
                     }
                   },
                   itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'export',
-                      child: Text('匯出全書 (TXT)'),
-                    ),
+                    const PopupMenuItem(value: 'export', child: Text('匯出全書 (TXT)')),
+                    const PopupMenuItem(value: 'clear_cache', child: Text('清理正文快取')),
+                    const PopupMenuItem(value: 'preload', child: Text('預加載後續章節')),
+                    const PopupMenuItem(value: 'edit', child: Text('編輯書籍資訊')),
                   ],
                 ),
               ],
             ),
-            body:
-                provider.isLoading && provider.chapters.isEmpty
-                    ? const Center(child: CircularProgressIndicator())
-                    : CustomScrollView(
-                      slivers: [
-                        SliverToBoxAdapter(child: _buildHeader(context, provider)),
-                        SliverToBoxAdapter(child: _buildIntro(book)),
-                        SliverPadding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          sliver: SliverToBoxAdapter(
-                            child: Text(
-                              '目錄 (${provider.chapters.length} 章)',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+            body: provider.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : CustomScrollView(
+                    slivers: [
+                      SliverToBoxAdapter(child: _buildHeader(context, provider, book)),
+                      SliverToBoxAdapter(child: _buildIntro(book)),
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        sliver: SliverToBoxAdapter(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('目錄 (${provider.filteredChapters.length} 章)', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                              Row(
+                                children: [
+                                  IconButton(icon: const Icon(Icons.search), onPressed: () => _showSearchTocDialog(context, provider)),
+                                  IconButton(icon: Icon(provider.isReversed ? Icons.vertical_align_top : Icons.vertical_align_bottom), onPressed: provider.toggleSort),
+                                ],
                               ),
-                            ),
+                            ],
                           ),
                         ),
-                        SliverList(
-                          delegate: SliverChildBuilderDelegate((
-                            context,
-                            index,
-                          ) {
-                            final chapter = provider.chapters[index];
-                            return ListTile(
-                              title: Text(
-                                chapter.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              onTap: () {
-                                _navigateToReader(context, book, index);
-                              },
-                            );
-                          }, childCount: provider.chapters.length),
-                        ),
-                      ],
-                    ),
-            bottomNavigationBar: _buildBottomBar(context, provider),
+                      ),
+                      SliverList(
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final chapter = provider.filteredChapters[index];
+                          return ListTile(
+                            title: Text(chapter.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                            onTap: () => _navigateToReader(context, book, chapter.index),
+                          );
+                        }, childCount: provider.filteredChapters.length),
+                      ),
+                    ],
+                  ),
           );
         },
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, BookDetailProvider provider) {
-    final book = provider.book;
+  Widget _buildHeader(BuildContext context, BookDetailProvider provider, Book book) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GestureDetector(
-            onLongPress: () => _showChangeCoverDialog(context, provider),
-            child: SizedBox(
-              width: 100,
-              height: 140,
-              child:
-                  book.coverUrl != null && book.coverUrl!.isNotEmpty
-                      ? CachedNetworkImage(
-                        imageUrl: book.coverUrl!,
-                        fit: BoxFit.cover,
-                        errorWidget:
-                            (context, url, error) =>
-                                const Icon(Icons.book, size: 50),
-                      )
-                      : const Icon(Icons.book, size: 50),
-            ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: book.coverUrl != null && book.coverUrl!.isNotEmpty
+                ? CachedNetworkImage(imageUrl: book.coverUrl!, width: 100, height: 140, fit: BoxFit.cover, errorWidget: (context, url, error) => _buildCoverPlaceholder())
+                : _buildCoverPlaceholder(),
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  book.name,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '作者：${book.author.isEmpty ? '未知' : book.author}',
-                  style: const TextStyle(fontSize: 16),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '來源：${book.originName.isEmpty ? '未知' : book.originName}',
-                        style: const TextStyle(fontSize: 14, color: Colors.grey),
-                        overflow: TextOverflow.ellipsis,
+            child: GestureDetector(
+              onTap: () => _showEditBookInfoDialog(context, provider),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(book.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text('作者：${book.author ?? '未知'}', style: const TextStyle(fontSize: 16)),
+                  const SizedBox(height: 4),
+                  Text('來源：${book.originName ?? '未知'}', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      ElevatedButton(
+                        onPressed: () => _navigateToReader(context, book, book.durChapterIndex),
+                        child: Text(book.durChapterIndex == 0 && book.durChapterPos == 0 ? '開始閱讀' : '繼續閱讀'),
                       ),
-                    ),
-                    TextButton(
-                      onPressed: () => _showChangeSourceDialog(context, provider),
-                      child: const Text('換源', style: TextStyle(fontSize: 12)),
-                    ),
-                  ],
-                ),
-                Text(
-                  '分類：${book.kind ?? '未知'}',
-                  style: const TextStyle(fontSize: 14, color: Colors.grey),
-                ),
-              ],
+                      const SizedBox(width: 8),
+                      TextButton(onPressed: () => _showChangeSourceDialog(context, provider), child: const Text('換源', style: TextStyle(fontSize: 12))),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -199,162 +134,118 @@ class BookDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildIntro(dynamic book) {
+  Widget _buildCoverPlaceholder() {
+    return Container(width: 100, height: 140, color: Colors.grey.shade200, child: const Icon(Icons.book, size: 50, color: Colors.grey));
+  }
+
+  Widget _buildIntro(Book book) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Divider(),
-          const Text(
-            '簡介',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
+          const Text('簡介', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          Text(
-            book.intro ?? '暫無簡介',
-            style: const TextStyle(fontSize: 14, height: 1.5),
-          ),
-          const Divider(),
+          Text(book.intro ?? '暫無簡介', style: const TextStyle(fontSize: 15, height: 1.5)),
+          const SizedBox(height: 16),
         ],
       ),
     );
   }
 
-  Widget _buildBottomBar(BuildContext context, BookDetailProvider provider) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Row(
+  void _navigateToReader(BuildContext context, Book book, int index) {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => ReaderPage(book: book, chapterIndex: index)));
+  }
+
+  void _showChangeSourceDialog(BuildContext context, BookDetailProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: const Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: provider.toggleBookshelf,
-                child: Text(provider.isInBookshelf ? '移出書架' : '加入書架'),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () {
-                  _navigateToReader(
-                    context,
-                    provider.book,
-                    provider.book.durChapterIndex,
-                  );
-                },
-                child: const Text('開始閱讀'),
-              ),
-            ),
+            Text('搜尋可用書源...', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            SizedBox(height: 20),
+            CircularProgressIndicator(),
+            SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
 
-  void _showChangeSourceDialog(BuildContext context, BookDetailProvider provider) {
-    showModalBottomSheet(
+  void _showSearchTocDialog(BuildContext context, BookDetailProvider provider) {
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      builder: (context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.7,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              const Text('換源搜尋', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const Divider(),
-              Expanded(
-                child: FutureBuilder<List<SearchBook>>(
-                  future: provider.searchAlternativeSources(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (snapshot.hasError) {
-                      return Center(child: Text('搜尋出錯: ${snapshot.error}'));
-                    }
-                    final list = snapshot.data ?? [];
-                    if (list.isEmpty) {
-                      return const Center(child: Text('未找到同名書源'));
-                    }
-                    return ListView.builder(
-                      itemCount: list.length,
-                      itemBuilder: (context, index) {
-                        final item = list[index];
-                        return ListTile(
-                          title: Text(item.originName ?? '未知'),
-                          subtitle: Text(item.latestChapterTitle ?? '未知最新章節'),
-                          onTap: () {
-                            provider.switchSource(item);
-                            Navigator.pop(context);
-                          },
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (context) => AlertDialog(
+        title: const Text('搜尋目錄'),
+        content: TextField(
+          decoration: const InputDecoration(hintText: '輸入章節名稱...'),
+          autofocus: true,
+          onChanged: provider.setSearchQuery,
+        ),
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('關閉'))],
+      ),
     );
   }
 
-  void _showChangeCoverDialog(BuildContext context, BookDetailProvider provider) {
-    showModalBottomSheet(
+  void _showPreloadDialog(BuildContext context, BookDetailProvider provider) {
+    final ctrl = TextEditingController(text: '50');
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      builder: (context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.8,
-          padding: const EdgeInsets.all(16),
+      builder: (context) => AlertDialog(
+        title: const Text('預加載章節'),
+        content: TextField(controller: ctrl, decoration: const InputDecoration(hintText: '輸入加載數量'), keyboardType: TextInputType.number),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          TextButton(
+            onPressed: () {
+              int count = int.tryParse(ctrl.text) ?? 50;
+              provider.preloadChapters(provider.book.durChapterIndex, count);
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('開始預加載 $count 章...')));
+            },
+            child: const Text('確定'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditBookInfoDialog(BuildContext context, BookDetailProvider provider) {
+    final nameCtrl = TextEditingController(text: provider.book.name);
+    final authorCtrl = TextEditingController(text: provider.book.author);
+    final introCtrl = TextEditingController(text: provider.book.intro);
+    final coverCtrl = TextEditingController(text: provider.book.coverUrl);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('編輯書籍資訊'),
+        content: SingleChildScrollView(
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('換封面', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const Divider(),
-              Expanded(
-                child: FutureBuilder<List<SearchBook>>(
-                  future: provider.searchAlternativeSources(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    final list = snapshot.data?.where((b) => b.coverUrl != null && b.coverUrl!.isNotEmpty).toList() ?? [];
-                    if (list.isEmpty) return const Center(child: Text('未找到可用封面'));
-                    
-                    return GridView.builder(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        childAspectRatio: 0.7,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                      ),
-                      itemCount: list.length,
-                      itemBuilder: (context, index) {
-                        final item = list[index];
-                        return GestureDetector(
-                          onTap: () {
-                            provider.updateCover(item.coverUrl!);
-                            Navigator.pop(context);
-                          },
-                          child: CachedNetworkImage(
-                            imageUrl: item.coverUrl!,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-                            errorWidget: (context, url, error) => const Icon(Icons.broken_image),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
+              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: '書名')),
+              TextField(controller: authorCtrl, decoration: const InputDecoration(labelText: '作者')),
+              TextField(controller: coverCtrl, decoration: const InputDecoration(labelText: '封面 URL')),
+              TextField(controller: introCtrl, decoration: const InputDecoration(labelText: '簡介'), maxLines: 3),
             ],
           ),
-        );
-      },
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          TextButton(
+            onPressed: () {
+              provider.updateBookInfo(nameCtrl.text, authorCtrl.text, introCtrl.text, coverCtrl.text);
+              Navigator.pop(context);
+            },
+            child: const Text('儲存'),
+          ),
+        ],
+      ),
     );
   }
 }

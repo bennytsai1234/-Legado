@@ -152,11 +152,21 @@ class ChapterDao {
   /// 檢查是否有正文快取
   Future<bool> hasContent(String bookUrl, int index) async {
     final db = await _db;
-    final result = await db.rawQuery(
+    final maps = await db.rawQuery(
       'SELECT 1 FROM $contentsTable WHERE bookUrl = ? AND chapterIndex = ? LIMIT 1',
       [bookUrl, index],
     );
-    return result.isNotEmpty;
+    return maps.isNotEmpty;
+  }
+
+  /// 僅刪除指定書籍的正文快取 (保留目錄)
+  Future<void> deleteContentByBook(String bookUrl) async {
+    final db = await _db;
+    await db.delete(
+      contentsTable,
+      where: 'bookUrl = ?',
+      whereArgs: [bookUrl],
+    );
   }
 
   /// 刪除書籍的所有章節與正文 (高度還原 Android delByBook)

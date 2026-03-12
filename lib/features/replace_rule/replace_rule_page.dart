@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'replace_rule_provider.dart';
 import '../../core/models/replace_rule.dart';
@@ -20,6 +21,23 @@ class ReplaceRulePage extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.add),
                   onPressed: () => _navigateToEdit(context, provider),
+                ),
+                PopupMenuButton<String>(
+                  onSelected: (val) {
+                    if (val == 'import') {
+                      _showImportDialog(context, provider);
+                    } else if (val == 'export') {
+                      provider.exportToClipboard();
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已複製至剪貼簿')));
+                    } else if (val == 'test') {
+                      _showTestDialog(context, provider);
+                    }
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(value: 'import', child: Text('從剪貼簿匯入')),
+                    PopupMenuItem(value: 'export', child: Text('匯出至剪貼簿')),
+                    PopupMenuItem(value: 'test', child: Text('即時測試')),
+                  ],
                 ),
               ],
             ),
@@ -109,6 +127,83 @@ class ReplaceRulePage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _showImportDialog(BuildContext context, ReplaceRuleProvider provider) async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (data?.text != null && data!.text!.isNotEmpty) {
+      final count = await provider.importFromText(data.text!);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('成功匯入 $count 個規則')));
+      }
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('剪貼簿無內容')));
+      }
+    }
+  }
+
+  void _showTestDialog(BuildContext context, ReplaceRuleProvider provider) {
+    final textCtrl = TextEditingController();
+    String resultText = "";
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('規則測試'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: textCtrl,
+                      decoration: const InputDecoration(hintText: '輸入測試文本', border: OutlineInputBorder()),
+                      maxLines: 4,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        String temp = textCtrl.text;
+                        final enabledRules = provider.rules.where((r) => r.isEnabled).toList();
+                        for (var rule in enabledRules) {
+                          try {
+                            if (rule.isRegex) {
+                              final reg = RegExp(rule.pattern);
+                              temp = temp.replaceAll(reg, rule.replacement);
+                            } else {
+                              temp = temp.replaceAll(rule.pattern, rule.replacement);
+                            }
+                          } catch (e) {
+                            debugPrint('規則執行失敗: $e');
+                          }
+                        }
+                        setState(() {
+                          resultText = temp;
+                        });
+                      },
+                      child: const Text('執行啟用規則'),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(8),
+                      color: Colors.grey.withValues(alpha: 0.1),
+                      child: Text(resultText.isEmpty ? '測試結果將顯示於此' : resultText),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('關閉')),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

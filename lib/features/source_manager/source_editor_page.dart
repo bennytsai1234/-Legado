@@ -139,6 +139,7 @@ class _SourceEditorPageState extends State<SourceEditorPage>
       appBar: AppBar(
         title: Text(widget.source == null ? '新建書源' : '編輯書源'),
         actions: [
+          IconButton(icon: const Icon(Icons.bug_report), tooltip: '偵錯控制台', onPressed: _showDebugConsole),
           IconButton(icon: const Icon(Icons.save), onPressed: _save),
         ],
         bottom: TabBar(
@@ -200,6 +201,80 @@ class _SourceEditorPageState extends State<SourceEditorPage>
           hintText: '輸入書源 JSON...',
         ),
       ),
+    );
+  }
+
+  void _showDebugConsole() {
+    if (_tabController.index == 1) {
+      if (!_updateFormFromJson()) return;
+    } else {
+      _syncSourceFromForm();
+    }
+    
+    final logs = <String>['開始偵錯...', '套用書源: ${_editingSource.bookSourceName}'];
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.7,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('偵錯控制台', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      Row(
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              setModalState(() {
+                                logs.add('>>> 執行搜尋測試...');
+                              });
+                              // 這裡未來可以接入真實的 BookSourceService 進行單步測試
+                              Future.delayed(const Duration(seconds: 1), () {
+                                if (mounted) {
+                                  setModalState(() {
+                                    logs.add('請求 URL: ${_editingSource.searchUrl}');
+                                    logs.add('搜尋結果: 模擬成功 (尚未串接真實解析邏輯)');
+                                  });
+                                }
+                              });
+                            }, 
+                            child: const Text('測試搜尋')
+                          ),
+                          IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+                        ],
+                      )
+                    ],
+                  ),
+                  const Divider(),
+                  Expanded(
+                    child: Container(
+                      color: Colors.black87,
+                      padding: const EdgeInsets.all(8),
+                      child: ListView.builder(
+                        itemCount: logs.length,
+                        itemBuilder: (context, index) {
+                          return Text(
+                            logs[index],
+                            style: const TextStyle(fontFamily: 'monospace', color: Colors.greenAccent, fontSize: 12),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
