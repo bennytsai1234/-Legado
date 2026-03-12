@@ -19,7 +19,7 @@
 | 11 | **書籍詳情** | 80% | WebDav 單書同步、長章節物理分割 | ⚠️ 缺同步 |
 | 12 | **匯入書籍** | 85% | 內建目錄導覽 UI、檔案名 JS 正則解析 | ✅ 基礎對齊 |
 | 13 | **漫畫閱讀** | 95% | 高性能預加載策略 | ✅ 核心對齊 |
-| 14 | **核心閱讀器** | 80% | 長章節預處理分割、雲端即時同步 | ⚠️ 核心缺失 |
+| 14 | **核心閱讀器** | 90% | 雲端即時同步 | ⚠️ 核心缺失 |
 | 15 | **全書搜尋** | 85% | 搜尋狀態手動中斷、精準搜尋語法過濾 | ✅ 基礎對齊 |
 | 16 | **內文搜尋** | 80% | 搜尋結果替換渲染、手動中斷 Scan Job | ✅ 基礎對齊 |
 | 17 | **書源管理** | 80% | 響應速度 (Ping) 排序、域名聚合顯示模式 | ⚠️ 缺算法 |
@@ -147,7 +147,7 @@
 | **14.1 九宮格點擊區域** | `PageView.kt`: L150 | `click_action_config_page.dart` | **Matched** | 均支援自定義九宮格交互。 |
 | **14.2 仿真翻頁動畫** | `PageView.kt` | `simulation_page_view.dart`: L10 (_SimulationPageViewState) | **Matched** | 已實作基於貝茲曲線裁剪與動態陰影的仿真翻頁組件，對標 Android 核心渲染效果。 |
 | **14.3 替換規則即時套用** | `ReadBookViewModel.kt`: L435 | `chapter_provider.dart`: L210 | **Matched** | 均在渲染章節內容前套用替換規則。 |
-| **14.5 長章節自動分割** | `ReadBookViewModel.kt` | - | **Logic Gap** | Android 支援對 >1MB 章節進行預處理分割；iOS 僅虛擬分頁。 |
+| **14.5 長章節自動分割** | `ReadBookViewModel.kt` | `chapter_provider.dart`: L20 (splitThreshold) | **Matched** | 已實作針對 >50,000 字超長章節的物理分割邏輯，解決了大規模 TXT 載入時的效能瓶頸。 |
 | **14.8 進度雲端即時同步** | `ReadBookViewModel.kt` | - | **Logic Gap** | Android 支援閱讀時即時同步至 WebDav；iOS 僅在退出。 |
 | **15.1 併發搜尋機制** | `SearchViewModel.kt`: L129 | `search_provider.dart`: L65 | **Matched** | 均採用異步併發模型。 |
 | **15.2 搜尋結果聚合顯示** | `SearchAdapter.kt` | `search_page.dart`: L180 | **Matched** | 均將不同源的結果聚合顯示。 |
