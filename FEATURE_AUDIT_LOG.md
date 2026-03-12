@@ -22,4 +22,12 @@
 | **12.4 批量導入機制** | `ImportBookActivity.kt`: L101 (onClickSelectBarMainAction) | `smart_scan_page.dart`: L46 (_importSelected) | **Matched** | 均支援勾選多本書籍後批量加入書架。 |
 | **12.5 重複導入檢測** | `ImportBookViewModel.kt` | `local_book_provider.dart`: L51 | **Matched** | 均在導入前檢查資料庫中是否已存在同路徑書籍。 |
 | **12.6 掃描進度顯示** | `ImportBookActivity.kt`: L168 (refreshProgressBar) | `smart_scan_page.dart`: L108 | **Equivalent** | 均有掃描時的 Loading 狀態提示。 |
+| **13.1 閱讀模式支援** | `ReadMangaActivity.kt`: L200 (setHorizontalScroll) | `manga_reader_page.dart`: L79 (ListView) | **Logic Gap** | Android 支援水平、垂直、Webtoon 等多種翻頁與捲動模式；iOS 目前僅有垂直捲動模式。 |
+| **13.2 交互區域與手勢** | `ReadMangaActivity.kt`: L228 (onNextPage) | `manga_reader_page.dart`: L75 (onTap) | **Logic Gap** | Android 支援點擊左/中/右區域分別觸發上一頁、選單、下一頁；iOS 僅點擊觸發選單控制。 |
+| **13.3 圖片預加載與緩存** | `ReadMangaActivity.kt`: L220 (mangaPreDownloadNum) | `manga_reader_page.dart`: L82 (cacheExtent) | **Logic Gap** | Android 支援精確控制圖片預加載數量且與 Glide 深度整合；iOS 目前依賴 ListView 基礎快取，缺乏專門的漫畫圖片調度引擎。 |
+| **13.4 自動捲動功能** | `ReadMangaActivity.kt`: L368 (scrollBy) | - | **Logic Gap** | iOS 目前完全缺失自動捲動 (Auto Scroll) 漫畫的功能。 |
+| **13.5 頁尾資訊條 (InfoBar)** | `ReadMangaActivity.kt`: L303 (upInfoBar) | - | **Logic Gap** | Android 支援顯示精確頁碼、電量、時間與百分比進度條；iOS 僅在選單展開時顯示章節進度。 |
+| **13.6 濾鏡與 E-Ink 適配** | `ReadMangaActivity.kt`: L202 (MangaColorFilterConfig) | `manga_reader_page.dart`: L103 (brightness) | **Logic Gap** | Android 支援複雜的色彩濾鏡、灰色模式及 E-Ink 優化；iOS 僅提供基礎的螢幕亮度覆蓋。 |
+| **13.7 進度雲端同步** | `ReadMangaActivity.kt`: L342 (syncProgress) | - | **Logic Gap** | iOS 目前尚未實作漫畫閱讀進度與 WebDav 或伺服器端的雙向同步。 |
+
 
