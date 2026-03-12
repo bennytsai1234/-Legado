@@ -16,6 +16,7 @@ import 'engine/chapter_provider.dart';
 import '../../core/database/dao/bookmark_dao.dart';
 import '../../core/models/bookmark.dart';
 import '../../core/services/content_processor.dart';
+import '../../core/services/webdav_service.dart';
 import '../../core/database/dao/http_tts_dao.dart';
 import '../../core/services/http_tts_service.dart';
 import '../../core/models/http_tts.dart';
@@ -138,6 +139,10 @@ class ReaderProvider extends ChangeNotifier {
     await _loadChapters();
     await _loadSource();
     await _loadHttpTtsEngines();
+    
+    // 深度還原：啟動時同步 WebDAV 進度
+    await WebDAVService().syncAllBookProgress();
+    
     await loadChapter(_currentChapterIndex);
   }
 
@@ -315,6 +320,9 @@ class ReaderProvider extends ChangeNotifier {
       final enabledRules = await _replaceDao.getEnabled();
       _content = ContentProcessor.processContent(book, _chapters[index], rawContent, chineseConvert: _chineseConvert, rules: enabledRules);
       await _bookDao.updateProgress(book.bookUrl, index, 0, _chapters[index].title);
+      
+      // 深度還原：加載章節後非同步上傳進度至 WebDAV
+      WebDAVService().uploadBookProgress(book);
     } catch (e) { _content = "加載失敗: $e"; }
     finally { if (_viewSize != null) {
       _doPaginate();
@@ -428,5 +436,14 @@ class ReaderProvider extends ChangeNotifier {
   }
 
   @override
-  void dispose() { tts.stop(); httpTts.stop(); _autoPageTimer?.cancel(); super.dispose(); }
+  void dispose() { 
+    tts.stop(); 
+    httpTts.stop(); 
+    _autoPageTimer?.cancel(); 
+    
+    // 深度還原：關閉閱讀器時上傳進度
+    WebDAVService().uploadBookProgress(book);
+    
+    super.dispose(); 
+  }
 }
