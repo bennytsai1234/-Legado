@@ -109,8 +109,9 @@
 - ✅ 預加載：支援詳情頁觸發後續章節下載。
 - ✅ 目錄搜尋：支援過濾關鍵字。
 
+- ✅ 線上檔案匯入：支援自動偵測並下載書源提供的 TXT/EPUB 檔案 (WebFile)，並自動解析章節與快取。
+
 **不足之處**：
-- [ ] **線上檔案匯入 (WebFile) 缺失**：Android 支持解析 WebFile（如 zip 下載），iOS 缺失此邏輯。
 - [ ] **WebDav 本地同步缺失**：缺乏與 WebDav 同步本地書籍文件的邏輯。
 
 ### 證據鏈明細
@@ -119,6 +120,7 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **3.1 目錄加載** | `BookInfoViewModel.kt`: L162 (`loadChapter`) | `book_detail_provider.dart`: L83 (`_loadChapters`) | **Matched** | 均支持在線與本地目錄加載。 |
 | **3.2 封面更換** | `BookInfoViewModel.kt`: L88 (`upCoverByRule`) | `change_cover_provider.dart` | **Matched** | 均支持自定義封面 URL。 |
+| **3.3 WebFile 匯入** | `WebBook.kt` | `book_source_service.dart`: L140 (`getBookInfo`), L227 (`_handleWebFile`) | **Matched** | 現已支援偵測 WebFile 標記並自動下載解析為本地書格式。 |
 
 ---
 

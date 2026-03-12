@@ -1,10 +1,16 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/book.dart';
 import '../models/chapter.dart';
 import '../models/search_book.dart';
 import '../models/book_source.dart';
 import '../engine/analyze_rule.dart';
 import '../engine/analyze_url.dart';
+import '../database/dao/chapter_dao.dart';
+import '../local_book/txt_parser.dart';
+import '../local_book/epub_parser.dart';
 import 'rate_limiter.dart';
 
 /// BookSourceService - 書源業務服務
@@ -134,13 +140,28 @@ class BookSourceService {
         book.latestChapterTitle = rule.getString(infoRule.lastChapter ?? "");
         book.tocUrl = rule.getString(infoRule.tocUrl ?? "", isUrl: true);
         if (book.tocUrl.isEmpty) book.tocUrl = book.bookUrl;
+        
+        // 深度還原：偵測 WebFile (對標 Android WebBook.getBookInfo)
+        if (book.kind?.contains("WebFile") ?? false || _isFilePath(book.tocUrl)) {
+          book.type |= BookType.file;
+        }
       }
       return book;
     });
   }
 
+  bool _isFilePath(String url) {
+    final lower = url.toLowerCase();
+    return lower.endsWith(".txt") || lower.endsWith(".zip") || lower.endsWith(".epub") || lower.endsWith(".umd");
+  }
+
   /// 獲取章節目錄 (支援翻頁)
   Future<List<BookChapter>> getChapterList(BookSource source, Book book, {CancelToken? cancelToken}) async {
+    // 深度還原：如果是 WebFile，則進行全檔案下載並交給本地解析器
+    if ((book.type & BookType.file) != 0) {
+      return await _handleWebFile(source, book, cancelToken: cancelToken);
+    }
+
     final chapters = <BookChapter>[];
     String? nextUrl = book.tocUrl.isEmpty ? book.bookUrl : book.tocUrl;
 
@@ -202,6 +223,50 @@ class BookSourceService {
 
       return (chapters: pageChapters, nextUrl: nextTocUrl);
     });
+  }
+
+  Future<List<BookChapter>> _handleWebFile(BookSource source, Book book, {CancelToken? cancelToken}) async {
+    final tempDir = await getTemporaryDirectory();
+    final fileName = "${book.name}_${book.author}".replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+    final ext = book.tocUrl.split('.').last.split('?').first.toLowerCase();
+    final filePath = "${tempDir.path}/$fileName.$ext";
+    
+    try {
+      await Dio().download(book.tocUrl, filePath, cancelToken: cancelToken);
+      final file = File(filePath);
+      final List<BookChapter> chapters = [];
+      final List<Map<String, dynamic>> contents = [];
+      
+      if (ext == 'txt') {
+        final parser = TxtParser(file);
+        await parser.load();
+        final chaptersData = await parser.splitChapters();
+        for (int i = 0; i < chaptersData.length; i++) {
+          final url = "${book.bookUrl}#$i";
+          chapters.add(BookChapter(url: url, title: chaptersData[i]['title'] ?? "第 ${i + 1} 章", bookUrl: book.bookUrl, index: i));
+          contents.add({'bookUrl': book.bookUrl, 'chapterIndex': i, 'content': chaptersData[i]['content'] ?? ""});
+        }
+      } else if (ext == 'epub') {
+        final parser = EpubParser(file);
+        await parser.load();
+        final epubChapters = parser.getChapters();
+        for (int i = 0; i < epubChapters.length; i++) {
+          final href = epubChapters[i]['href'] ?? "";
+          chapters.add(BookChapter(url: href, title: epubChapters[i]['title'] ?? "第 ${i + 1} 章", bookUrl: book.bookUrl, index: i));
+          // 注意：EPUB 的正文提取較慢，通常建議隨讀隨取，但為了對齊 WebFile 行為，這裡模擬全部快取
+          final content = parser.getChapterContent(href);
+          contents.add({'bookUrl': book.bookUrl, 'chapterIndex': i, 'content': content});
+        }
+      }
+      
+      if (contents.isNotEmpty) {
+        await ChapterDao().insertContents(contents);
+      }
+      return chapters;
+    } catch (e) {
+      debugPrint("Handle WebFile Failed: $e");
+    }
+    return [];
   }
 
   /// 獲取正文內容 (支援正文翻頁)
