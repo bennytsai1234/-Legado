@@ -1,7 +1,7 @@
+import 'book.dart';
+
 /// SearchBook - 搜尋結果模型
 /// 對應 Android: data/entities/SearchBook.kt
-library;
-
 class SearchBook {
   String bookUrl; // 書籍 URL
   String name; // 書名
@@ -17,6 +17,7 @@ class SearchBook {
   int type; // 書源類型
   int addTime; // 添加時間
   String? variable; // 暫存變數
+  String? tocUrl; // 目錄 URL
 
   SearchBook({
     required this.bookUrl,
@@ -33,6 +34,7 @@ class SearchBook {
     this.type = 0,
     this.addTime = 0,
     this.variable,
+    this.tocUrl,
   });
 
   factory SearchBook.fromJson(Map<String, dynamic> json) {
@@ -51,25 +53,43 @@ class SearchBook {
       type: json['type'] ?? 0,
       addTime: json['addTime'] ?? 0,
       variable: json['variable'],
+      tocUrl: json['tocUrl'],
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'bookUrl': bookUrl,
-    'name': name,
-    'author': author,
-    'kind': kind,
-    'coverUrl': coverUrl,
-    'intro': intro,
-    'wordCount': wordCount,
-    'latestChapterTitle': latestChapterTitle,
-    'origin': origin,
-    'originName': originName,
-    'originOrder': originOrder,
-    'type': type,
-    'addTime': addTime,
-    'variable': variable,
-  };
+  Map<String, dynamic> toJson() {
+    return {
+      'bookUrl': bookUrl,
+      'name': name,
+      'author': author,
+      'kind': kind,
+      'coverUrl': coverUrl,
+      'intro': intro,
+      'wordCount': wordCount,
+      'latestChapterTitle': latestChapterTitle,
+      'origin': origin,
+      'originName': originName,
+      'originOrder': originOrder,
+      'type': type,
+      'addTime': addTime,
+      'variable': variable,
+      'tocUrl': tocUrl,
+    };
+  }
+
+  Book toBook() {
+    return Book(
+      bookUrl: bookUrl,
+      tocUrl: tocUrl ?? '',
+      origin: origin,
+      originName: originName ?? '',
+      name: name,
+      author: author ?? '',
+      coverUrl: coverUrl,
+      intro: intro,
+      type: type,
+    );
+  }
 }
 
 class AggregatedSearchBook {

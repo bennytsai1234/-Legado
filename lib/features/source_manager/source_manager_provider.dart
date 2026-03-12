@@ -182,19 +182,38 @@ class SourceManagerProvider extends ChangeNotifier {
   }
 
   /// 從 URL 匯入
-  Future<int> importFromUrl(String urlText) async {
-    final urls = urlText.split(RegExp(r'[\n\r]+')).map((e) => e.trim()).where((e) => e.isNotEmpty);
+  Future<int> importFromJson(String jsonStr) async {
+    try {
+      final data = jsonDecode(jsonStr);
+      List<dynamic> list = data is List ? data : [data];
+      int count = 0;
+      for (var item in list) {
+        final source = BookSource.fromJson(item);
+        await _dao.insertOrUpdate(source);
+        count++;
+      }
+      await loadSources();
+      return count;
+    } catch (e) {
+      debugPrint('從 JSON 匯入書源失敗: $e');
+      return 0;
+    }
+  }
+
+  Future<int> importFromUrl(String url) async {
+    final urls = url.split(RegExp(r'[\n\r]+')).map((e) => e.trim()).where((e) => e.isNotEmpty);
     int totalCount = 0;
+    final dio = Dio();
     
-    for (final url in urls) {
+    for (final u in urls) {
       try {
-        final response = await Dio().get(url);
+        final response = await dio.get(u);
         if (response.data != null) {
-          String content = response.data is String ? response.data : jsonEncode(response.data);
-          totalCount += await importFromText(content);
+          final String jsonStr = response.data is String ? response.data : jsonEncode(response.data);
+          totalCount += await importFromJson(jsonStr);
         }
       } catch (e) {
-        debugPrint('從 URL 匯入失敗 ($url): $e');
+        debugPrint('從 URL 匯入書源失敗 ($u): $e');
       }
     }
     return totalCount;

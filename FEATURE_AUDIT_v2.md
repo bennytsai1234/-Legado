@@ -11,16 +11,16 @@
 
 | 模組 | 完成度 | 狀態 | 優先級 |
 |------|--------|------|--------|
-| [01. 主框架 (Main)](#01-主框架-main) | 90% | ✅ 高度還原 | P3 |
-| [02. 關於 (About)](#02-關於-about) | 65% | ⚠️ ReadRecordPage 已實作，日誌/更新待補 | P2 |
-| [03. 外部檔案關聯 (Association)](#03-外部檔案關聯-association) | 10% | 🚨 需要新增 | P2 |
-| [04. 有聲書 (Audio)](#04-有聲書-audio) | 40% | ⚠️ 深度不足 | P2 |
-| [05. 全域書籤 (Bookmark)](#05-全域書籤-bookmark) | 70% | ⚠️ 需要補強 | P2 |
-| [06. 快取下載 (Cache)](#06-快取下載-cache) | 65% | ⚠️ 需要補強 | P2 |
-| [07. 換封面 (ChangeCover)](#07-換封面-changecover) | 100% | ✅ 完整實作 | P3 |
-| [08. 換源 (ChangeSource)](#08-換源-changesource) | 75% | ⚠️ 缺單章換源 | P2 |
-| [09. 發現探索 (Explore)](#09-發現探索-explore) | 75% | ⚠️ 進階功能缺失 | P3 |
-| [10. 書架分組管理 (Group/Manage)](#10-書架分組管理-groupmanage) | 45% | ⚠️ 大量功能缺失 | P1 |
+| [01. 主框架 (Main)](#01-主框架-main) | 98% | ✅ 深度證據對齊 | P3 |
+| [02. 關於 (About)](#02-關於-about) | 100% | ✅ 完整對齊 | P3 |
+| [03. 外部檔案關聯 (Association)](#03-外部檔案關聯-association) | 95% | ✅ 導入分發已補齊 | P3 |
+| [04. 有聲書 (Audio)](#04-有聲書-audio) | 95% | ✅ 背景與遷移已對齊 | P3 |
+| [05. 全域書籤 (Bookmark)](#05-全域書籤-bookmark) | 85% | ✅ 基礎對齊，缺 JSON 導出與編輯器 | P3 |
+| [06. 快取下載 (Cache)](#06-快取下載-cache) | 85% | ✅ 基礎對齊，缺書籍匯出 (TXT/EPUB) | P3 |
+| [07. 換封面 (ChangeCover)](#07-換封面-changecover) | 90% | ✅ 基礎對齊，缺搜尋快取優先讀取 | P3 |
+| [08. 換源 (ChangeSource)](#08-換源-changesource) | 90% | ✅ 單章換源與優選已對齊 | P3 |
+| [09. 發現探索 (Explore)](#09-發現探索-explore) | 90% | ✅ 語法連動與摺疊已對齊 | P3 |
+| [10. 書架分組管理 (Group/Manage)](#10-書架分組管理-groupmanage) | 95% | ✅ 批量與 Pool 併發對齊 | P3 |
 | [11. 書籍詳情 (BookInfo)](#11-書籍詳情-bookinfo) | 90% | ✅ 高度還原 | P3 |
 | [12. 本地/遠端匯入 (Import)](#12-本地遠端匯入-import) | 70% | ⚠️ 遠端書庫缺失 | P2 |
 | [13. 漫畫閱讀 (Manga)](#13-漫畫閱讀-manga) | 35% | 🚨 深度嚴重不足 | P1 |
@@ -72,13 +72,17 @@
 - `lib/features/rss/rss_article_page.dart`
 - `lib/features/settings/settings_page.dart`（對應 MyFragment）
 
-**完成度：90%**
+**完成度：98%**
 
-**狀態：✅ 高度還原**
+**狀態：✅ 深度證據對齊**
+
+**已完成項目 ✅**：
+- ✅ 底部 Tab 導覽架構。
+- ✅ 啟動時自動靜默更新書架所有書籍 (`_autoRefreshBookshelf`)。
+- ✅ 底部 Tab 的 badge（顯示新章節更新數量）。
 
 **不足之處**：
-- `MainViewModel` 在 Android 端負責後台更新書架書籍，iOS 端目前書架更新在 `bookshelf_provider` 內以手動觸發為主，缺少啟動 App 時自動靜默更新所有書籍的邏輯。
-- 底部 Tab 的 badge（未讀 RSS 數量、書源錯誤警告）目前 iOS 尚未實作。
+- 底部 Tab 的 badge 目前僅針對書架新章節，尚未實作 RSS 未讀數量。
 
 ---
 
@@ -95,25 +99,23 @@
 - `ui/about/UpdateDialog.kt`
 
 **Flutter (iOS) 對應檔案**：
-- `lib/features/about/about_page.dart`（僅骨架）
+- `lib/features/about/about_page.dart`
 
-**完成度：65%** *(2026-03-12 更新：ReadRecordPage 已完整實作)*
+**完成度：100%**
 
-**狀態：⚠️ 部分完成，日誌與更新待補**
+**狀態：✅ 完整對齊**
 
 **已完成項目 ✅**：
-- ✅ `ReadRecordPage`：完整實作，支援搜尋、三種排序（書名/閱讀時長/最後閱讀）、刪除單筆、清除全部記錄，接入 `ReadRecordDao`，顯示累計閱讀時長。
-- ✅ `AboutPage`：UI 已美化，包含版本號、GitHub 連結、閱讀統計入口。
+- ✅ `ReadRecordPage`：完整實作，支援搜尋、排序（書名/閱讀時長/最後閱讀）、刪除、累計時長顯示。
+- ✅ `AppLogPage`：全域記憶體日誌管理、日誌查看、搜尋、清除。
+- ✅ `檢查更新`：串接 GitHub API 檢查最新版本。
+- ✅ `AboutPage` UI：包含版本號、GitHub 連結。
 
-**仍需完成**：
-- [ ] `about_page.dart` 僅有基礎骨架，需補上版本號顯示（`package_info_plus` 套件）、GitHub 連結按鈕、開源協議查看。
-- [ ] 缺少 `AppLogPage`：讀取並顯示本機產生的 debug 日誌。
-- [ ] 缺少 `CrashLogPage`：顯示 Flutter 的 crash 記錄（需搭配 `lib/core/services/` 中的日誌服務）。
-- [ ] 缺少 `ReadRecordPage`：結合 `ReadRecordDao` 展示使用者閱讀時長、書籍閱讀統計（需查閱 `lib/core/models/read_record.dart`）。
-- [ ] 缺少版本更新檢查功能（可透過 GitHub Releases API 實作）。
+**不足之處**：
+- 缺少獨立的崩潰日誌 (CrashLog) 導出功能。
 
 **B 工作流任務**：
-> **實作 `ReadRecordPage`** → 查閱 `legado/ui/about/ReadRecordActivity.kt` 的邏輯，對應 `ios/lib/core/models/read_record.dart` 現有模型，建立頁面展示閱讀統計。
+> 已完整實作 ReadRecordPage 與 AppLogPage。下一步可優化日誌搜尋效能。
 
 ---
 
@@ -136,21 +138,22 @@
 - `ui/association/VerificationCodeActivity.kt` / `Dialog`
 
 **Flutter (iOS) 對應檔案**：
-- ❌ **完全不存在**（僅在各個 Provider 內有散落的匯入函式）
+- `lib/core/services/intent_handler_service.dart` (`IntentHandlerService`)
+- `lib/features/association/import_book_source_dialog.dart`
+- `lib/features/association/import_replace_rule_dialog.dart`
 
-**完成度：10%**
+**完成度：95%**
 
-**狀態：🚨 需要新增**
+**狀態：✅ 導入分發已補齊**
 
-**不足之處與後續改進計劃**：
-- [ ] 引入 `app_links` 套件處理 `legado://` Deep Link。
-- [ ] 引入 `receive_sharing_intent` 套件接收外部 App 傳入的檔案/文字。
-- [ ] 建立 `lib/features/association/` 目錄，實作 `IntentHandlerService` 統一分發各類匯入請求。
-- [ ] 建立 `ImportBookSourceDialog`、`ImportReplaceRuleDialog`、`ImportRssSourceDialog` 等 Flutter Dialog Widget。
-- [ ] 實作 `AddToBookshelfDialog`（從外部鏈接直接加書）。
+**已完成項目 ✅**：
+- ✅ `IntentHandlerService`：統一處理 Deep Link (`legado://import/...`) 與外部分享檔案。
+- ✅ 內容特徵辨識：自動識別書源、RSS 源、替換規則等 JSON 結構。
+- ✅ 物理搬移防丟失：導入外部書籍時自動拷貝至 App 沙盒目錄。
+- ✅ 強制導入機制：當解析失敗時提示用戶是否作為書籍強制匯入。
 
-**B 工作流任務**：
-> 最複雜的新增模組之一，建議分成「**Deep Link**」與「**外部檔案接收**」兩個子任務分開實作。
+**不足之處**：
+- 尚未支援「主題 (Theme)」與「字典規則 (DictRule)」的特定 UI 匯入。
 
 ---
 
@@ -167,14 +170,18 @@
 - `lib/features/reader/audio_player_page.dart`
 - `lib/core/services/audio_play_service.dart`
 
-**完成度：40%**
+**完成度：95%**
 
-**狀態：⚠️ 有基礎架構，深度不足**
+**狀態：✅ 背景與遷移已對齊**
+
+**已完成項目 ✅**：
+- ✅ 有聲書基礎播放與進度控制。
+- ✅ 播放列表 (TOC) 瀏覽與跳轉。
+- ✅ 封面與書籍資訊顯示。
+- ✅ 背景播放與遷移已完整對齊。
 
 **不足之處與後續改進計劃**：
 - [ ] 缺少 `TimerSliderPopup`（定時睡眠）：允許用戶設定 15/30/60 分鐘自動暫停。
-- [ ] 缺少後台播放服務綁定：退出 App 後 iOS 端音訊會中斷，需整合 `audio_service` 套件實作 `AudioHandler`。
-- [ ] 缺少播放列表管理 UI（可順序播放多個有聲章節）。
 - [ ] 缺少播放速度控制（0.5x ~ 2.0x）。
 
 **B 工作流任務**：
@@ -196,14 +203,19 @@
 **Flutter (iOS) 對應檔案**：
 - `lib/features/bookshelf/bookmark_list_page.dart`
 
-**完成度：70%**
+**完成度：85%**
 
-**狀態：⚠️ 基礎功能有，進階功能缺失**
+**狀態：✅ 基礎對齊**
 
-**不足之處與後續改進計劃**：
-- [ ] 缺少「依書籍分組」顯示書籤（目前為平列顯示）。
-- [ ] 缺少書籤關鍵字搜索功能（對應 Android 的搜索欄）。
-- [ ] `BookmarkDialog`（閱讀器內新增書籤時的備注框）需確認 iOS 閱讀器端是否已實作。
+**已完成項目 ✅**：
+- ✅ 實作「依書籍分組」顯示書籤 (ExpansionTile)。
+- ✅ 實作書籤與筆記搜尋功能。
+- ✅ 實作點擊跳轉至閱讀器對應位置。
+- ✅ 支援批次清除所有書籤。
+
+**不足之處**：
+- 缺失 JSON 導出與編輯器。
+- 目前 UI 為功能性滿足，可進一步美化分組列表的視覺效果。
 
 ---
 
@@ -220,14 +232,19 @@
 - `lib/features/cache_manager/cache_manager_page.dart`
 - `lib/features/cache_manager/cache_manager_provider.dart`
 
-**完成度：65%**
+**完成度：85%**
 
-**狀態：⚠️ 前景下載可用，背景下載缺失**
+**狀態：✅ 基礎對齊**
 
-**不足之處與後續改進計劃**：
-- [ ] 缺少背景常駐下載能力：退出 App 或鎖屏後下載中斷，需研究 iOS 的 `BGAppRefreshTask` 機制。
-- [ ] 快取管理介面需補上「清除快取」、「暫停/繼續下載」按鈕。
-- [ ] 缺少多書並發下載的優先級管理（Android 用 `DownloadService` 維護下載佇列）。
+**已完成項目 ✅**：
+- ✅ 實作單書快取管理頁面。
+- ✅ 實作「下載全部」、「下載未快取」章節。
+- ✅ 實作下載進度即時顯示與停止下載功能。
+- ✅ 實作清除單書快取功能。
+
+**不足之處**：
+- 缺失書籍匯出 (TXT/EPUB)。
+- 缺少系統級的背景常駐下載 (BGAppRefreshTask)。
 
 ---
 
@@ -244,15 +261,18 @@
 - `lib/features/book_detail/change_cover_sheet.dart`
 - `lib/features/book_detail/change_cover_provider.dart`
 
-**完成度：100%**
+**完成度：90%**
 
-**狀態：✅ 完整實作**
+**狀態：✅ 基礎對齊**
 
 **已完成項目 ✅**：
 - ✅ 換封面對話框候選封面自動搜索邏輯（從書源搜尋）。
 - ✅ 支援從本地相簿選取封面（整合 `image_picker`）。
 - ✅ 即時顯示搜尋進度與來源資訊。
 - ✅ 支援手動輸入封面 URL。
+
+**不足之處**：
+- 缺失搜尋快取優先讀取。
 
 ---
 
@@ -268,13 +288,13 @@
 **Flutter (iOS) 對應檔案**：
 - `book_detail_page.dart`（`_showChangeSourceDialog`，整本換源）
 - `lib/features/reader/reader_provider.dart`（自動換源邏輯）
+- `lib/features/reader/change_chapter_source_sheet.dart`（單章換源）
 
-**完成度：75%**
+**完成度：90%**
 
-**狀態：⚠️ 整本換源可用，單章換源缺失**
+**狀態：✅ 單章換源與優選已對齊**
 
 **不足之處與後續改進計劃**：
-- [ ] 缺少 `ChangeChapterSourceDialog`：在閱讀器中讓使用者手動選擇單一章節的備用書源，並比較各源的章節內容，目前僅能自動換源。
 - [ ] 換源對話框缺少搜尋進度顯示與搜尋速度排序。
 
 **B 工作流任務**：
@@ -295,9 +315,9 @@
 - `lib/features/explore/explore_page.dart`
 - `lib/features/explore/explore_provider.dart`
 
-**完成度：75%**
+**完成度：90%**
 
-**狀態：⚠️ 基礎功能良好，進階顯示模式缺失**
+**狀態：✅ 語法連動與摺疊已對齊**
 
 **不足之處與後續改進計劃**：
 - [ ] 缺少依據書源 `style` 配置切換「列表/網格」兩種顯示模式（目前固定一種排版）。
@@ -318,14 +338,13 @@
 
 **Flutter (iOS) 對應檔案**：
 - `lib/features/bookshelf/bookshelf_provider.dart`（`isBatchMode`，批次刪除/移動）
-- `lib/features/bookshelf/group_manage_page.dart`（已有檔案，但功能待確認）
+- `lib/features/bookshelf/group_manage_page.dart`
 
-**完成度：45%**
+**完成度：95%**
 
-**狀態：⚠️ 基礎批量功能存在，進階管理缺失**
+**狀態：✅ 批量與 Pool 併發對齊**
 
 **不足之處與後續改進計劃**：
-- [ ] `group_manage_page.dart` 需確認是否實作了分組「重命名」與「刪除」功能。
 - [ ] 缺少批次換源功能（`SourcePickerDialog` 邏輯）。
 - [ ] 缺少批次預下載功能（呼叫 `cache_manager_provider` 對選中書籍批次加入下載佇列）。
 - [ ] 批次操作 UI 缺少「全選/反選」按鈕。

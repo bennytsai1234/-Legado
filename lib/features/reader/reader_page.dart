@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'reader_provider.dart';
+import 'change_chapter_source_sheet.dart';
 import 'engine/page_view_widget.dart';
 import '../../core/models/book.dart';
 import '../../core/models/chapter.dart';
@@ -313,6 +314,24 @@ class _ReaderPageState extends State<ReaderPage> {
       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text("反轉內容", style: TextStyle(color: Colors.white)), Switch(value: provider.reverseContent, onChanged: (v) { provider.toggleReverseContent(); setState(() {}); })]),
       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text("刪除重複標題", style: TextStyle(color: Colors.white)), Switch(value: provider.removeSameTitle, onChanged: (v) { provider.toggleRemoveSameTitle(); setState(() {}); })]),
       const Divider(color: Colors.white24),
+      ListTile(
+        title: const Text("單章換源", style: TextStyle(color: Colors.white)),
+        subtitle: const Text("為當前章節搜尋其他來源", style: TextStyle(color: Colors.white54, fontSize: 12)),
+        trailing: const Icon(Icons.swap_horiz, color: Colors.white54),
+        onTap: () {
+          Navigator.pop(context);
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (ctx) => ChangeChapterSourceSheet(
+              book: provider.book,
+              chapterIndex: provider.currentChapterIndex,
+              chapterTitle: provider.currentChapter?.title ?? "未知章節",
+            ),
+          );
+        },
+      ),
       ListTile(
         title: const Text("點擊區域自定義", style: TextStyle(color: Colors.white)),
         trailing: const Icon(Icons.chevron_right, color: Colors.white54),

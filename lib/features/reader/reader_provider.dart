@@ -74,6 +74,20 @@ class ReaderProvider extends ChangeNotifier {
   bool _reverseContent = false;
   bool _removeSameTitle = false;
 
+  /// 為特定章節設定臨時覆蓋書源
+  Future<void> replaceChapterSource(int index, BookSource source, String content) async {
+    _chapterSourceOverrides[index] = source;
+    _content = content;
+    // 更新資料庫快取 (可選，這裡比照 Legado 僅臨時替換)
+    await _chapterDao.saveContent(book.bookUrl, index, content);
+    _doPaginate();
+  }
+
+  /// 獲取指定書源的特定章節內容
+  Future<String> fetchChapterContent(BookSource source, Book book, BookChapter chapter) async {
+    return await _service.getContent(source, book, chapter);
+  }
+
   // 九宮格點擊動作 (高度還原 Android)
   // 0:TL, 1:TC, 2:TR, 3:ML, 4:MC, 5:MR, 6:BL, 7:BC, 8:BR
   // 動作 ID: 0:選單, 1:下一頁, 2:上一頁, 3:下一章, 4:上一章

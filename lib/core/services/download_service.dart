@@ -24,6 +24,9 @@ class DownloadService extends ChangeNotifier {
 
   final List<DownloadTask> _tasks = [];
   bool _isDownloading = false;
+  bool _isPaused = false;
+  Completer<void>? _pauseCompleter;
+  bool _isScheduling = false;
   final int _maxConcurrent = 3; // 最大併發書籍數
   final int _maxChapterConcurrent = 5; // 每本書最大併發章節數
 
@@ -33,6 +36,25 @@ class DownloadService extends ChangeNotifier {
 
   List<DownloadTask> get tasks => _tasks;
   bool get isDownloading => _isDownloading;
+  bool get isPaused => _isPaused;
+
+  void togglePause() {
+    _isPaused = !_isPaused;
+    if (!_isPaused) {
+      _pauseCompleter?.complete();
+      _pauseCompleter = null;
+    } else {
+      _pauseCompleter = Completer<void>();
+    }
+    notifyListeners();
+  }
+
+  Future<void> _checkPause() async {
+    if (_isPaused) {
+      _pauseCompleter ??= Completer<void>();
+      await _pauseCompleter!.future;
+    }
+  }
 
   /// 獲取總體下載進度 (0.0 - 1.0)
   double get progress {
@@ -101,25 +123,31 @@ class DownloadService extends ChangeNotifier {
 
   /// 開始下載隊列
   Future<void> startDownloads() async {
-    if (_isDownloading) return;
-    _isDownloading = true;
-    notifyListeners();
+    if (_isScheduling || _isDownloading) return;
+    _isScheduling = true;
 
-    while (_tasks.any((t) => t.status == 0 || t.status == 1)) {
-      final activeTasks = _tasks.where((t) => t.status == 1).toList();
-      if (activeTasks.length < _maxConcurrent) {
-        final nextTask = _tasks.cast<DownloadTask?>().firstWhere((t) => t?.status == 0, orElse: () => null);
-        if (nextTask != null) {
-          _processTask(nextTask);
-        } else if (activeTasks.isEmpty) {
-          break;
+    try {
+      _isDownloading = true;
+      notifyListeners();
+
+      while (_tasks.any((t) => t.status == 0 || t.status == 1)) {
+        final activeTasks = _tasks.where((t) => t.status == 1).toList();
+        if (activeTasks.length < _maxConcurrent) {
+          final nextTask = _tasks.cast<DownloadTask?>().firstWhere((t) => t?.status == 0, orElse: () => null);
+          if (nextTask != null) {
+            _processTask(nextTask);
+          } else if (activeTasks.isEmpty) {
+            break;
+          }
         }
+        await Future.delayed(const Duration(seconds: 1));
       }
-      await Future.delayed(const Duration(seconds: 1));
-    }
 
-    _isDownloading = false;
-    notifyListeners();
+      _isDownloading = false;
+      notifyListeners();
+    } finally {
+      _isScheduling = false;
+    }
   }
 
   /// 處理單個書籍任務
@@ -135,12 +163,28 @@ class DownloadService extends ChangeNotifier {
       final source = await _sourceDao.getByUrl(book.origin);
       if (source == null) throw Exception("書源不存在");
       
-      final chapters = await _chapterDao.getChapters(task.bookUrl);
+      var chapters = await _chapterDao.getChapters(task.bookUrl);
+      
+      // 深度補齊：下載前目錄自動補全 (對應 Android chapterCount == 0)
+      if (chapters.isEmpty) {
+        chapters = await _sourceService.getChapterList(source, book);
+        await _chapterDao.insertChapters(chapters);
+        // 更新任務對象 (因為屬性是 final)
+        final newTask = task.copyWith(
+          totalCount: chapters.length,
+          endChapterIndex: chapters.isNotEmpty ? chapters.last.index : 0,
+        );
+        int idx = _tasks.indexOf(task);
+        if (idx != -1) _tasks[idx] = newTask;
+        task = newTask;
+      }
+
       final toDownload = chapters.where((c) => c.index >= task.startChapterIndex && c.index <= task.endChapterIndex).toList();
 
       int poolCount = 0;
       for (var chapter in toDownload) {
         if (!_isDownloading || task.status == 2) break; // Check for pause/cancel
+        await _checkPause(); // 深度補齊：每下載一個章節前檢查是否全域暫停 (對應 Android checkPause)
         
         // 檢查是否已快取
         if (await _chapterDao.hasContent(task.bookUrl, chapter.index)) {

@@ -29,6 +29,7 @@ dependencies:
   # === Media / Audio ===
   just_audio: ^0.9.44
   audio_session: ^0.1.21
+  audio_service: ^0.18.17
 
   # === HTML Parsing (replaces Android Jsoup) ===
   html: ^0.15.5
@@ -56,6 +57,14 @@ dependencies:
 
   # === Image Picker ===
   image_picker: ^1.1.2
+
+  # === Deep Link & Sharing ===
+  app_links: ^6.3.2
+  receive_sharing_intent: ^1.1.1
+
+  # === Background Tasks ===
+  workmanager: ^0.5.2
+  pool: ^1.5.2
 
   # === Local File Support ===
   file_picker: ^10.3.10

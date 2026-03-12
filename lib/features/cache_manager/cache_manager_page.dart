@@ -49,16 +49,27 @@ class CacheManagerPage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('正在下載中...', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(provider.downloadService.isPaused ? '下載已暫停' : '正在下載中...', style: const TextStyle(fontWeight: FontWeight.bold)),
               Text('${(provider.downloadService.progress * 100).toStringAsFixed(1)}%'),
             ],
           ),
           const SizedBox(height: 8),
           LinearProgressIndicator(value: provider.downloadService.progress),
-          const SizedBox(height: 8),
-          ElevatedButton(
-            onPressed: provider.downloadService.cancelDownloads,
-            child: const Text('停止下載'),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton.icon(
+                icon: Icon(provider.downloadService.isPaused ? Icons.play_arrow : Icons.pause),
+                onPressed: provider.downloadService.togglePause,
+                label: Text(provider.downloadService.isPaused ? '恢復下載' : '暫停下載'),
+              ),
+              const SizedBox(width: 12),
+              OutlinedButton(
+                onPressed: provider.downloadService.cancelDownloads,
+                child: const Text('停止下載'),
+              ),
+            ],
           ),
         ],
       ),

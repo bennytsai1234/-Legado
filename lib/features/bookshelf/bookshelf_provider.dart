@@ -251,6 +251,11 @@ class BookshelfProvider extends BaseProvider {
   }
 
   Future<void> createGroup(String name) async {
+    // 深度補齊：64 個分組上限檢核 (對應 Android canAddGroup)
+    if (_groups.where((g) => g.groupId > 0).length >= 64) {
+      debugPrint("分組已達上限 (64個)");
+      return;
+    }
     final groupId = await _groupDao.getUnusedId();
     final group = BookGroup(groupId: groupId, groupName: name, order: _groups.length);
     await _groupDao.insert(group);

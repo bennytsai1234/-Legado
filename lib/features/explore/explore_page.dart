@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'explore_provider.dart';
-import '../book_detail/book_detail_page.dart';
 import '../../core/models/book_source.dart';
 import '../../core/models/search_book.dart';
+import 'explore_provider.dart';
+import '../book_detail/book_detail_page.dart';
+import '../search/search_page.dart';
 
 class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});
@@ -24,6 +25,10 @@ class _ExplorePageState extends State<ExplorePage> {
             appBar: AppBar(
               title: const Text('發現'),
               actions: [
+                IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: () => _showSearchDialog(context, provider),
+                ),
                 _buildSourcePicker(context, provider),
               ],
             ),
@@ -44,19 +49,122 @@ class _ExplorePageState extends State<ExplorePage> {
     );
   }
 
+  void _showSearchDialog(BuildContext context, ExploreProvider provider) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('發現搜尋'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            hintText: '輸入關鍵字或 group:分組名',
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
+          onSubmitted: (val) {
+            Navigator.pop(ctx);
+            _handleSearch(context, provider, val);
+          },
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _handleSearch(context, provider, controller.text);
+            },
+            child: const Text('搜尋'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleSearch(BuildContext context, ExploreProvider provider, String query) {
+    if (query.startsWith('group:')) {
+      final group = query.substring(6).trim();
+      provider.setGroup(group);
+    } else if (query.isNotEmpty) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => SearchPage(initialKeyword: query)));
+    }
+  }
+
   Widget _buildSourcePicker(BuildContext context, ExploreProvider provider) {
-    return PopupMenuButton<BookSource>(
-      icon: const Icon(Icons.filter_list),
-      tooltip: '選擇書源',
-      onSelected: provider.setSource,
-      itemBuilder: (context) {
-        return provider.sources.map((source) {
-          return PopupMenuItem(
-            value: source,
-            child: Text(source.bookSourceName),
-          );
-        }).toList();
-      },
+    return Row(
+      children: [
+        // 分組過濾 (對應 Android upGroupsMenu)
+        PopupMenuButton<String>(
+          icon: const Icon(Icons.filter_list),
+          tooltip: '過濾分組',
+          onSelected: provider.setGroup,
+          itemBuilder: (context) => [
+            const PopupMenuItem(value: '全部', child: Text('全部')),
+            ...provider.groups.map((g) => PopupMenuItem(value: g, child: Text(g))),
+          ],
+        ),
+        // 書源選擇
+        Expanded(
+          child: PopupMenuButton<BookSource>(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+              child: Row(
+                children: [
+                  Expanded(child: Text(provider.selectedSource?.bookSourceName ?? '選擇書源', overflow: TextOverflow.ellipsis)),
+                  const Icon(Icons.arrow_drop_down),
+                ],
+              ),
+            ),
+            onSelected: provider.setSource,
+            itemBuilder: (context) => provider.sources.map((s) => PopupMenuItem(
+              value: s,
+              child: InkWell(
+                onLongPress: () {
+                  Navigator.pop(context); // 關閉選單
+                  _showSourceManageDialog(context, s, provider);
+                },
+                child: Text(s.bookSourceName),
+              ),
+            )).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showSourceManageDialog(BuildContext context, BookSource source, ExploreProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.vertical_align_top),
+            title: const Text('置頂書源'),
+            onTap: () {
+              Navigator.pop(ctx);
+              // TODO: 實作置頂邏輯 (更新 customOrder)
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.edit_outlined),
+            title: const Text('編輯書源'),
+            onTap: () {
+              Navigator.pop(ctx);
+              // TODO: 跳轉至書源編輯頁
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.search),
+            title: const Text('站內搜尋'),
+            onTap: () {
+              Navigator.pop(ctx);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => SearchPage(initialSource: source)));
+            },
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
     );
   }
 
@@ -89,55 +197,95 @@ class _ExplorePageState extends State<ExplorePage> {
     if (provider.books.isEmpty) {
       return const Center(child: Text('請選擇書源開始探索'));
     }
+
+    // 判斷是否為網格模式 (style: 1 為網格, layout: 1 也是網格)
+    final isGrid = provider.selectedConfig?['style'] == 1 || 
+                   provider.selectedConfig?['style'] == "1" ||
+                   provider.selectedConfig?['layout'] == 1;
+
     return RefreshIndicator(
       onRefresh: provider.refresh,
-      child: ListView.builder(
-        itemCount: provider.books.length + (provider.hasMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == provider.books.length) {
-            provider.loadMore();
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(8.0),
-                child: CircularProgressIndicator(),
-              ),
-            );
-          }
+      child: isGrid ? _buildExploreGrid(provider) : _buildExploreList(provider),
+    );
+  }
 
-          final book = provider.books[index];
-          return ListTile(
-            leading: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: book.coverUrl != null && book.coverUrl!.isNotEmpty
-                  ? CachedNetworkImage(
-                      imageUrl: book.coverUrl!,
-                      width: 45,
-                      height: 60,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                      errorWidget: (context, url, error) => const Icon(Icons.book),
-                    )
-                  : const Icon(Icons.book, size: 45),
-            ),
-            title: Text(book.name),
-            subtitle: Text('${book.author ?? '未知'} · ${book.kind ?? ''}'),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => BookDetailPage(
-                    searchBook: AggregatedSearchBook(
-                      book: book,
-                      sources: [book.originName ?? '發現'],
-                    ),
-                  ),
-                ),
-              );
-            },
-          );
-        },
+  Widget _buildExploreList(ExploreProvider provider) {
+    return ListView.builder(
+      itemCount: provider.books.length + (provider.hasMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == provider.books.length) {
+          provider.loadMore();
+          return const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()));
+        }
+        final book = provider.books[index];
+        return ListTile(
+          leading: _buildCover(book, width: 45, height: 60),
+          title: Text(book.name),
+          subtitle: Text('${book.author ?? '未知'} · ${book.kind ?? ''}'),
+          onTap: () => _openBookDetail(context, book),
+        );
+      },
+    );
+  }
+
+  Widget _buildExploreGrid(ExploreProvider provider) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(8),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 0.6,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+      ),
+      itemCount: provider.books.length + (provider.hasMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == provider.books.length) {
+          provider.loadMore();
+          return const Center(child: CircularProgressIndicator());
+        }
+        final book = provider.books[index];
+        return GestureDetector(
+          onTap: () => _openBookDetail(context, book),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _buildCover(book)),
+              const SizedBox(height: 4),
+              Text(book.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              Text(book.author ?? '未知', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCover(SearchBook book, {double? width, double? height}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: book.coverUrl != null && book.coverUrl!.isNotEmpty
+          ? CachedNetworkImage(
+              imageUrl: book.coverUrl!,
+              width: width,
+              height: height,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Container(color: Colors.grey[200], child: const Center(child: CircularProgressIndicator(strokeWidth: 2))),
+              errorWidget: (context, url, error) => Container(color: Colors.grey[200], child: const Icon(Icons.book)),
+            )
+          : Container(color: Colors.grey[200], child: const Icon(Icons.book)),
+    );
+  }
+
+  void _openBookDetail(BuildContext context, SearchBook book) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BookDetailPage(
+          searchBook: AggregatedSearchBook(
+            book: book,
+            sources: [book.originName ?? '發現'],
+          ),
+        ),
       ),
     );
   }

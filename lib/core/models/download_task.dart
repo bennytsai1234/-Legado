@@ -55,4 +55,30 @@ class DownloadTask {
       'lastUpdateTime': lastUpdateTime,
     };
   }
+
+  DownloadTask copyWith({
+    String? bookUrl,
+    String? bookName,
+    int? startChapterIndex,
+    int? endChapterIndex,
+    int? currentChapterIndex,
+    int? status,
+    int? totalCount,
+    int? successCount,
+    int? errorCount,
+    int? lastUpdateTime,
+  }) {
+    return DownloadTask(
+      bookUrl: bookUrl ?? this.bookUrl,
+      bookName: bookName ?? this.bookName,
+      startChapterIndex: startChapterIndex ?? this.startChapterIndex,
+      endChapterIndex: endChapterIndex ?? this.endChapterIndex,
+      currentChapterIndex: currentChapterIndex ?? this.currentChapterIndex,
+      status: status ?? this.status,
+      totalCount: totalCount ?? this.totalCount,
+      successCount: successCount ?? this.successCount,
+      errorCount: errorCount ?? this.errorCount,
+      lastUpdateTime: lastUpdateTime ?? this.lastUpdateTime,
+    );
+  }
 }

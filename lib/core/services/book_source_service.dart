@@ -49,6 +49,7 @@ class BookSourceService {
             .where((book) => filter(book.name, book.author ?? ""))
             .toList();
       }
+
       return list;
     });
   }

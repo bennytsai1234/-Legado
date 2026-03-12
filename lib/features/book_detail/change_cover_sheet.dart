@@ -96,20 +96,27 @@ class _ChangeCoverSheetState extends State<ChangeCoverSheet> {
   }
 
   Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          '更換封面',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        IconButton(
-          icon: const Icon(Icons.refresh),
-          onPressed: () {
-            context.read<ChangeCoverProvider>().search(widget.bookName, widget.author);
-          },
-        ),
-      ],
+    return Consumer<ChangeCoverProvider>(
+      builder: (context, provider, child) => Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            '更換封面',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          IconButton(
+            icon: Icon(provider.isSearching ? Icons.stop_circle_outlined : Icons.refresh),
+            color: provider.isSearching ? Colors.red : null,
+            onPressed: () {
+              if (provider.isSearching) {
+                provider.stopSearch();
+              } else {
+                provider.search(widget.bookName, widget.author);
+              }
+            },
+          ),
+        ],
+      ),
     );
   }
 

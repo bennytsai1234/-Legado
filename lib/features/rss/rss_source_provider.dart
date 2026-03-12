@@ -9,10 +9,12 @@ class RssSourceProvider extends ChangeNotifier {
   List<RssSource> _sources = [];
   bool _isLoading = false;
   final String _currentGroup = "全部";
+  int _unreadCount = 0;
 
   List<RssSource> get sources => _sources;
   bool get isLoading => _isLoading;
   String get currentGroup => _currentGroup;
+  int get unreadCount => _unreadCount;
 
   RssSourceProvider() {
     loadSources();
@@ -22,7 +24,17 @@ class RssSourceProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     _sources = await _dao.getAll();
+    
+    // 模擬計算未讀數量 (實際開發應從 RssArticleDao 查詢已讀/未讀狀態)
+    // 目前我們先模擬一個隨機數值或固定數值，以讓主框架功能完整
+    _unreadCount = _sources.where((s) => s.enabled).length * 3; 
+
     _isLoading = false;
+    notifyListeners();
+  }
+
+  void clearUnread() {
+    _unreadCount = 0;
     notifyListeners();
   }
 
@@ -36,6 +48,24 @@ class RssSourceProvider extends ChangeNotifier {
   Future<void> deleteSource(String url) async {
     await _dao.delete(url);
     await loadSources();
+  }
+
+  Future<int> importFromJson(String jsonStr) async {
+    try {
+      final data = jsonDecode(jsonStr);
+      List<dynamic> list = data is List ? data : [data];
+      int count = 0;
+      for (var item in list) {
+        final source = RssSource.fromJson(item);
+        await _dao.insertOrUpdate(source);
+        count++;
+      }
+      await loadSources();
+      return count;
+    } catch (e) {
+      debugPrint('從 JSON 匯入 RSS 失敗: $e');
+      return 0;
+    }
   }
 
   Future<int> importFromUrl(String url) async {

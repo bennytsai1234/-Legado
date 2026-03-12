@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/database/dao/bookmark_dao.dart';
 import '../../core/database/dao/book_dao.dart';
 import '../../core/models/bookmark.dart';
 import '../reader/reader_page.dart';
 import 'package:intl/intl.dart';
+import '../../core/engine/app_event_bus.dart';
 
 /// BookmarkListPage - 全域書籤管理
 /// 對應 Android: ui/book/bookmark/AllBookmarkActivity.kt
@@ -18,6 +21,7 @@ class _BookmarkListPageState extends State<BookmarkListPage> {
   final BookmarkDao _bookmarkDao = BookmarkDao();
   final BookDao _bookDao = BookDao();
   final TextEditingController _searchController = TextEditingController();
+  StreamSubscription? _eventSub;
 
   List<Bookmark> _allBookmarks = [];
   Map<String, List<Bookmark>> _groupedBookmarks = {};
@@ -28,11 +32,15 @@ class _BookmarkListPageState extends State<BookmarkListPage> {
   void initState() {
     super.initState();
     _loadBookmarks();
+    _eventSub = AppEventBus().onName("up_bookmark").listen((_) {
+      _loadBookmarks(_searchController.text);
+    });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _eventSub?.cancel();
     super.dispose();
   }
 
@@ -61,6 +69,29 @@ class _BookmarkListPageState extends State<BookmarkListPage> {
     }
   }
 
+  Future<void> _exportBookmarks() async {
+    if (_allBookmarks.isEmpty) return;
+    
+    final buffer = StringBuffer();
+    buffer.writeln('# Legado Reader 書籤匯出');
+    buffer.writeln('導出日期: ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}');
+    buffer.writeln();
+
+    for (final bookName in _groupedBookmarks.keys) {
+      buffer.writeln('## 《$bookName》');
+      for (final bm in _groupedBookmarks[bookName]!) {
+        final time = DateFormat('yyyy-MM-dd HH:mm').format(DateTime.fromMillisecondsSinceEpoch(bm.time));
+        buffer.writeln('### ${bm.chapterName} ($time)');
+        if (bm.bookText.isNotEmpty) buffer.writeln('> ${bm.bookText}');
+        if (bm.content.isNotEmpty) buffer.writeln('\n**筆記**: ${bm.content}');
+        buffer.writeln('\n---');
+      }
+      buffer.writeln();
+    }
+
+    await Share.share(buffer.toString(), subject: 'Legado 書籤匯出');
+  }
+
   Future<void> _deleteBookmark(Bookmark bookmark) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -78,7 +109,7 @@ class _BookmarkListPageState extends State<BookmarkListPage> {
     );
     if (confirmed == true) {
       await _bookmarkDao.delete(bookmark);
-      await _loadBookmarks(_searchController.text);
+      // 自動刷新會由 EventBus 觸發，這裡不需要手動加載
     }
   }
 
@@ -99,7 +130,6 @@ class _BookmarkListPageState extends State<BookmarkListPage> {
     );
     if (confirmed == true) {
       await _bookmarkDao.clearAll();
-      await _loadBookmarks();
     }
   }
 
@@ -134,6 +164,11 @@ class _BookmarkListPageState extends State<BookmarkListPage> {
             icon: Icon(_groupByBook ? Icons.list : Icons.folder_outlined),
             tooltip: _groupByBook ? '平列顯示' : '依書籍分組',
             onPressed: () => setState(() => _groupByBook = !_groupByBook),
+          ),
+          IconButton(
+            icon: const Icon(Icons.share_outlined),
+            tooltip: '匯出書籤',
+            onPressed: _allBookmarks.isNotEmpty ? _exportBookmarks : null,
           ),
           IconButton(
             icon: const Icon(Icons.delete_sweep_outlined),

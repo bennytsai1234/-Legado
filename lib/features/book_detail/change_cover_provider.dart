@@ -17,6 +17,11 @@ class ChangeCoverProvider extends ChangeNotifier {
   bool get isSearching => _isSearching;
   double get progress => _totalSources == 0 ? 0 : _searchCount / _totalSources;
 
+  void stopSearch() {
+    _isSearching = false;
+    notifyListeners();
+  }
+
   void clear() {
     _covers = [];
     _isSearching = false;
@@ -26,6 +31,10 @@ class ChangeCoverProvider extends ChangeNotifier {
   }
 
   Future<void> search(String name, String author) async {
+    _isSearching = false; // 先停止
+    notifyListeners();
+    await Future.delayed(const Duration(milliseconds: 50));
+
     _isSearching = true;
     _covers = [];
     _searchCount = 0;
@@ -45,6 +54,7 @@ class ChangeCoverProvider extends ChangeNotifier {
     // 並發搜尋
     final List<Future<void>> tasks = [];
     for (final source in coverSources) {
+      if (!_isSearching) break; // 深度補齊：循環中斷檢查
       tasks.add(_searchSingleSource(source, name, author));
     }
 
@@ -54,6 +64,7 @@ class ChangeCoverProvider extends ChangeNotifier {
   }
 
   Future<void> _searchSingleSource(BookSource source, String name, String author) async {
+    if (!_isSearching) return; // 深度補齊：開始請求前檢查
     try {
       final List<SearchBook> books = await _service.searchBooks(
         source,

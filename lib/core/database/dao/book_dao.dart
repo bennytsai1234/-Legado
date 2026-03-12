@@ -90,15 +90,25 @@ class BookDao {
 
   /// 根據 URL 獲取書籍
   Future<Book?> getByUrl(String bookUrl) async {
-    final db = await _db;
+    final db = await AppDatabase.database;
     final List<Map<String, dynamic>> maps = await db.query(
       tableName,
       where: 'bookUrl = ?',
       whereArgs: [bookUrl],
     );
-
     if (maps.isEmpty) return null;
     return Book.fromJson(maps.first);
+  }
+
+  /// 根據書名查找書籍 (對應 Android BookDao.findByName)
+  Future<List<Book>> findByName(String name) async {
+    final db = await AppDatabase.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      tableName,
+      where: 'name = ?',
+      whereArgs: [name],
+    );
+    return List.generate(maps.length, (i) => Book.fromJson(maps[i]));
   }
 
   /// 更新是否在書架上

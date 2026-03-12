@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/database/dao/read_record_dao.dart';
+import '../../core/database/dao/book_dao.dart';
+import '../../core/models/search_book.dart';
+import '../search/search_page.dart';
+import '../book_detail/book_detail_page.dart';
+import '../settings/settings_provider.dart';
 
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
@@ -63,6 +71,16 @@ class AboutPage extends StatelessWidget {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const AppLogPage()),
+            ),
+          ),
+          _buildListTile(
+            context,
+            icon: Icons.report_problem_outlined,
+            title: '崩潰日誌',
+            subtitle: '查看錯誤記錄',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CrashLogPage()),
             ),
           ),
           _buildListTile(
@@ -189,6 +207,7 @@ class ReadRecordPage extends StatefulWidget {
 
 class _ReadRecordPageState extends State<ReadRecordPage> {
   final ReadRecordDao _dao = ReadRecordDao();
+  final BookDao _bookDao = BookDao();
   final TextEditingController _searchController = TextEditingController();
 
   List<ReadRecordShow> _records = [];
@@ -199,8 +218,23 @@ class _ReadRecordPageState extends State<ReadRecordPage> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _loadSortMode().then((_) => _loadData());
     _loadAllTime();
+  }
+
+  Future<void> _loadSortMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final index = prefs.getInt('read_record_sort') ?? 0;
+    if (mounted) {
+      setState(() {
+        _sortMode = _SortMode.values[index];
+      });
+    }
+  }
+
+  Future<void> _saveSortMode(_SortMode mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('read_record_sort', mode.index);
   }
 
   @override
@@ -312,17 +346,22 @@ class _ReadRecordPageState extends State<ReadRecordPage> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SettingsProvider>();
     return Scaffold(
       appBar: AppBar(
         title: const Text('閱讀統計'),
         actions: [
-          PopupMenuButton<_SortMode>(
+          PopupMenuButton<dynamic>(
             icon: const Icon(Icons.sort),
-            tooltip: '排序方式',
+            tooltip: '更多設定',
             initialValue: _sortMode,
-            onSelected: (mode) {
-              setState(() => _sortMode = mode);
-              _loadData(_searchController.text);
+            onSelected: (val) {
+              if (val is _SortMode) {
+                setState(() => _sortMode = val);
+                _loadData(_searchController.text);
+              } else if (val == 'toggle_record') {
+                settings.setEnableReadRecord(!settings.enableReadRecord);
+              }
             },
             itemBuilder: (_) => [
               const PopupMenuItem(
@@ -336,6 +375,17 @@ class _ReadRecordPageState extends State<ReadRecordPage> {
               const PopupMenuItem(
                 value: _SortMode.byLastRead,
                 child: Text('依最後閱讀時間排序'),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'toggle_record',
+                child: Row(
+                  children: [
+                    Icon(settings.enableReadRecord ? Icons.check_box : Icons.check_box_outline_blank, size: 20),
+                    const SizedBox(width: 8),
+                    const Text('啟用閱讀記錄'),
+                  ],
+                ),
               ),
             ],
           ),
@@ -496,6 +546,16 @@ class _ReadRecordPageState extends State<ReadRecordPage> {
                                           fontSize: 12, color: Colors.grey),
                                     )
                                   : null,
+                              onTap: () async {
+                                // 深度補齊：連動搜尋邏輯 (對應 Android findByName)
+                                final bookList = await _bookDao.findByName(record.bookName);
+                                if (!mounted) return;
+                                if (bookList.isEmpty) {
+                                  Navigator.push(context, MaterialPageRoute(builder: (_) => SearchPage(initialQuery: record.bookName)));
+                                } else {
+                                  Navigator.push(context, MaterialPageRoute(builder: (_) => BookDetailPage(searchBook: AggregatedSearchBook(book: SearchBook(bookUrl: bookList.first.bookUrl, name: bookList.first.name, author: bookList.first.author, origin: bookList.first.origin, originName: bookList.first.originName), sources: [bookList.first.originName ?? '本地']))));
+                                }
+                              },
                               onLongPress: () => _deleteRecord(record),
                             ),
                           );
@@ -552,17 +612,42 @@ class AppLogPage extends StatefulWidget {
 }
 
 class _AppLogPageState extends State<AppLogPage> {
+  final TextEditingController _searchController = TextEditingController();
   List<AppLogEntry> _logs = [];
+  List<AppLogEntry> _filteredLogs = [];
 
   @override
   void initState() {
     super.initState();
-    _logs = AppLog.logs.reversed.toList(); // 最新的在最前面
+    _logs = AppLog.logs.toList().reversed.toList();
+    _filteredLogs = _logs;
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterLogs(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredLogs = _logs;
+      } else {
+        _filteredLogs = _logs.where((log) => 
+          log.message.toLowerCase().contains(query.toLowerCase()) ||
+          (log.error?.toString().toLowerCase().contains(query.toLowerCase()) ?? false)
+        ).toList();
+      }
+    });
   }
 
   void _clearLogs() {
     AppLog.clear();
-    setState(() => _logs = []);
+    setState(() {
+      _logs = [];
+      _filteredLogs = [];
+    });
   }
 
   String _formatTime(DateTime dt) {
@@ -581,7 +666,10 @@ class _AppLogPageState extends State<AppLogPage> {
             icon: const Icon(Icons.refresh),
             tooltip: '重新整理',
             onPressed: () {
-              setState(() => _logs = AppLog.logs.reversed.toList());
+              setState(() {
+                _logs = AppLog.logs.toList().reversed.toList();
+                _filterLogs(_searchController.text);
+              });
             },
           ),
           IconButton(
@@ -591,73 +679,172 @@ class _AppLogPageState extends State<AppLogPage> {
           ),
         ],
       ),
-      body: _logs.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.check_circle_outline,
-                      size: 64,
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2)),
-                  const SizedBox(height: 16),
-                  Text(
-                    '目前沒有日誌記錄',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
-                    ),
-                  ),
-                ],
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: '搜尋日誌內容...',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 18),
+                        onPressed: () {
+                          _searchController.clear();
+                          _filterLogs('');
+                        },
+                      )
+                    : null,
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
+                ),
+                filled: true,
               ),
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.only(bottom: 24),
-              itemCount: _logs.length,
-              separatorBuilder: (_, __) => const Divider(height: 1, indent: 16, endIndent: 16),
-              itemBuilder: (context, index) {
-                final log = _logs[index];
-                final hasError = log.error != null;
-                return ListTile(
-                  dense: true,
-                  leading: Icon(
-                    hasError ? Icons.error_outline : Icons.info_outline,
-                    color: hasError ? Colors.red : Colors.grey,
-                    size: 20,
-                  ),
-                  title: Text(
-                    log.message,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: hasError ? Colors.red : null,
+              onChanged: _filterLogs,
+            ),
+          ),
+          Expanded(
+            child: _filteredLogs.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.check_circle_outline,
+                            size: 64,
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2)),
+                        const SizedBox(height: 16),
+                        Text(
+                          _logs.isEmpty ? '目前沒有日誌記錄' : '找不到匹配的日誌',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+                          ),
+                        ),
+                      ],
                     ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.only(bottom: 24),
+                    itemCount: _filteredLogs.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1, indent: 16, endIndent: 16),
+                    itemBuilder: (context, index) {
+                      final log = _filteredLogs[index];
+                      final hasError = log.error != null;
+                      return ListTile(
+                        dense: true,
+                        leading: Icon(
+                          hasError ? Icons.error_outline : Icons.info_outline,
+                          color: hasError ? Colors.red : Colors.grey,
+                          size: 20,
+                        ),
+                        title: Text(
+                          log.message,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: hasError ? Colors.red : null,
+                          ),
+                        ),
+                        subtitle: Text(
+                          _formatTime(log.time),
+                          style: const TextStyle(fontSize: 11, color: Colors.grey),
+                        ),
+                        onTap: hasError
+                            ? () {
+                                showDialog(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    title: const Text('錯誤詳情'),
+                                    content: SingleChildScrollView(
+                                      child: SelectableText(
+                                        '${log.message}\n\n${log.error}',
+                                        style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                                      ),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(ctx),
+                                        child: const Text('關閉'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+                            : null,
+                      );
+                    },
                   ),
-                  subtitle: Text(
-                    _formatTime(log.time),
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
-                  ),
-                  onTap: hasError
-                      ? () {
-                          showDialog(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              title: const Text('錯誤詳情'),
-                              content: SingleChildScrollView(
-                                child: SelectableText(
-                                  '${log.message}\n\n${log.error}',
-                                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-                                ),
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(ctx),
-                                  child: const Text('關閉'),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-                      : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ----------------------------------------------------------------
+// CrashLogPage - 崩潰日誌頁
+// 對應 Android: ui/about/CrashLogsDialog.kt
+// ----------------------------------------------------------------
+
+class CrashLogPage extends StatefulWidget {
+  const CrashLogPage({super.key});
+
+  @override
+  State<CrashLogPage> createState() => _CrashLogPageState();
+}
+
+class _CrashLogPageState extends State<CrashLogPage> {
+  List<AppLogEntry> _errors = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _errors = AppLog.logs.where((e) => e.error != null).toList().reversed.toList();
+  }
+
+  void _shareLogs() {
+    if (_errors.isEmpty) return;
+    final text = _errors.map((e) => '[${e.time}] ${e.message}\nError: ${e.error}').join('\n\n---\n\n');
+    Share.share(text, subject: 'Legado Reader iOS Crash Logs');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('崩潰日誌'),
+        actions: [
+          if (_errors.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.share),
+              onPressed: _shareLogs,
+            ),
+        ],
+      ),
+      body: _errors.isEmpty
+          ? const Center(child: Text('目前沒有錯誤記錄', style: TextStyle(color: Colors.grey)))
+          : ListView.separated(
+              itemCount: _errors.length,
+              separatorBuilder: (_, __) => const Divider(),
+              itemBuilder: (ctx, idx) {
+                final err = _errors[idx];
+                return ListTile(
+                  title: Text(err.message, style: const TextStyle(color: Colors.red, fontSize: 13)),
+                  subtitle: Text(err.time.toString(), style: const TextStyle(fontSize: 11)),
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (c) => AlertDialog(
+                        title: const Text('錯誤詳情'),
+                        content: SingleChildScrollView(child: SelectableText(err.error.toString())),
+                        actions: [TextButton(onPressed: () => Navigator.pop(c), child: const Text('關閉'))],
+                      ),
+                    );
+                  },
                 );
               },
             ),

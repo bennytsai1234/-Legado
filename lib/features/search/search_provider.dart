@@ -103,6 +103,26 @@ class SearchProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 在特定書源中搜尋 (對應 Android 站內搜尋)
+  Future<void> searchInSource(BookSource source, String keyword) async {
+    if (keyword.isEmpty) return;
+    
+    _isSearching = true;
+    _results = [];
+    _searchCount = 0;
+    _totalSources = 1;
+    notifyListeners();
+
+    try {
+      await _searchSingleSource(source, keyword);
+    } catch (e) {
+      debugPrint('站內搜尋失敗: $e');
+    } finally {
+      _isSearching = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> _searchSingleSource(BookSource source, String keyword) async {
     try {
       final List<SearchBook> books = await _service.searchBooks(

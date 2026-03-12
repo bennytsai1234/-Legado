@@ -4,9 +4,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'search_provider.dart';
 import '../book_detail/book_detail_page.dart';
 import '../../core/models/search_book.dart';
+import '../../core/models/book_source.dart';
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+  final String? initialQuery;
+  final BookSource? initialSource;
+
+  const SearchPage({super.key, this.initialQuery, this.initialSource});
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -14,6 +18,21 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   final TextEditingController _controller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialQuery != null || widget.initialSource != null) {
+      _controller.text = widget.initialQuery ?? "";
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (widget.initialSource != null) {
+          context.read<SearchProvider>().searchInSource(widget.initialSource!, _controller.text);
+        } else {
+          context.read<SearchProvider>().search(_controller.text);
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {

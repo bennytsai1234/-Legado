@@ -41,6 +41,33 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.gedoor.legado</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>legado</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Legado Book Source</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.json</string>
+				<string>public.text</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>需要存取相簿以更換書籍封面</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>

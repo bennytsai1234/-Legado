@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import '../../models/bookmark.dart';
 import '../app_database.dart';
+import '../../engine/app_event_bus.dart';
 
 /// BookmarkDao - 書籤資料表操作
 /// 對應 Android: data/dao/BookmarkDao.kt
@@ -75,6 +76,7 @@ class BookmarkDao {
       bookmark.toJson(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    AppEventBus().fire("up_bookmark");
   }
 
   /// 更新書籤
@@ -86,18 +88,21 @@ class BookmarkDao {
       where: 'id = ?',
       whereArgs: [bookmark.id],
     );
+    AppEventBus().fire("up_bookmark");
   }
 
   /// 刪除書籤
   Future<void> delete(Bookmark bookmark) async {
     final db = await AppDatabase.database;
     await db.delete(tableName, where: 'id = ?', whereArgs: [bookmark.id]);
+    AppEventBus().fire("up_bookmark");
   }
 
   /// 清除所有書籤
   Future<void> clearAll() async {
     final db = await AppDatabase.database;
     await db.delete(tableName);
+    AppEventBus().fire("up_bookmark");
   }
 
   /// 全域搜尋書籤（跨所有書籍）

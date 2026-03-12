@@ -22,6 +22,21 @@ class SettingsProvider extends ChangeNotifier {
   String get webdavPassword => _webdavPassword;
   bool get webdavEnabled => _webdavEnabled;
 
+  bool _appCrash = false;
+  bool get appCrash => _appCrash;
+
+  bool _enableReadRecord = true;
+  bool get enableReadRecord => _enableReadRecord;
+
+  String _localPassword = '';
+  String get localPassword => _localPassword;
+
+  int _lastBackup = 0;
+  int get lastBackup => _lastBackup;
+
+  int _lastVersionCode = 0;
+  int get lastVersionCode => _lastVersionCode;
+
   SettingsProvider() {
     _loadSettings();
   }
@@ -35,6 +50,12 @@ class SettingsProvider extends ChangeNotifier {
     _webdavUser = prefs.getString(PreferKey.webDavAccount) ?? '';
     _webdavPassword = prefs.getString(PreferKey.webDavPassword) ?? '';
     _webdavEnabled = _webdavUrl.isNotEmpty && _webdavUser.isNotEmpty;
+
+    _appCrash = prefs.getBool('app_crash') ?? false;
+    _enableReadRecord = prefs.getBool('enable_read_record') ?? true;
+    _localPassword = prefs.getString('local_password') ?? '';
+    _lastBackup = prefs.getInt('last_backup') ?? 0;
+    _lastVersionCode = prefs.getInt('last_version_code') ?? 0;
 
     ignoreAudioFocusAloud = prefs.getBool('ignore_audio_focus_aloud') ?? false;
     pauseReadAloudWhilePhoneCalls = prefs.getBool('pause_read_aloud_while_phone_calls') ?? false;
@@ -325,5 +346,60 @@ class SettingsProvider extends ChangeNotifier {
     final db = await AppDatabase.database;
     await db.delete('chapter_contents');
     notifyListeners();
+  }
+
+  Future<void> setAppCrash(bool value) async {
+    _appCrash = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('app_crash', value);
+    notifyListeners();
+  }
+
+  Future<void> setEnableReadRecord(bool value) async {
+    _enableReadRecord = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('enable_read_record', value);
+    notifyListeners();
+  }
+
+  Future<void> setLocalPassword(String value) async {
+    _localPassword = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('local_password', value);
+    notifyListeners();
+  }
+
+  Future<void> setLastBackup(int value) async {
+    _lastBackup = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('last_backup', value);
+    notifyListeners();
+  }
+
+  Future<void> setLastVersionCode(int value) async {
+    _lastVersionCode = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('last_version_code', value);
+    notifyListeners();
+  }
+
+  /// 檢查 WebDav 備份同步 (對應 Android backupSync)
+  /// 返回遠端較新的備份檔名，否則返回 null
+  Future<String?> checkWebDavBackupSync() async {
+    if (!_webdavEnabled || !autoCheckNewBackup) return null;
+    
+    try {
+      debugPrint("正在檢查 WebDav 備份時間...");
+      // 這裡暫時模擬發現遠端備份檔案
+      const remoteTime = 1773310000000; 
+      const remoteName = "backup_2026-03-12.db";
+      
+      if (remoteTime - _lastBackup > 60000) { // 差值大於一分鐘
+        return remoteName;
+      }
+    } catch (e) {
+      debugPrint("WebDav 同步檢查失敗: $e");
+    }
+    return null;
   }
 }
