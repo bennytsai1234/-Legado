@@ -35,6 +35,8 @@ class _ChangeChapterSourceSheetState extends State<ChangeChapterSourceSheet> {
   
   List<SearchBook> _allResults = [];
   List<SearchBook> _filteredResults = [];
+  List<String> _groups = ['全部'];
+  String _selectedGroup = '全部';
   bool _isSearching = false;
   String _status = "正在初始化...";
   bool _checkAuthor = true;
@@ -42,7 +44,22 @@ class _ChangeChapterSourceSheetState extends State<ChangeChapterSourceSheet> {
   @override
   void initState() {
     super.initState();
-    _startSearch();
+    _loadGroups().then((_) => _startSearch());
+  }
+
+  Future<void> _loadGroups() async {
+    final sources = await _sourceDao.getEnabled();
+    final Set<String> groupSet = {'全部'};
+    for (var s in sources) {
+      if (s.bookSourceGroup != null && s.bookSourceGroup!.isNotEmpty) {
+        groupSet.addAll(s.bookSourceGroup!.split(',').map((e) => e.trim()));
+      }
+    }
+    if (mounted) {
+      setState(() {
+        _groups = groupSet.toList()..sort();
+      });
+    }
   }
 
   @override
@@ -91,8 +108,16 @@ class _ChangeChapterSourceSheetState extends State<ChangeChapterSourceSheet> {
     });
 
     try {
-      final enabledSources = await _sourceDao.getEnabled();
-      // 深度補齊：根據 _checkAuthor 決定搜尋精度 (對應 Android changeSourceCheckAuthor)
+      var enabledSources = await _sourceDao.getEnabled();
+      
+      // 深度還原：套用分組過濾邏輯 (對標 Android searchGroup)
+      if (_selectedGroup != '全部') {
+        enabledSources = enabledSources.where((s) {
+          final g = s.bookSourceGroup ?? "";
+          return g.split(',').map((e) => e.trim()).contains(_selectedGroup);
+        }).toList();
+      }
+
       var results = await _service.preciseSearch(
         enabledSources, 
         widget.book.name, 
@@ -201,19 +226,49 @@ class _ChangeChapterSourceSheetState extends State<ChangeChapterSourceSheet> {
   }
 
   Widget _buildFilterBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: TextField(
-        controller: _filterController,
-        decoration: InputDecoration(
-          hintText: '搜尋結果內篩選...',
-          prefixIcon: const Icon(Icons.search, size: 18),
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(vertical: 8),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+    return Column(
+      children: [
+        if (_groups.length > 1)
+          SizedBox(
+            height: 40,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: _groups.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (ctx, index) {
+                final group = _groups[index];
+                final isSelected = _selectedGroup == group;
+                return FilterChip(
+                  label: Text(group, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : null)),
+                  selected: isSelected,
+                  onSelected: (val) {
+                    setState(() => _selectedGroup = group);
+                    _startSearch();
+                  },
+                  selectedColor: Colors.blue,
+                  showCheckmark: false,
+                  padding: EdgeInsets.zero,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                );
+              },
+            ),
+          ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+          child: TextField(
+            controller: _filterController,
+            decoration: InputDecoration(
+              hintText: '搜尋結果內篩選...',
+              prefixIcon: const Icon(Icons.search, size: 18),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 8),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onChanged: _applyFilter,
+          ),
         ),
-        onChanged: _applyFilter,
-      ),
+      ],
     );
   }
 
