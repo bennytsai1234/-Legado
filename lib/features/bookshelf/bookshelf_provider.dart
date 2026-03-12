@@ -339,6 +339,19 @@ class BookshelfProvider extends BaseProvider {
       await Future.wait(updateTasks);
       _updatingCount = 0;
       await loadBooks();
+
+      // 深度補齊：自動下載聯動 (對應 Android cacheBook)
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool('auto_download_new_chapters') ?? false) {
+        // 全選所有有更新的書籍
+        _selectedBookUrls.clear();
+        for (var b in _books) {
+          if (b.lastCheckCount > 0) _selectedBookUrls.add(b.bookUrl);
+        }
+        if (_selectedBookUrls.isNotEmpty) {
+          batchDownloadChapters();
+        }
+      }
     });
   }
 
