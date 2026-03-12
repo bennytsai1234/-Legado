@@ -133,7 +133,7 @@
 | **11.5 目錄加載與倒序** | `BookInfoViewModel.kt`: L120 | `book_detail_page.dart`: L85 | **Matched** | 均支援目錄搜尋與正/倒序顯示。 |
 | **11.6 WebDav 上傳同步** | `BookInfoViewModel.kt`: L245 | `export_book_service.dart` | **Matched** | 已實作在匯出書籍後自動上傳至 WebDav 雲端目錄，對標 Android exportWebDav 邏輯。 |
 | **11.7 正文快取清理** | `BookInfoActivity.kt` | `book_detail_page.dart`: L36 | **Matched** | 均支援刪除該書已下載的章節內容。 |
-| **11.9 大檔案章節物理分割** | `BookInfoViewModel.kt` | - | **Logic Gap** | Android 支援將超大章節物理分割為子章節；iOS 僅在渲染時虛擬分頁。 |
+| **11.9 大檔案章節物理分割** | `BookInfoViewModel.kt` | `txt_parser.dart`: L45 (_splitLargeContent) | **Matched** | 已實作針對超長本地 TXT 正文的物理分割邏輯（每 100KB 拆分一次），有效提升載入與渲染效能，對標 Android 核心解析邏輯。 |
 | **12.1 目錄導航方式** | `ImportBookActivity.kt`: L140 (upPath) | `smart_scan_page.dart`: L35 (_isHierarchicalMode) | **Matched** | 已實作層級導航與全量掃描雙模式，支援麵包屑路徑跳轉與子目錄進入，對標 Android 內建瀏覽器。 |
 | **12.2 遞迴掃描機制** | `ImportBookViewModel.kt`: L138 | `local_book_provider.dart`: L95 | **Matched** | 均支援全資料夾遞迴尋找書籍。 |
 | **12.3 檔案名正則解析** | `ImportBookViewModel.kt` | `local_book_provider.dart`: L25 (_parseFileName) | **Matched** | 已實作與 Android 對等的 JS 解析機制，支援自定義腳本從原始檔名中提取書名與作者。 |
