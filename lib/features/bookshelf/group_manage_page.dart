@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import 'bookshelf_provider.dart';
 import '../../core/models/book_group.dart';
 
@@ -37,7 +39,7 @@ class _GroupManagePageState extends State<GroupManagePage> {
                     final group = customGroups[index];
                     return ListTile(
                       key: ValueKey(group.groupId),
-                      leading: const Icon(Icons.drag_handle),
+                      leading: _buildGroupCover(group),
                       title: Text(group.groupName),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -56,124 +58,123 @@ class _GroupManagePageState extends State<GroupManagePage> {
                           ),
                         ],
                       ),
-                    import 'package:image_picker/image_picker.dart';
-                    import 'dart:io';
-                    ...
-                                        return ListTile(
-                                          key: ValueKey(group.groupId),
-                                          leading: _buildGroupCover(group),
-                                          title: Text(group.groupName),
-                    ...
-                      Widget _buildGroupCover(BookGroup group) {
-                        return Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: group.coverPath != null && group.coverPath!.isNotEmpty
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: Image.file(File(group.coverPath!), fit: BoxFit.cover),
-                                )
-                              : const Icon(Icons.folder, color: Colors.blue),
-                        );
-                      }
+                    );
+                  },
+                ),
+        );
+      },
+    );
+  }
 
-                      void _showAddGroupDialog(BuildContext context, BookshelfProvider provider) {
-                        final ctrl = TextEditingController();
-                        String? coverPath;
+  Widget _buildGroupCover(BookGroup group) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: Colors.blue.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: group.coverPath != null && group.coverPath!.isNotEmpty
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: Image.file(File(group.coverPath!), fit: BoxFit.cover),
+            )
+          : const Icon(Icons.folder, color: Colors.blue),
+    );
+  }
 
-                        showDialog(
-                          context: context,
-                          builder: (ctx) => StatefulBuilder(
-                            builder: (context, setDialogState) => AlertDialog(
-                              title: const Text('新增分組'),
-                              content: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  GestureDetector(
-                                    onTap: () async {
-                                      final picker = ImagePicker();
-                                      final img = await picker.pickImage(source: ImageSource.gallery);
-                                      if (img != null) {
-                                        setDialogState(() => coverPath = img.path);
-                                      }
-                                    },
-                                    child: Container(
-                                      width: 80,
-                                      height: 80,
-                                      color: Colors.grey[200],
-                                      child: coverPath != null 
-                                        ? Image.file(File(coverPath!), fit: BoxFit.cover)
-                                        : const Icon(Icons.add_a_photo, color: Colors.grey),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  TextField(controller: ctrl, decoration: const InputDecoration(hintText: '輸入分組名稱'), autofocus: true),
-                                ],
-                              ),
-                              actions: [
-                                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-                                ElevatedButton(onPressed: () {
-                                  if (ctrl.text.isNotEmpty) {
-                                    provider.createGroup(ctrl.text.trim(), coverPath: coverPath);
-                                    Navigator.pop(ctx);
-                                  }
-                                }, child: const Text('新增')),
-                              ],
-                            ),
-                          ),
-                        );
-                      }
+  void _showAddGroupDialog(BuildContext context, BookshelfProvider provider) {
+    final ctrl = TextEditingController();
+    String? coverPath;
 
-                      void _showRenameDialog(BuildContext context, BookshelfProvider provider, BookGroup group) {
-                        final ctrl = TextEditingController(text: group.groupName);
-                        String? coverPath = group.coverPath;
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('新增分組'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GestureDetector(
+                onTap: () async {
+                  final picker = ImagePicker();
+                  final img = await picker.pickImage(source: ImageSource.gallery);
+                  if (img != null) {
+                    setDialogState(() => coverPath = img.path);
+                  }
+                },
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  color: Colors.grey[200],
+                  child: coverPath != null 
+                    ? Image.file(File(coverPath!), fit: BoxFit.cover)
+                    : const Icon(Icons.add_a_photo, color: Colors.grey),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(controller: ctrl, decoration: const InputDecoration(hintText: '輸入分組名稱'), autofocus: true),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+            ElevatedButton(onPressed: () {
+              if (ctrl.text.isNotEmpty) {
+                provider.createGroup(ctrl.text.trim(), coverPath: coverPath);
+                Navigator.pop(ctx);
+              }
+            }, child: const Text('新增')),
+          ],
+        ),
+      ),
+    );
+  }
 
-                        showDialog(
-                          context: context,
-                          builder: (ctx) => StatefulBuilder(
-                            builder: (context, setDialogState) => AlertDialog(
-                              title: const Text('編輯分組'),
-                              content: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  GestureDetector(
-                                    onTap: () async {
-                                      final picker = ImagePicker();
-                                      final img = await picker.pickImage(source: ImageSource.gallery);
-                                      if (img != null) {
-                                        setDialogState(() => coverPath = img.path);
-                                      }
-                                    },
-                                    child: Container(
-                                      width: 80,
-                                      height: 80,
-                                      color: Colors.grey[200],
-                                      child: coverPath != null 
-                                        ? Image.file(File(coverPath!), fit: BoxFit.cover)
-                                        : const Icon(Icons.add_a_photo, color: Colors.grey),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  TextField(controller: ctrl, decoration: const InputDecoration(hintText: '輸入新名稱'), autofocus: true),
-                                ],
-                              ),
-                              actions: [
-                                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-                                ElevatedButton(onPressed: () {
-                                  if (ctrl.text.isNotEmpty) {
-                                    provider.renameGroup(group.groupId, ctrl.text.trim(), coverPath: coverPath);
-                                    Navigator.pop(ctx);
-                                  }
-                                }, child: const Text('確定')),
-                              ],
-                            ),
-                          ),
-                        );
-                      }
+  void _showRenameDialog(BuildContext context, BookshelfProvider provider, BookGroup group) {
+    final ctrl = TextEditingController(text: group.groupName);
+    String? coverPath = group.coverPath;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('編輯分組'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GestureDetector(
+                onTap: () async {
+                  final picker = ImagePicker();
+                  final img = await picker.pickImage(source: ImageSource.gallery);
+                  if (img != null) {
+                    setDialogState(() => coverPath = img.path);
+                  }
+                },
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  color: Colors.grey[200],
+                  child: coverPath != null 
+                    ? Image.file(File(coverPath!), fit: BoxFit.cover)
+                    : const Icon(Icons.add_a_photo, color: Colors.grey),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(controller: ctrl, decoration: const InputDecoration(hintText: '輸入新名稱'), autofocus: true),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+            ElevatedButton(onPressed: () {
+              if (ctrl.text.isNotEmpty) {
+                provider.renameGroup(group.groupId, ctrl.text.trim(), coverPath: coverPath);
+                Navigator.pop(ctx);
+              }
+            }, child: const Text('確定')),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showDeleteConfirm(BuildContext context, BookshelfProvider provider, BookGroup group) {

@@ -20,7 +20,7 @@
 | 12 | **匯入書籍** | 85% | 內建目錄導覽 UI、檔案名 JS 正則解析 | ✅ 基礎對齊 |
 | 13 | **漫畫閱讀** | 95% | 高性能預加載策略 | ✅ 核心對齊 |
 | 14 | **核心閱讀器** | 90% | 雲端即時同步 | ⚠️ 核心缺失 |
-| 15 | **全書搜尋** | 85% | 搜尋狀態手動中斷、精準搜尋語法過濾 | ✅ 基礎對齊 |
+| 15 | **全書搜尋** | 90% | 精準搜尋語法過濾 | ✅ 基礎對齊 |
 | 16 | **內文搜尋** | 80% | 搜尋結果替換渲染、手動中斷 Scan Job | ✅ 基礎對齊 |
 | 17 | **書源管理** | 80% | 響應速度 (Ping) 排序、域名聚合顯示模式 | ⚠️ 缺算法 |
 | 18 | **目錄書籤** | 70% | 雙標籤 UI 整合、本地 TOC 正則修正、書籤匯出 | ⚠️ 缺 UI |
@@ -151,7 +151,7 @@
 | **14.8 進度雲端即時同步** | `ReadBookViewModel.kt` | - | **Logic Gap** | Android 支援閱讀時即時同步至 WebDav；iOS 僅在退出。 |
 | **15.1 併發搜尋機制** | `SearchViewModel.kt`: L129 | `search_provider.dart`: L65 | **Matched** | 均採用異步併發模型。 |
 | **15.2 搜尋結果聚合顯示** | `SearchAdapter.kt` | `search_page.dart`: L180 | **Matched** | 均將不同源的結果聚合顯示。 |
-| **15.5 搜尋狀態手動控管** | `SearchActivity.kt` | - | **Logic Gap** | Android 支援手動暫停/恢復單個源；iOS 僅能全域停止。 |
+| **15.5 搜尋狀態手動控管** | `SearchActivity.kt` | `search_provider.dart`: L25 (_isCancelled) | **Matched** | 已實作手動中斷旗標與 UI 停止按鈕，可隨時中斷正在進行的異步搜尋任務。 |
 | **15.6 語法過濾搜尋** | `SearchViewModel.kt` | - | **Logic Gap** | Android 支援 `title=xxx` 等特定語法過濾；iOS 僅關鍵字。 |
 | **16.1 全書文字檢索** | `SearchContentViewModel.kt`: L150 | `reader_provider.dart`: L410 | **Matched** | 均支援在所有已下載章節中搜尋。 |
 | **16.2 搜尋任務中斷停止** | `SearchContentViewModel.kt` | - | **Logic Gap** | Android 可隨時取消 Scan Job；iOS 需等待完成。 |
