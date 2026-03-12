@@ -1,39 +1,115 @@
-# 🔄 增量式代碼對齊流程 (Incremental Alignment Pipeline) v3
+---
+description: 基於功能審計報告中的 Logic Gap，逐項實作或修復程式碼以達成功能對齊
+---
 
-本工作流程旨在採用「資料夾增量」方式，將穩定的 Android (Legado) 邏輯精確遷移至 iOS (Reader)，並確保語義級別的對齊。
+# 🔧 增量式實作修復工作流 (Incremental Alignment) v4
+
+本工作流以 `/feature-parity` 產出的審計報告為任務來源，逐項實作缺失功能或修復邏輯缺口。
 
 ---
 
-## 階段一：建立全量地圖 (Global Mapping Phase)
-在開始具體審計前，需先理清兩個專案之間的「邏輯責任區」。
+## 核心產物
 
-1.  **全量結構掃描**：
-    - 列出 Android (Legado) 所有的 Activity, ViewModel, Help, Data 類別。
-    - 列出 iOS (Reader) 當前的所有 Page, Provider, Service, DAO 類別。
-2.  **建立全量映射表 (`COMPREHENSIVE_FEATURE_MAPPING.md`)**：
-    - **對應關係**：明確標註 Android 的「功能大腦（ViewModel/Help）」與 iOS 的「對應腦區（Provider/Service）」。
-    - **邏輯錨點**：不限於檔案名，而是定義功能責任（如：換源演算法、WebDav 同步邏輯）。
+- 修改/新增後的 Dart 原始碼
+- 更新後的 `FEATURE_AUDIT_v2.md`（完成度提升）
+- 更新後的 `FEATURE_AUDIT_LOG.md`（狀態從 Logic Gap → Matched）
 
 ---
 
-## 階段二：單元遞增審計 (Module Loop)
-按照資料夾逐個進行，採用「語義比對」策略以應對命名差異。
+## 前置條件
 
-1.  **Android 邏輯與互動提取**：
-    - 讀取 Kotlin 與 XML 佈局。
-    - **提取重點**：識別所有影響 UI 顯示與資料處理的 **「判定分支 (if/else)」** 與 **「核心演算」**。
-2.  **iOS 語義核對與驗證**：
-    - **精確閱讀**：根據映射表，直接開啟 iOS 對應檔案。
-    - **對齊校核**：忽略命名差異（如變數名不同），專注於「這段邏輯在 iOS 裡有沒有做？」、「處理流程是否一致？」。
-    - **標註標準**：`Matched` (一致), `Equivalent` (語義對等但寫法不同), `Logic Gap` (完全缺失)。
-3.  **單一文件增量追加**：
-    - 將核對結果追加至 `FEATURE_AUDIT_LOG.md`。
-    - 每次完成一個模組，執行 `git add FEATURE_AUDIT_LOG.md` 暫存進度。
+- **必須先完成** `/feature-parity`，確保 `FEATURE_AUDIT_v2.md` 中有明確的「不足之處」清單
+- 確認目標模組在 `FEATURE_AUDIT_LOG.md` 中有 `Logic Gap` 記錄
 
 ---
 
-## 階段三：批次提交與報告更新 (Finalization)
-1.  **批次提交 (Batch Commit)**：
-    - 每完成 5 個模組，或完成一個完整的「功能模組包」後，執行一次 `git commit`。
-2.  **導航總表同步**：
-    - 同步更新 `FEATURE_AUDIT_LOG.md` 頂部的導航表格，反映 iOS 端最新的達成率。
+## 執行模式
+
+### 模式 A：按優先級批量修復
+從 `FEATURE_AUDIT_v2.md` 頂部儀表板選取 P0/P1 模組，全面修復。
+
+### 模式 B：單點修復（預設）
+使用者指定一個具體的 Logic Gap（如 `14.8 進度雲端即時同步`），僅修復該點。
+
+---
+
+## 執行步驟
+
+### Step 1：從報告提取任務
+// turbo
+- 開啟 `FEATURE_AUDIT_v2.md`，找到目標模組的「不足之處」清單
+- 開啟 `FEATURE_AUDIT_LOG.md`，找到對應的 `Logic Gap` 記錄
+- 確認待修復的邏輯點與 Android 參考路徑
+
+### Step 2：閱讀 Android 參考實作
+// turbo
+- 根據 `FEATURE_AUDIT_LOG.md` 中的證據鏈（檔案名:行號），讀取 Android 原始碼
+- 提取核心邏輯：
+  - 輸入/輸出資料結構
+  - 演算法步驟
+  - 邊際處理與例外情況
+  - UI 互動行為
+
+### Step 3：閱讀 iOS 當前程式碼
+// turbo
+- 根據地圖，讀取 iOS 對應檔案的當前狀態
+- 確認修改插入點或新建檔案的位置
+- 確認是否有需要重構的現有程式碼
+
+### Step 4：實作修復
+- **嚴格使用 `replace` 工具**進行精確代碼替換
+- 修改策略：
+  1. **新增邏輯**：在適當位置插入 Dart 實作
+  2. **補全邊際**：補充缺失的 if/else 分支
+  3. **新建檔案**：使用 `write_to_file` 建立全新的 Dart 檔案
+- **禁止 `write_file` 覆寫已有檔案**
+
+### Step 5：立即備份
+- 每完成一個檔案的修改，立即在同一輪次執行：
+```powershell
+git add <modified_file> ; git commit -m "backup: update <file>"
+```
+
+### Step 6：驗證修復
+- 執行靜態分析：
+```powershell
+flutter analyze
+```
+- 若有相關測試，執行：
+```powershell
+flutter test
+```
+- 若分析有錯誤，回到 Step 4 修復後重新驗證
+
+### Step 7：更新報告
+- 更新 `FEATURE_AUDIT_LOG.md`：
+  - 將修復的 `Logic Gap` 狀態改為 `Matched`
+  - 更新狀態描述，記錄修復方式
+- 更新 `FEATURE_AUDIT_v2.md`：
+  - 從「不足之處」移至「已完成項目」
+  - 更新完成度百分比
+  - 更新頂部儀表板
+
+### Step 8：正式提交
+```powershell
+git add -A ; git commit -m "feat: implement [邏輯點描述] for [模組名]"
+```
+
+---
+
+## 完成判定
+
+- 所有目標 Logic Gap 已修復
+- `flutter analyze` 無新增錯誤
+- 報告已同步更新
+- Git 已正式提交
+- 回報使用者：修復摘要（修復了 X 個缺口，完成度從 Y% → Z%）
+
+---
+
+## 與其他工作流的關係
+
+```
+/feature-parity → 本工作流 → /debug（若修復後發現 bug）
+本工作流 ─→ 更新報告 ─→ /feature-parity（可重新分析驗證）
+```
