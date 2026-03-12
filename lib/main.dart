@@ -172,6 +172,7 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   int _currentIndex = 0;
+  int _newChapterCount = 0; // 未讀新章節更新數量 (對應 Android onUpBooksLiveData)
 
   final List<Widget> _pages = const [
     BookshelfPage(),
@@ -185,6 +186,26 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // 對應 Android MainViewModel.upAllBookToc() —— 啟動時靜默更新書架
+    _autoRefreshBookshelf();
+  }
+
+  /// 啟動後自動靜默更新書架所有書籍的目錄
+  Future<void> _autoRefreshBookshelf() async {
+    try {
+      final provider = context.read<BookshelfProvider>();
+      await provider.refreshBookshelf();
+      // 統計有多少書新增了章節
+      int count = 0;
+      for (final book in provider.books) {
+        if (book.lastCheckCount > 0) count += book.lastCheckCount;
+      }
+      if (mounted && count > 0) {
+        setState(() => _newChapterCount = count);
+      }
+    } catch (e) {
+      debugPrint('自動更新書架失敗: $e');
+    }
   }
 
   @override
@@ -210,30 +231,40 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
         onDestinationSelected: (index) {
           setState(() {
             _currentIndex = index;
+            // 切到書架時清除 badge
+            if (index == 0) _newChapterCount = 0;
           });
         },
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.book_outlined),
-            selectedIcon: Icon(Icons.book),
+            icon: Badge(
+              isLabelVisible: _newChapterCount > 0,
+              label: Text('$_newChapterCount'),
+              child: const Icon(Icons.book_outlined),
+            ),
+            selectedIcon: Badge(
+              isLabelVisible: _newChapterCount > 0,
+              label: Text('$_newChapterCount'),
+              child: const Icon(Icons.book),
+            ),
             label: '書架',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.explore_outlined),
             selectedIcon: Icon(Icons.explore),
             label: '發現',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.source_outlined),
             selectedIcon: Icon(Icons.source),
             label: '書源',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.rss_feed_outlined),
             selectedIcon: Icon(Icons.rss_feed),
             label: '訂閱',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.settings_outlined),
             selectedIcon: Icon(Icons.settings),
             label: '設定',
