@@ -19,7 +19,7 @@
 | 11 | **書籍詳情** | 80% | WebDav 單書同步、長章節物理分割 | ⚠️ 缺同步 |
 | 12 | **匯入書籍** | 85% | 內建目錄導覽 UI、檔案名 JS 正則解析 | ✅ 基礎對齊 |
 | 13 | **漫畫閱讀** | 95% | 高性能預加載策略 | ✅ 核心對齊 |
-| 14 | **核心閱讀器** | 75% | 仿真翻頁動畫、長章節預處理分割、雲端即時同步 | ⚠️ 核心缺失 |
+| 14 | **核心閱讀器** | 80% | 長章節預處理分割、雲端即時同步 | ⚠️ 核心缺失 |
 | 15 | **全書搜尋** | 85% | 搜尋狀態手動中斷、精準搜尋語法過濾 | ✅ 基礎對齊 |
 | 16 | **內文搜尋** | 80% | 搜尋結果替換渲染、手動中斷 Scan Job | ✅ 基礎對齊 |
 | 17 | **書源管理** | 80% | 響應速度 (Ping) 排序、域名聚合顯示模式 | ⚠️ 缺算法 |
@@ -145,7 +145,7 @@
 | 13.4 自動捲動功能 | `AutoPager.kt` | `manga_reader_page.dart`: L100 (_toggleAutoScroll) | **Matched** | 已實作平滑自動捲動與跨章節自動加載邏輯。 |
 | 13.5 頁尾資訊定制 | `MangaFooterConfig.kt` | `manga_reader_page.dart`: L165 (_buildInfoBar) | **Matched** | 已實作顯示頁碼、電量與時間的 InfoBar。 |
 | **14.1 九宮格點擊區域** | `PageView.kt`: L150 | `click_action_config_page.dart` | **Matched** | 均支援自定義九宮格交互。 |
-| **14.2 仿真翻頁動畫** | `PageView.kt` | - | **Logic Gap** | Android 具備原生 Canvas 實現的仿真翻頁；iOS 目前缺乏。 |
+| **14.2 仿真翻頁動畫** | `PageView.kt` | `simulation_page_view.dart`: L10 (_SimulationPageViewState) | **Matched** | 已實作基於貝茲曲線裁剪與動態陰影的仿真翻頁組件，對標 Android 核心渲染效果。 |
 | **14.3 替換規則即時套用** | `ReadBookViewModel.kt`: L435 | `chapter_provider.dart`: L210 | **Matched** | 均在渲染章節內容前套用替換規則。 |
 | **14.5 長章節自動分割** | `ReadBookViewModel.kt` | - | **Logic Gap** | Android 支援對 >1MB 章節進行預處理分割；iOS 僅虛擬分頁。 |
 | **14.8 進度雲端即時同步** | `ReadBookViewModel.kt` | - | **Logic Gap** | Android 支援閱讀時即時同步至 WebDav；iOS 僅在退出。 |
