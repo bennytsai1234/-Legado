@@ -136,7 +136,7 @@
 | **11.9 大檔案章節物理分割** | `BookInfoViewModel.kt` | - | **Logic Gap** | Android 支援將超大章節物理分割為子章節；iOS 僅在渲染時虛擬分頁。 |
 | **12.1 目錄導航方式** | `ImportBookActivity.kt`: L140 (upPath) | `smart_scan_page.dart`: L35 (_isHierarchicalMode) | **Matched** | 已實作層級導航與全量掃描雙模式，支援麵包屑路徑跳轉與子目錄進入，對標 Android 內建瀏覽器。 |
 | **12.2 遞迴掃描機制** | `ImportBookViewModel.kt`: L138 | `local_book_provider.dart`: L95 | **Matched** | 均支援全資料夾遞迴尋找書籍。 |
-| **12.3 檔案名正則解析** | `ImportBookViewModel.kt` | - | **Logic Gap** | Android 支援從檔名自動提取作者與書名；iOS 僅取檔名。 |
+| **12.3 檔案名正則解析** | `ImportBookViewModel.kt` | `local_book_provider.dart`: L25 (_parseFileName) | **Matched** | 已實作與 Android 對等的 JS 解析機制，支援自定義腳本從原始檔名中提取書名與作者。 |
 | **12.4 批量導入功能** | `ImportBookActivity.kt` | `smart_scan_page.dart`: L150 | **Matched** | 均支援勾選多個檔案批次匯入書架。 |
 | **12.5 重複檢測邏輯** | `ImportBookViewModel.kt` | `local_book_provider.dart` | **Matched** | 匯入時均會比對路徑/書名防止重複。 |
 | **13.1 閱讀模式切換** | `ReadMangaActivity.kt` | - | **Logic Gap** | Android 支援 WebToon/雙頁/覆蓋；iOS 僅有基礎 PageView。 |
