@@ -103,7 +103,7 @@
 | **6.3 目錄自動補完機制** | `CacheViewModel.kt` | `download_service.dart`: L135 (getChapterList) | **Matched** | 下載前均會檢查目錄是否為空，若為空則自動觸發目錄更新後再下載。 |
 | **6.4 雙層併發限制** | `AppConfig.threadCount` | `download_service.dart`: L30 (_maxConcurrent) | **Matched** | 均支援同時下載多本書，且每本書內部分發多個章節下載執行緒。 |
 | **6.5 書籍匯出功能** | `CacheActivity.kt`: L116 (startExport) | `export_book_service.dart` | **Matched** | 已實作高品質 TXT 匯出功能，支援套用正則替換規則與匯出進度顯示，對標 Android 核心匯出邏輯。 |
-| **6.6 設定備份加密** | `Backup.kt`: L118 (aes.encrypt) | - | **Logic Gap** | Android 支援對導出的設定檔案進行 AES 加密；iOS 目前僅為明文 JSON。 |
+| **6.6 設定備份加密** | `Backup.kt`: L118 (aes.encrypt) | `backup_aes_service.dart` | **Matched** | 已實作與 Android 對等的 AES/ECB 加密邏輯，支援對備份檔中的 WebDav 密碼等敏感項進行保護。 |
 | **7.1 併發搜尋機制** | `ChangeCoverViewModel.kt`: L129 (mapParallel) | `change_cover_provider.dart`: L67 (Future.wait) | **Matched** | 均支援在所有已啟用書源中並發執行封面搜尋任務。 |
 | **7.2 搜尋狀態控管** | `ChangeCoverDialog.kt`: L85 (startOrStop) | `change_cover_sheet.dart`: L85 (provider.stopSearch) | **Matched** | 均在 UI 提供「停止/重新整理」按鈕，實作對背景搜尋 Job 的生命週期控制。 |
 | **7.3 搜尋結果精確過濾** | `ChangeCoverViewModel.kt`: L151 (searchBook.name == name) | `change_cover_provider.dart`: L83 (fName == name) | **Matched** | 均實作了嚴格的「書名+作者」過濾，確保搜尋結果與原書一致。 |
