@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../core/database/dao/read_record_dao.dart';
 import '../../core/database/dao/book_dao.dart';
 import '../../core/models/search_book.dart';
@@ -589,6 +591,25 @@ class AppLog {
   }
 
   static void clear() => _logs.clear();
+
+  /// 導出日誌 (深度還原 Android 導出 logs.zip)
+  static Future<void> exportLogs() async {
+    try {
+      final buffer = StringBuffer();
+      for (var log in _logs) {
+        buffer.writeln('[${log.time}] ${log.message}');
+        if (log.error != null) buffer.writeln('Error: ${log.error}');
+      }
+      
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/logs.txt');
+      await file.writeAsString(buffer.toString());
+      
+      await Share.shareXFiles([XFile(file.path)], subject: 'Reader Logs');
+    } catch (e) {
+      debugPrint('導出日誌失敗: $e');
+    }
+  }
 }
 
 class AppLogEntry {
@@ -662,6 +683,11 @@ class _AppLogPageState extends State<AppLogPage> {
       appBar: AppBar(
         title: const Text('應用程式日誌'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.download_rounded),
+            tooltip: '導出日誌檔案',
+            onPressed: () => AppLog.exportLogs(),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: '重新整理',
