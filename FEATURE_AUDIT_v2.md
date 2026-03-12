@@ -137,8 +137,10 @@
 - ✅ 校驗功能：內建 `CheckSourceService` 批量測試。
 - ✅ 多樣化匯入：支援 JSON、本地、URL 匯入。
 
+- ✅ 多維度排序：支援按權重、響應速度、更新時間、名稱及手動排序。
+
 **不足之處**：
-- [ ] **排序維度缺失**：iOS 目前不支持按權重或響應速度排序。
+- [ ] **無顯著 Logic Gap**：書源管理功能已高度對齊。
 
 ### 證據鏈明細
 
@@ -146,6 +148,7 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **4.1 分組過濾** | `BookSourceViewModel.kt`: L185 (`upGroup`) | `source_manager_provider.dart`: L49 (`selectGroup`) | **Matched** | 均支持分組展示與篩選。 |
 | **4.2 批次操作** | `BookSourceViewModel.kt`: L48 (`enable`) | `source_manager_provider.dart`: L86 (`deleteSelected`) | **Matched** | 均支持批量刪除與狀態切換。 |
+| **4.3 多維排序** | `BookSourceSort.kt` | `source_manager_provider.dart`: L75 (`_applySort`) | **Matched** | 現已支援權重、響應速度等多維度動態排序。 |
 
 ---
 

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/database/dao/book_source_dao.dart';
 import '../../core/database/dao/book_dao.dart';
 import '../../core/models/book_source.dart';
@@ -15,16 +16,18 @@ class SourceManagerProvider extends ChangeNotifier {
   List<BookSource> _sources = [];
   List<String> _groups = [];
   String _selectedGroup = '全部';
+  int _sortMode = 0; // 0:手動, 1:權重, 2:響應速度, 3:更新時間, 4:名稱
   bool _isLoading = false;
 
   bool _isBatchMode = false;
   Set<String> _selectedUrls = {};
 
   List<BookSource> get sources {
-    if (_selectedGroup == '全部') return _sources;
-    return _sources
-        .where((s) => s.bookSourceGroup?.contains(_selectedGroup) ?? false)
-        .toList();
+    List<BookSource> list = _sources;
+    if (_selectedGroup != '全部') {
+      list = list.where((s) => s.bookSourceGroup?.contains(_selectedGroup) ?? false).toList();
+    }
+    return list;
   }
 
   List<String> get groups => ['全部', ..._groups];
@@ -32,11 +35,12 @@ class SourceManagerProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isBatchMode => _isBatchMode;
   Set<String> get selectedUrls => _selectedUrls;
+  int get sortMode => _sortMode;
   
   CheckSourceService get checkService => _checkService;
 
   SourceManagerProvider() {
-    loadSources();
+    _init();
     // 監聽校驗服務的變化以更新 UI
     _checkService.addListener(() {
       if (!_checkService.isChecking) {
@@ -46,12 +50,47 @@ class SourceManagerProvider extends ChangeNotifier {
     });
   }
 
+  Future<void> _init() async {
+    final prefs = await SharedPreferences.getInstance();
+    _sortMode = prefs.getInt('source_sort_mode') ?? 0;
+    await loadSources();
+  }
+
+  Future<void> setSortMode(int mode) async {
+    _sortMode = mode;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('source_sort_mode', mode);
+    _applySort();
+    notifyListeners();
+  }
+
+  void _applySort() {
+    switch (_sortMode) {
+      case 1: // 權重
+        _sources.sort((a, b) => b.weight.compareTo(a.weight));
+        break;
+      case 2: // 響應速度
+        _sources.sort((a, b) => a.respondTime.compareTo(b.respondTime));
+        break;
+      case 3: // 更新時間
+        _sources.sort((a, b) => b.lastUpdateTime.compareTo(a.lastUpdateTime));
+        break;
+      case 4: // 名稱
+        _sources.sort((a, b) => a.bookSourceName.compareTo(b.bookSourceName));
+        break;
+      default: // 手動
+        _sources.sort((a, b) => a.customOrder.compareTo(b.customOrder));
+        break;
+    }
+  }
+
   Future<void> loadSources() async {
     _isLoading = true;
     notifyListeners();
 
     _sources = await _dao.getAllPart();
     _groups = await _dao.getGroups();
+    _applySort();
 
     _isLoading = false;
     notifyListeners();
