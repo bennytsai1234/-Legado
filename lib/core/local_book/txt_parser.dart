@@ -3,14 +3,15 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:fast_gbk/fast_gbk.dart';
 
-/// TxtParser - 解析 TXT 格式書籍
-/// 對應 Android: model/localBook/TextFile.kt
+/// TxtParser - 高性能 TXT 解析器
+/// 深度還原 Android model/localBook/TextFile.kt 的物理分割邏輯
 class TxtParser {
   final File file;
-  String? content;
   String _charset = 'UTF-8';
+  
+  // 深度還原：單個虛擬章節的最大字元數 (約 100KB)
+  static const int maxChapterChars = 50000;
 
-  // 預設切章正則，相容《第X章》等各種常見格式
   static final RegExp defaultChapterPattern = RegExp(
     r'^.{0,10}[第][0-9零一二两三四五六七八九十百千万万]+[章回节卷集幕计][ \t]*.*',
     multiLine: true,
@@ -18,89 +19,71 @@ class TxtParser {
 
   TxtParser(this.file);
 
-  /// 載入並解析內容，自動偵測編碼 (簡單判斷 UTF-8/GBK)
+  /// 自動偵測編碼並執行初步掃描
   Future<void> load() async {
-    try {
-      final bytes = await file.readAsBytes();
-
-      // 簡單的編碼偵測 heuristics
-      bool isUtf8 = _isUtf8(bytes);
-
-      if (isUtf8) {
-        _charset = 'UTF-8';
-        content = utf8.decode(bytes, allowMalformed: true);
-      } else {
-        _charset = 'GBK';
-        try {
-          content = gbk.decode(bytes);
-        } catch (_) {
-          // 萬一遇到未知編碼或解碼失敗，直接使用 utf8 容錯模式，避免完全無法讀取
-          _charset = 'UTF-8 (Malformed)';
-          content = utf8.decode(bytes, allowMalformed: true);
-        }
-      }
-    } catch (e) {
-      debugPrint("TxtParser load error: \$e");
-      throw Exception("Failed to load TXT file: \$e");
+    final bytes = await file.openRead(0, 4096).first; // 只讀取開頭 4KB 偵測編碼
+    if (_isUtf8(bytes)) {
+      _charset = 'UTF-8';
+    } else {
+      _charset = 'GBK';
     }
   }
 
-  /// 取得編碼
-  String get charset => _charset;
-
-  /// 取得全文本內容
-  String get fullContent => content ?? "";
-
-  /// 透過正則切出章節列表
-  /// 回傳 List<{ title, content }>
-  List<Map<String, String>> splitChapters({RegExp? customPattern}) {
-    if (content == null || content!.isEmpty) return [];
-
+  /// 深度還原：支援物理分割的章節切割邏輯
+  Future<List<Map<String, String>>> splitChapters({RegExp? customPattern}) async {
     final pattern = customPattern ?? defaultChapterPattern;
-    final chapters = <Map<String, String>>[];
-
-    final matches = pattern.allMatches(content!);
+    final String content = await _readFullFile(); // 暫時維持全量讀取以進行正則匹配，但輸出改為分割塊
+    
+    final List<Map<String, String>> result = [];
+    final matches = pattern.allMatches(content).toList();
 
     if (matches.isEmpty) {
-      // 沒切出章節，整本當作一章
-      chapters.add({'title': '正文', 'content': content!});
-      return chapters;
+      return _splitLargeContent("正文", content);
     }
 
-    int lastStart = 0;
-    String lastTitle = "前言";
-
-    // 如果第一個 Match 不是從 0 開始，前面的內容當作前言
+    // 處理前言
     if (matches.first.start > 0) {
-      chapters.add({
-        'title': lastTitle,
-        'content': content!.substring(0, matches.first.start).trim(),
+      result.addAll(_splitLargeContent("前言", content.substring(0, matches.first.start)));
+    }
+
+    for (int i = 0; i < matches.length; i++) {
+      final start = matches[i].start;
+      final end = (i + 1 < matches.length) ? matches[i + 1].start : content.length;
+      final title = matches[i].group(0)?.trim() ?? "第 ${i + 1} 章";
+      final chapterContent = content.substring(start, end).trim();
+      
+      // 深度還原：物理分割邏輯
+      result.addAll(_splitLargeContent(title, chapterContent));
+    }
+
+    return result;
+  }
+
+  /// 深度還原：將單個超大內容區塊物理分割為多個虛擬章節
+  List<Map<String, String>> _splitLargeContent(String title, String content) {
+    if (content.length <= maxChapterChars) {
+      return [{'title': title, 'content': content}];
+    }
+
+    final List<Map<String, String>> chunks = [];
+    int count = 1;
+    for (int i = 0; i < content.length; i += maxChapterChars) {
+      int end = (i + maxChapterChars < content.length) ? i + maxChapterChars : content.length;
+      chunks.add({
+        'title': '$title (${count++})',
+        'content': content.substring(i, end),
       });
     }
+    return chunks;
+  }
 
-    Match? previousMatch;
-    for (final match in matches) {
-      if (previousMatch != null) {
-        chapters.add({
-          'title': lastTitle,
-          'content': content!.substring(previousMatch.end, match.start).trim(),
-        });
-      }
-
-      lastTitle = match.group(0)?.trim() ?? "Unnamed Chapter";
-      previousMatch = match;
-      lastStart = match.end;
+  Future<String> _readFullFile() async {
+    final bytes = await file.readAsBytes();
+    if (_charset == 'UTF-8') {
+      return utf8.decode(bytes, allowMalformed: true);
+    } else {
+      return gbk.decode(bytes);
     }
-
-    // 最後一個章節
-    if (previousMatch != null) {
-      chapters.add({
-        'title': lastTitle,
-        'content': content!.substring(lastStart).trim(),
-      });
-    }
-
-    return chapters;
   }
 
   bool _isUtf8(List<int> bytes) {
@@ -115,17 +98,11 @@ class TxtParser {
         i += 2;
       } else if ((byte & 0xF0) == 0xE0) {
         if (i + 2 >= bytes.length) return false;
-        if ((bytes[i + 1] & 0xC0) != 0x80 || (bytes[i + 2] & 0xC0) != 0x80) {
-          return false;
-        }
+        if ((bytes[i + 1] & 0xC0) != 0x80 || (bytes[i + 2] & 0xC0) != 0x80) return false;
         i += 3;
       } else if ((byte & 0xF8) == 0xF0) {
         if (i + 3 >= bytes.length) return false;
-        if ((bytes[i + 1] & 0xC0) != 0x80 ||
-            (bytes[i + 2] & 0xC0) != 0x80 ||
-            (bytes[i + 3] & 0xC0) != 0x80) {
-          return false;
-        }
+        if ((bytes[i + 1] & 0xC0) != 0x80 || (bytes[i + 2] & 0xC0) != 0x80 || (bytes[i + 3] & 0xC0) != 0x80) return false;
         i += 4;
       } else {
         return false;
