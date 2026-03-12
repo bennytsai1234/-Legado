@@ -48,8 +48,8 @@ class BookmarkDao {
     return List.generate(maps.length, (i) => Bookmark.fromJson(maps[i]));
   }
 
-  /// 搜尋書籤
-  Future<List<Bookmark>> search(
+  /// 搜尋特定書籍的書籤
+  Future<List<Bookmark>> searchInBook(
     String bookName,
     String bookAuthor,
     String key,
@@ -92,5 +92,28 @@ class BookmarkDao {
   Future<void> delete(Bookmark bookmark) async {
     final db = await AppDatabase.database;
     await db.delete(tableName, where: 'id = ?', whereArgs: [bookmark.id]);
+  }
+
+  /// 清除所有書籤
+  Future<void> clearAll() async {
+    final db = await AppDatabase.database;
+    await db.delete(tableName);
+  }
+
+  /// 全域搜尋書籤（跨所有書籍）
+  Future<List<Bookmark>> search(String key) async {
+    final db = await AppDatabase.database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      '''
+        SELECT * FROM $tableName 
+        WHERE bookName LIKE '%' || ? || '%' 
+        OR chapterName LIKE '%' || ? || '%' 
+        OR content LIKE '%' || ? || '%'
+        OR bookText LIKE '%' || ? || '%'
+        ORDER BY bookName COLLATE NOCASE, chapterIndex
+      ''',
+      [key, key, key, key],
+    );
+    return List.generate(maps.length, (i) => Bookmark.fromJson(maps[i]));
   }
 }
