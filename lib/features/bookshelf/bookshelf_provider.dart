@@ -16,6 +16,7 @@ import '../../core/database/dao/book_source_dao.dart';
 import '../../core/models/book.dart';
 import '../../core/models/book_group.dart';
 import '../../core/models/chapter.dart';
+import '../../core/models/book_source.dart';
 import '../../core/services/book_source_service.dart';
 import '../../core/local_book/txt_parser.dart';
 import '../../core/local_book/epub_parser.dart';
@@ -325,27 +326,69 @@ class BookshelfProvider extends ChangeNotifier {
   }
 
   Future<void> importBookshelfFromUrl(String url) async {
+    _isLoading = true;
+    notifyListeners();
     try {
-      final response = await Dio().get(url);
-      if (response.data != null) {
-        final jsonStr = response.data is String ? response.data : jsonEncode(response.data);
-        final List<dynamic> decoded = jsonDecode(jsonStr);
+      final input = url.trim();
+      if (input.startsWith('http') && !input.contains('[')) {
+        // 單個書籍 URL 匯入
+        final uri = Uri.parse(input);
+        final baseUrl = "${uri.scheme}://${uri.host}";
         final sources = await _sourceDao.getEnabled();
-        for (var item in decoded) {
-          if (item is! Map) continue;
-          final name = item['name']?.toString() ?? "";
-          final author = item['author']?.toString() ?? "";
-          if (name.isEmpty) continue;
-          final searchResults = await _service.preciseSearch(sources, name, author);
-          if (searchResults.isNotEmpty) {
-            final bestMatch = searchResults.first;
-            final newBook = bestMatch.toBook().copyWith(isInBookshelf: true);
-            await _bookDao.insertOrUpdate(newBook);
+        
+        // 尋找匹配書源 (比照 Android NetworkUtils.getBaseUrl 邏輯)
+        BookSource? source = sources.cast<BookSource?>().firstWhere(
+          (s) => s?.bookSourceUrl.contains(baseUrl) ?? false, 
+          orElse: () => null
+        );
+
+        if (source == null) {
+          // 嘗試使用 bookUrlPattern 匹配
+          for (var s in sources) {
+            if (s.bookUrlPattern != null && RegExp(s.bookUrlPattern!).hasMatch(input)) {
+              source = s;
+              break;
+            }
           }
         }
-        await loadBooks();
+
+        if (source != null) {
+          var book = Book(bookUrl: input, name: "加載中...", author: "", origin: source.bookSourceUrl, originName: source.bookSourceName, isInBookshelf: true);
+          book = await _service.getBookInfo(source, book);
+          final chapters = await _service.getChapterList(source, book);
+          
+          await _bookDao.insertOrUpdate(book);
+          await ChapterDao().insertChapters(chapters);
+          await loadBooks();
+        }
+      } else {
+        // 原有 JSON 陣列匯入
+        final response = await Dio().get(input);
+        if (response.data != null) {
+          final jsonStr = response.data is String ? response.data : jsonEncode(response.data);
+          final List<dynamic> decoded = jsonDecode(jsonStr);
+          final sources = await _sourceDao.getEnabled();
+          for (var item in decoded) {
+            if (item is! Map) continue;
+            final name = item['name']?.toString() ?? "";
+            final author = item['author']?.toString() ?? "";
+            if (name.isEmpty) continue;
+            final searchResults = await _service.preciseSearch(sources, name, author);
+            if (searchResults.isNotEmpty) {
+              final bestMatch = searchResults.first;
+              final newBook = bestMatch.toBook().copyWith(isInBookshelf: true);
+              await _bookDao.insertOrUpdate(newBook);
+            }
+          }
+          await loadBooks();
+        }
       }
-    } catch (e) { debugPrint('從 URL 匯入書架失敗: $e'); }
+    } catch (e) { 
+      debugPrint('從 URL 匯入書架失敗: $e'); 
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   @override

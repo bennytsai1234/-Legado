@@ -53,7 +53,7 @@
 | **1.4 書籍更新 (Refresh)** | `MainViewModel.kt` | `bookshelf_provider.dart`: L166 (`refreshBookshelf`) | **Matched** | iOS 使用 `pool` 限制並發數，語義一致。 |
 | **1.5 匯出書架** | `BookshelfViewModel.kt`: L107 (`exportBookshelf`) | `bookshelf_provider.dart`: L257 (`exportBookshelf`) | **Matched** | 均導出為 JSON 數組。 |
 | **1.6 本地匯入** | `ImportBookActivity.kt` | `bookshelf_provider.dart`: L205 (`importLocalBook`) | **Matched** | 支援 TXT/EPUB 解析。 |
-| **1.7 URL 解析匯入** | `BookshelfViewModel.kt`: L35 (`addBookByUrl`) | `bookshelf_provider.dart`: L265 (`importBookshelfFromUrl`) | **Logic Gap** | iOS 不支持單個書網址解析。 |
+| **1.7 URL 解析匯入** | `BookshelfViewModel.kt`: L35 (`addBookByUrl`) | `bookshelf_provider.dart`: L327 (`importBookshelfFromUrl`) | **Matched** | 現已支援單個書籍詳情頁 URL 解析並自動獲取書名、作者及目錄。 |
 | **1.8 書架排序** | `BaseBookshelfFragment.kt`: L190 (`AppConfig.bookshelfSort`) | `bookshelf_provider.dart` | **Logic Gap** | iOS 端缺乏 UI 指定的動態排序邏輯。 |
 
 ---
