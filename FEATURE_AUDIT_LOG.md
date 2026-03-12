@@ -56,6 +56,13 @@
 | **17.5 高級排序演算法** | `BookSourceActivity.kt`: L295 (BookSourceSort) | - | **Logic Gap** | Android 支援按權重、URL、響應時間、更新時間等多維度排序；iOS 目前僅有默認排序。 |
 | **17.6 域名聚合顯示** | `BookSourceActivity.kt`: L180 (groupSourcesByDomain) | - | **Logic Gap** | Android 支援按 Domain 聚合顯示書源以優化同站管理；iOS 尚未實作此視圖。 |
 | **17.7 拖拽排序與持久化** | `ItemTouchCallback.kt` | - | **Logic Gap** | Android 支援手動拖拽調整書源權重順序；iOS 目前列表順序固定。 |
+| **18.1 目錄/書籤雙標籤** | `TocActivity.kt`: L235 (TabFragmentPageAdapter) | - | **Logic Gap** | Android 採用 Tab 頁面同時管理目錄與書籤；iOS 的目錄位於詳情頁或閱讀器側邊欄，書籤則散落在全域書籤頁或需進階 UI 整合。 |
+| **18.2 目錄搜尋與過濾** | `TocActivity.kt`: L100 (searchView) | `book_detail_page.dart`: L165 (_showSearchTocDialog) | **Matched** | 均支援透過關鍵字即時過濾章節標題。 |
+| **18.3 目錄倒序排列** | `TocActivity.kt`: L145 (menu_reverse_toc) | `book_detail_page.dart`: L75 (toggleSort) | **Matched** | 均支援目錄標題的正序/倒序切換顯示。 |
+| **18.4 自定義 TOC 正則** | `TocActivity.kt`: L135 (menu_toc_regex) | - | **Logic Gap** | Android 支援針對本地 TXT 手動輸入正則表達式解析目錄；iOS 目前依賴預設的 TxtParser 邏輯。 |
+| **18.5 章節字數統計** | `TocActivity.kt`: L160 (menu_load_word_count) | - | **Logic Gap** | Android 支援在目錄列表中顯示每個章節的字數預算；iOS 目前僅顯示標題。 |
+| **18.6 書籤匯出功能** | `TocActivity.kt`: L165 (menu_export_bookmark) | - | **Logic Gap** | Android 支援將單本書籍的書籤匯出為 JSON 或 Markdown；iOS 目前缺失此導出路徑。 |
+
 
 
 
