@@ -1,7 +1,10 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_js/flutter_js.dart';
 import '../../core/local_book/epub_parser.dart';
 import '../../core/local_book/txt_parser.dart';
 import '../../core/database/dao/book_dao.dart';
@@ -12,19 +15,38 @@ import '../../core/models/chapter.dart';
 class LocalBookProvider extends ChangeNotifier {
   final BookDao _bookDao = BookDao();
   final ChapterDao _chapterDao = ChapterDao();
+  final JavascriptRuntime _jsRuntime = getJavascriptRuntime();
   bool _isImporting = false;
 
   bool get isImporting => _isImporting;
 
-  Future<bool> importLocalBook() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['txt', 'epub'],
-    );
+  /// 深度還原：利用 JS 解析檔名獲取書名與作者
+  Future<Map<String, String>> _parseFileName(String fileName) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsCode = prefs.getString('book_import_file_name_js') ?? '';
+    
+    if (jsCode.isEmpty) {
+      return {'name': p.basenameWithoutExtension(fileName), 'author': ''};
+    }
 
-    if (result == null || result.files.single.path == null) return false;
-
-    return await importFile(result.files.single.path!);
+    try {
+      final String fullJs = """
+        var src = "$fileName";
+        var name = "";
+        var author = "";
+        $jsCode
+        JSON.stringify({name: name, author: author});
+      """;
+      final result = _jsRuntime.evaluate(fullJs);
+      final map = Map<String, dynamic>.from(jsonDecode(result.stringResult));
+      return {
+        'name': map['name']?.toString() ?? p.basenameWithoutExtension(fileName),
+        'author': map['author']?.toString() ?? '',
+      };
+    } catch (e) {
+      debugPrint('JS 檔名解析失敗: $e');
+      return {'name': p.basenameWithoutExtension(fileName), 'author': ''};
+    }
   }
 
   Future<bool> importFile(String path) async {
@@ -33,10 +55,12 @@ class LocalBookProvider extends ChangeNotifier {
 
     final file = File(path);
     final ext = p.extension(path).toLowerCase();
+    
+    final info = await _parseFileName(p.basename(path));
 
     try {
       if (ext == '.txt') {
-        await _importTxt(file);
+        await _importTxt(file, info['name']!, info['author']!);
       } else if (ext == '.epub') {
         await _importEpub(file);
       }
@@ -50,14 +74,15 @@ class LocalBookProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _importTxt(File file) async {
+  Future<void> _importTxt(File file, String name, String author) async {
     final parser = TxtParser(file);
     await parser.load();
     final chaptersData = parser.splitChapters();
 
     final book = Book(
       bookUrl: 'local://${file.path}',
-      name: p.basenameWithoutExtension(file.path),
+      name: name,
+      author: author,
       origin: 'local',
       originName: '本地',
       isInBookshelf: true,
@@ -83,7 +108,6 @@ class LocalBookProvider extends ChangeNotifier {
       });
     }
     
-    // Batch insert metadata first, then contents
     await _chapterDao.insertChapters(chapters);
     await _chapterDao.insertContents(contents);
   }

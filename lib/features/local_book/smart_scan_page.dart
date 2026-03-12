@@ -123,12 +123,58 @@ class _SmartScanPageState extends State<SmartScanPage> {
     }
   }
 
+  void _showJsSettingDialog() async {
+    final prefs = await SharedPreferences.getInstance();
+    final controller = TextEditingController(text: prefs.getString('book_import_file_name_js') ?? '');
+    
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('檔名解析 JS'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('使用變數 src (檔名)，賦值給 name 與 author。', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: controller,
+                maxLines: 5,
+                decoration: const InputDecoration(
+                  hintText: 'const p = src.split("_");\\nname = p[0]; author = p[1];',
+                  border: OutlineInputBorder(),
+                ),
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+            ElevatedButton(
+              onPressed: () async {
+                await prefs.setString('book_import_file_name_js', controller.text);
+                if (mounted) Navigator.pop(ctx);
+              },
+              child: const Text('儲存'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('導入本地書籍'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.javascript),
+            tooltip: '檔名解析設定',
+            onPressed: _showJsSettingDialog,
+          ),
           if (_displayItems.isNotEmpty)
             TextButton(
               onPressed: _importSelected,
