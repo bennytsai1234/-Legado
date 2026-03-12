@@ -321,8 +321,9 @@ class BookshelfProvider extends BaseProvider {
       _updatingCount = onlineBooks.length;
       notifyListeners();
 
-      // 深度補齊：使用 Pool 控制併發 (對應 Android threadCount)
-      final updatePool = Pool(4); 
+      // 深度補齊：使用全域 Pool 控制併發 (對應 Android threadCount)
+      final threadCount = await SharedPreferences.getInstance().then((p) => p.getInt('thread_count') ?? 8);
+      final updatePool = Pool(threadCount); 
       int completed = 0;
       final List<Future<void>> updateTasks = [];
 

@@ -5,6 +5,8 @@ import '../../core/models/book_source.dart';
 import '../../core/models/search_book.dart';
 import '../../core/models/book.dart';
 import '../../core/services/book_source_service.dart';
+import 'package:pool/pool.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ChangeCoverProvider extends ChangeNotifier {
   final BookSourceDao _sourceDao = BookSourceDao();
@@ -97,10 +99,14 @@ class ChangeCoverProvider extends ChangeNotifier {
       return;
     }
 
+    // 深度還原：使用全域 Pool 控制併發 (對應 Android threadCount)
+    final threadCount = await SharedPreferences.getInstance().then((p) => p.getInt('thread_count') ?? 8);
+    final coverPool = Pool(threadCount);
+
     final List<Future<void>> tasks = [];
     for (final source in coverSources) {
       if (!_isSearching) break;
-      tasks.add(_searchSingleSource(source, name, author));
+      tasks.add(coverPool.withResource(() => _searchSingleSource(source, name, author)));
     }
 
     await Future.wait(tasks);

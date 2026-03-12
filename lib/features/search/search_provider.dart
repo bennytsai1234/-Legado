@@ -4,6 +4,8 @@ import '../../core/database/dao/search_history_dao.dart';
 import '../../core/models/book_source.dart';
 import '../../core/models/search_book.dart';
 import '../../core/services/book_source_service.dart';
+import 'package:pool/pool.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SearchProvider extends ChangeNotifier {
   final BookSourceDao _sourceDao = BookSourceDao();
@@ -92,10 +94,14 @@ class SearchProvider extends ChangeNotifier {
       return;
     }
 
+    // 深度還原：使用全域 Pool 控制併發 (對應 Android threadCount)
+    final threadCount = await SharedPreferences.getInstance().then((p) => p.getInt('thread_count') ?? 8);
+    final searchPool = Pool(threadCount);
+
     // 並發搜尋
     final List<Future<void>> tasks = [];
     for (final source in enabledSources) {
-      tasks.add(_searchSingleSource(source, keyword));
+      tasks.add(searchPool.withResource(() => _searchSingleSource(source, keyword)));
     }
 
     await Future.wait(tasks);
