@@ -80,7 +80,7 @@ class OtherSettingsPage extends StatelessWidget {
               ListTile(
                 title: const Text('全域封面規則'),
                 subtitle: Text(settings.globalCoverRule.isEmpty ? '未設定' : '已設定 (點擊編輯)'),
-                onTap: () => _showGlobalCoverRuleDialog(context, settings),
+                onTap: () => _showAdvancedCoverConfig(context, settings),
               ),
               ListTile(
                 title: const Text('直鏈上傳規則'),
@@ -237,6 +237,72 @@ class OtherSettingsPage extends StatelessWidget {
                     Navigator.pop(context);
                   },
                   child: const Text('確定'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showAdvancedCoverConfig(BuildContext context, SettingsProvider settings) {
+    final ruleController = TextEditingController(text: settings.globalCoverRule);
+    showDialog(
+      context: context,
+      builder: (context) {
+        int priority = settings.coverSearchPriority;
+        double timeout = settings.coverTimeout.toDouble();
+        
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('進階封面設定'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<int>(
+                      value: priority,
+                      decoration: const InputDecoration(labelText: '搜尋優先級'),
+                      items: const [
+                        DropdownMenuItem(value: 0, child: Text('書源優先')),
+                        DropdownMenuItem(value: 1, child: Text('全域規則優先')),
+                      ],
+                      onChanged: (val) => setState(() => priority = val!),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('超時時間: ${(timeout / 1000).toStringAsFixed(1)} 秒'),
+                    Slider(
+                      value: timeout,
+                      min: 1000,
+                      max: 30000,
+                      divisions: 29,
+                      onChanged: (val) => setState(() => timeout = val),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: ruleController,
+                      decoration: const InputDecoration(
+                        labelText: '全域規則 (每行一個 URL)',
+                        hintText: '例: https://example.com/cover/{{key}}.jpg',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 5,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+                TextButton(
+                  onPressed: () {
+                    settings.setCoverSearchPriority(priority);
+                    settings.setCoverTimeout(timeout.toInt());
+                    settings.setGlobalCoverRule(ruleController.text);
+                    Navigator.pop(context);
+                  },
+                  child: const Text('儲存'),
                 ),
               ],
             );
