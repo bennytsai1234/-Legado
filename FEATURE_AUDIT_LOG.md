@@ -113,7 +113,7 @@
 | **8.2 換源搜尋快取預加載** | `ChangeBookSourceViewModel.kt`: L105 (getDbSearchBooks) | `change_chapter_source_sheet.dart`: L75 (_searchBookDao) | **Matched** | 均支援啟動換源介面時先從本地資料庫讀取已有的搜尋結果，縮短等待時間。 |
 | **8.3 精準搜尋過濾開關** | `ChangeBookSourceDialog.kt`: R.id.menu_check_author | `change_chapter_source_sheet.dart`: L165 (_checkAuthor) | **Matched** | 均在介面提供開關，控制搜尋時是否必須強制匹配作者名。 |
 | **8.4 搜尋範圍分組過濾** | `AppConfig.searchGroup` | `change_chapter_source_sheet.dart`: L105 | **Matched** | 已實作在換源介面選取特定書源分組進行過濾搜尋的功能，高度還原 Android searchGroup 邏輯。 |
-| **8.5 空結果切換引導** | `ChangeBookSourceViewModel.kt`: L55 (searchFinishCallback) | - | **Logic Gap** | Android 在分組搜尋為空時提示切換到全部分組；iOS 目前僅顯示「無搜尋結果」。 |
+| **8.5 空結果切換引導** | `ChangeBookSourceViewModel.kt`: L55 (searchFinishCallback) | `change_chapter_source_sheet.dart`: L120 | **Matched** | 已實作當特定分組搜尋結果為空時，主動彈出 SnackBar 引導用戶切換至「全部分組」並重試，對標 Android 導出邏輯。 |
 | **8.6 跨類型（有聲/文本）遷移** | `ChangeBookSourceDialog.kt`: L200 (migrateTo) | `change_chapter_source_sheet.dart`: L286 (_showMigrationDialog) | **Matched** | 均支援在換源時偵測類型變更，並提示執行進度遷移與播放器/閱讀器跳轉。 |
 | **9.1 發現搜尋語法連動** | `ExploreFragment.kt`: L155 (group:) | `explore_page.dart`: L67 (_handleSearch) | **Matched** | 均支援在發現頁搜尋框輸入 `group:NAME` 自動切換至對應分組。 |
 | **9.2 網格/列表自動切換** | `ExploreShowActivity.kt` | `explore_page.dart`: L133 (isGrid) | **Matched** | 均支援根據書源探索規則中的 layout/style 屬性自動切換顯示模式。 |
