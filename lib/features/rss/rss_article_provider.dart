@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import '../../core/models/rss_source.dart';
 import '../../core/models/rss_article.dart';
+import '../../core/models/rss_star.dart';
+import '../../core/database/dao/rss_star_dao.dart';
 import '../../core/services/rss_parser.dart';
 import '../../core/engine/analyze_url.dart';
 import '../../core/engine/analyze_rule.dart';
 
 class RssArticleProvider extends ChangeNotifier {
   final RssSource source;
+  final RssStarDao _starDao = RssStarDao();
+  
   List<RssArticle> _articles = [];
+  Set<String> _starredLinks = {};
   bool _isLoading = false;
   int _page = 1;
   String? _nextPageUrl;
@@ -17,7 +22,40 @@ class RssArticleProvider extends ChangeNotifier {
   bool get hasMore => _nextPageUrl != null || _page == 1;
 
   RssArticleProvider(this.source) {
-    loadArticles();
+    _init();
+  }
+
+  Future<void> _init() async {
+    await loadStarred();
+    await loadArticles();
+  }
+
+  Future<void> loadStarred() async {
+    final starred = await _starDao.getAll();
+    _starredLinks = starred.map((e) => e.link).toSet();
+    notifyListeners();
+  }
+
+  bool isStarred(RssArticle article) => _starredLinks.contains(article.link);
+
+  Future<void> toggleStar(RssArticle article) async {
+    if (isStarred(article)) {
+      await _starDao.delete(article.origin, article.link);
+      _starredLinks.remove(article.link);
+    } else {
+      final star = RssStar(
+        origin: article.origin,
+        link: article.link,
+        title: article.title,
+        pubDate: article.pubDate,
+        description: article.description,
+        image: article.image,
+        starTime: DateTime.now().millisecondsSinceEpoch,
+      );
+      await _starDao.insert(star);
+      _starredLinks.add(article.link);
+    }
+    notifyListeners();
   }
 
   Future<void> loadArticles({bool refresh = false}) async {

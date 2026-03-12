@@ -7,10 +7,31 @@ import '../../core/models/replace_rule.dart';
 class ReplaceRuleProvider extends ChangeNotifier {
   final ReplaceRuleDao _dao = ReplaceRuleDao();
   List<ReplaceRule> _rules = [];
+  String _selectedGroup = '全部';
   bool _isLoading = false;
 
-  List<ReplaceRule> get rules => _rules;
+  List<ReplaceRule> get rules {
+    if (_selectedGroup == '全部') return _rules;
+    return _rules.where((r) => r.group?.contains(_selectedGroup) ?? false).toList();
+  }
+
+  List<String> get groups {
+    final Set<String> allGroups = {'全部'};
+    for (var rule in _rules) {
+      if (rule.group != null && rule.group!.isNotEmpty) {
+        allGroups.addAll(rule.group!.split(',').map((e) => e.trim()));
+      }
+    }
+    return allGroups.toList()..sort();
+  }
+
+  String get selectedGroup => _selectedGroup;
   bool get isLoading => _isLoading;
+
+  void selectGroup(String group) {
+    _selectedGroup = group;
+    notifyListeners();
+  }
 
   ReplaceRuleProvider() {
     loadRules();

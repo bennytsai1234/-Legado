@@ -424,8 +424,20 @@ class ReaderProvider extends ChangeNotifier {
   Future<List<Map<String, dynamic>>> searchContent(String kw) async {
     final res = <Map<String, dynamic>>[];
     for (int i = 0; i < chapters.length; i++) {
-      final c = await _chapterDao.getContent(book.bookUrl, i);
-      if (c != null && c.contains(kw)) {
+      String? c = await _chapterDao.getContent(book.bookUrl, i);
+      
+      // 深度還原：支援在線搜尋 (對標 Android ReadBookViewModel.searchResultPositions)
+      if (c == null || c.isEmpty) {
+        if (_source == null) await _loadSource();
+        if (_source != null) {
+          try {
+            c = await _service.getContent(_source!, book, _chapters[i]);
+            await _chapterDao.saveContent(book.bookUrl, i, c);
+          } catch (_) { continue; }
+        } else { continue; }
+      }
+
+      if (c.contains(kw)) {
         final idx = c.indexOf(kw);
         final start = (idx - 20).clamp(0, c.length);
         final end = (idx + kw.length + 20).clamp(0, c.length);
