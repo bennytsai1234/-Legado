@@ -55,6 +55,13 @@ class CacheManagerProvider extends ChangeNotifier {
     await downloadService.addDownloadTask(book, toDownload);
   }
 
+  Future<void> downloadUncached() async {
+    final uncached = _chapters.where((ch) => !_cachedIndices.contains(ch.index)).toList();
+    if (uncached.isNotEmpty) {
+      await downloadService.addDownloadTask(book, uncached);
+    }
+  }
+
   Future<void> clearCache() async {
     await _chapterDao.deleteByBook(book.bookUrl);
     await loadStatus();

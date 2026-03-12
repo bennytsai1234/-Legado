@@ -66,20 +66,50 @@ class CacheManagerPage extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context, CacheManagerProvider provider) {
+    final total = provider.chapters.length;
+    final cached = provider.cachedIndices.length;
+    final percent = total > 0 ? (cached * 100 / total).toStringAsFixed(1) : '0';
+    
     return Padding(
       padding: const EdgeInsets.all(8.0),
-      child: Wrap(
-        spacing: 8,
+      child: Column(
         children: [
-          ElevatedButton(
-            onPressed: () => provider.downloadChapters(0, provider.chapters.length),
-            child: const Text('下載全部'),
+          // 快取統計
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(
+              children: [
+                Icon(Icons.storage, size: 16, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 6),
+                Text(
+                  '已快取 $cached / $total 章 ($percent%)',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
           ),
-          ElevatedButton(
-            onPressed: () {
-              provider.downloadChapters(0, provider.chapters.length);
-            },
-            child: const Text('下載未快取'),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.download, size: 18),
+                  onPressed: () => provider.downloadChapters(0, total),
+                  label: const Text('下載全部'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.download_for_offline_outlined, size: 18),
+                  onPressed: () => provider.downloadUncached(),
+                  label: const Text('下載未快取'),
+                ),
+              ),
+            ],
           ),
         ],
       ),
