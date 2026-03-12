@@ -30,9 +30,49 @@ class _MangaReaderPageState extends State<MangaReaderPage> with WidgetsBindingOb
   
   // 閱讀模式：0: 垂直, 1: 水平, 2: WebToon
   int _readingMode = 0; 
+  Timer? _autoScrollTimer;
+  bool _isAutoScrolling = false;
+  double _autoScrollSpeed = 2.0;
 
   final PageController _pageController = PageController();
   final ScrollController _scrollController = ScrollController();
+
+  void _toggleAutoScroll() {
+    if (_readingMode == 1) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("水平翻頁模式不支援自動捲動")));
+      return;
+    }
+    setState(() {
+      _isAutoScrolling = !_isAutoScrolling;
+      _showControls = false;
+    });
+    
+    if (_isAutoScrolling) {
+      _autoScrollTimer = Timer.periodic(const Duration(milliseconds: 30), (timer) {
+        if (_scrollController.hasClients) {
+          final max = _scrollController.position.maxScrollExtent;
+          final current = _scrollController.offset;
+          if (current >= max) {
+            _stopAutoScroll();
+            if (_currentChapterIndex < _chapters.length - 1) {
+              _loadChapter(_currentChapterIndex + 1);
+            }
+          } else {
+            _scrollController.jumpTo(current + _autoScrollSpeed);
+          }
+        }
+      });
+    } else {
+      _autoScrollTimer?.cancel();
+    }
+  }
+
+  void _stopAutoScroll() {
+    if (_isAutoScrolling) {
+      setState(() => _isAutoScrolling = false);
+      _autoScrollTimer?.cancel();
+    }
+  }
   final BookSourceService _service = BookSourceService();
   final BookSourceDao _sourceDao = BookSourceDao();
   final ChapterDao _chapterDao = ChapterDao();
@@ -254,7 +294,12 @@ class _MangaReaderPageState extends State<MangaReaderPage> with WidgetsBindingOb
             children: [
               const Icon(Icons.chrome_reader_mode_outlined, color: Colors.white, size: 18),
               const SizedBox(width: 12),
-              const Text("閱讀模式：", style: TextStyle(color: Colors.white, fontSize: 14)),
+              IconButton(
+                icon: Icon(_isAutoScrolling ? Icons.pause_circle_filled : Icons.play_circle_outline, color: Colors.blue),
+                onPressed: _toggleAutoScroll,
+                tooltip: '自動捲動',
+              ),
+              const Text("模式：", style: TextStyle(color: Colors.white, fontSize: 14)),
               DropdownButton<int>(
                 dropdownColor: Colors.grey[900],
                 value: _readingMode,
