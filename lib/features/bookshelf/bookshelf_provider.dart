@@ -151,6 +151,15 @@ class BookshelfProvider extends BaseProvider {
     notifyListeners();
   }
 
+  void setSelected(String url, bool selected) {
+    if (selected) {
+      _selectedBookUrls.add(url);
+    } else {
+      _selectedBookUrls.remove(url);
+    }
+    notifyListeners();
+  }
+
   void selectAll() {
     _selectedBookUrls.addAll(_books.map((b) => b.bookUrl));
     notifyListeners();

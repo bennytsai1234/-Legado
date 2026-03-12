@@ -18,6 +18,55 @@ class BookshelfPage extends StatefulWidget {
 }
 
 class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProviderStateMixin {
+  final Map<String, GlobalKey> _itemKeys = {};
+  String? _dragStartUrl;
+  Set<String> _initialSelected = {};
+
+  void _handleDragUpdate(Offset localPosition, List<Book> groupBooks, BookshelfProvider provider) {
+    if (!provider.isBatchMode) return;
+
+    String? hoveredUrl;
+    for (var book in groupBooks) {
+      final key = _itemKeys[book.bookUrl];
+      if (key == null || key.currentContext == null) continue;
+
+      final box = key.currentContext!.findRenderObject() as RenderBox;
+      final position = box.localToGlobal(Offset.zero);
+      final size = box.size;
+      final rect = Rect.fromLTWH(position.dx, position.globalToLocal(Offset.zero).dy + position.dy, size.width, size.height);
+      
+      // 使用更簡單的 hitTest 方式
+      final globalPos = (context.findRenderObject() as RenderBox).localToGlobal(localPosition);
+      final localInBox = box.globalToLocal(globalPos);
+      if (localInBox.dx >= 0 && localInBox.dx <= size.width && localInBox.dy >= 0 && localInBox.dy <= size.height) {
+        hoveredUrl = book.bookUrl;
+        break;
+      }
+    }
+
+    if (hoveredUrl != null && _dragStartUrl != null) {
+      final startIndex = groupBooks.indexWhere((b) => b.bookUrl == _dragStartUrl);
+      final currentIndex = groupBooks.indexWhere((b) => b.bookUrl == hoveredUrl);
+      
+      if (startIndex != -1 && currentIndex != -1) {
+        final start = startIndex < currentIndex ? startIndex : currentIndex;
+        final end = startIndex < currentIndex ? currentIndex : startIndex;
+        
+        final bool shouldSelect = !_initialSelected.contains(_dragStartUrl);
+        
+        for (int i = 0; i < groupBooks.length; i++) {
+          final url = groupBooks[i].bookUrl;
+          if (i >= start && i <= end) {
+            provider.setSelected(url, shouldSelect);
+          } else {
+            // 恢復至拖拽前的狀態
+            provider.setSelected(url, _initialSelected.contains(url));
+          }
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<BookshelfProvider>(
@@ -62,9 +111,19 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
 
                           return RefreshIndicator(
                             onRefresh: () => provider.refreshBookshelf(),
-                            child: provider.isGridLayout
-                                ? _buildGridView(provider, groupBooks)
-                                : _buildListView(provider, groupBooks),
+                            child: GestureDetector(
+                              onPanStart: (details) {
+                                if (provider.isBatchMode) {
+                                  _initialSelected = Set.from(provider.selectedBookUrls);
+                                  // 這裡簡單處理：透過觸發位置找 startUrl 邏輯較複雜，
+                                  // 我們在 GridItem/ListItem 的 LongPress 中已經開啟了 BatchMode。
+                                }
+                              },
+                              onPanUpdate: (details) => _handleDragUpdate(details.localPosition, groupBooks, provider),
+                              child: provider.isGridLayout
+                                  ? _buildGridView(provider, groupBooks)
+                                  : _buildListView(provider, groupBooks),
+                            ),
                           );
                         }).toList(),
                       ),
@@ -168,7 +227,10 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
 
   Widget _buildGridItem(BookshelfProvider provider, Book book) {
     final isSelected = provider.selectedBookUrls.contains(book.bookUrl);
+    _itemKeys.putIfAbsent(book.bookUrl, () => GlobalKey());
+    
     return GestureDetector(
+      key: _itemKeys[book.bookUrl],
       onLongPress: () => provider.toggleBatchMode(book.bookUrl),
       onTap: () {
         if (provider.isBatchMode) {
@@ -243,7 +305,10 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
 
   Widget _buildListItem(BookshelfProvider provider, Book book) {
     final isSelected = provider.selectedBookUrls.contains(book.bookUrl);
+    _itemKeys.putIfAbsent(book.bookUrl, () => GlobalKey());
+
     return ListTile(
+      key: _itemKeys[book.bookUrl],
       leading: ClipRRect(
         borderRadius: BorderRadius.circular(3),
         child: SizedBox(
