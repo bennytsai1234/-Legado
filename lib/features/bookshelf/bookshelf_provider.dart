@@ -310,64 +310,68 @@ class BookshelfProvider extends BaseProvider {
     await loadGroups();
   }
   Future<void> refreshBookshelf() async {
-    await runTask(() async {
-      // 深度補齊：排除不參與自動更新的分組 (對應 Android it.enableRefresh)
-      final disabledGroups = _groups.where((g) => !g.enableRefresh).map((g) => g.groupId).toSet();
+    AppEventBus().fire(AppEventBus.bookshelfRefreshStart);
+    try {
+      await runTask(() async {
+        // 深度補齊：排除不參與自動更新的分組 (對應 Android it.enableRefresh)
+        final disabledGroups = _groups.where((g) => !g.enableRefresh).map((g) => g.groupId).toSet();
 
-      final onlineBooks = _books.where((b) {
-        return b.origin != 'local' && !disabledGroups.contains(b.group);
-      }).toList();
+        final onlineBooks = _books.where((b) {
+          return b.origin != 'local' && !disabledGroups.contains(b.group);
+        }).toList();
 
-      _updatingCount = onlineBooks.length;
-      notifyListeners();
+        _updatingCount = onlineBooks.length;
+        notifyListeners();
 
-      // 深度補齊：使用全域 Pool 控制併發 (對應 Android threadCount)
-      final threadCount = await SharedPreferences.getInstance().then((p) => p.getInt('thread_count') ?? 8);
-      final updatePool = Pool(threadCount); 
-      int completed = 0;
-      final List<Future<void>> updateTasks = [];
+        // 深度還原：使用全域 Pool 控制併發 (對應 Android threadCount)
+        final threadCount = await SharedPreferences.getInstance().then((p) => p.getInt('thread_count') ?? 8);
+        final updatePool = Pool(threadCount); 
+        int completed = 0;
+        final List<Future<void>> updateTasks = [];
 
-      for (var book in onlineBooks) {
-        updateTasks.add(updatePool.withResource(() async {
-          final source = await _sourceDao.getByUrl(book.origin);
-          if (source != null) {
-            try {
-              final updatedBook = await _service.getBookInfo(source, book);
-              final chapters = await _service.getChapterList(source, updatedBook);
-              if (chapters.length > book.totalChapterNum) {
-                book.lastCheckCount = chapters.length - book.totalChapterNum;
-                book.totalChapterNum = chapters.length;
-                book.latestChapterTitle = chapters.last.title;
-                await _bookDao.insertOrUpdate(book);
-                await ChapterDao().insertChapters(chapters);
+        for (var book in onlineBooks) {
+          updateTasks.add(updatePool.withResource(() async {
+            final source = await _sourceDao.getByUrl(book.origin);
+            if (source != null) {
+              try {
+                final updatedBook = await _service.getBookInfo(source, book);
+                final chapters = await _service.getChapterList(source, updatedBook);
+                if (chapters.length > book.totalChapterNum) {
+                  book.lastCheckCount = chapters.length - book.totalChapterNum;
+                  book.totalChapterNum = chapters.length;
+                  book.latestChapterTitle = chapters.last.title;
+                  await _bookDao.insertOrUpdate(book);
+                  await ChapterDao().insertChapters(chapters);
+                }
+              } catch (e) {
+                debugPrint('更新書籍 ${book.name} 失敗: $e');
               }
-            } catch (e) {
-              debugPrint('更新書籍 ${book.name} 失敗: $e');
             }
+            completed++;
+            _updatingCount = onlineBooks.length - completed;
+            notifyListeners();
+          }));
+        }
+
+        await Future.wait(updateTasks);
+        _updatingCount = 0;
+        await loadBooks();
+
+        // 深度補齊：自動下載聯動 (對應 Android cacheBook)
+        final prefs = await SharedPreferences.getInstance();
+        if (prefs.getBool('auto_download_new_chapters') ?? false) {
+          _selectedBookUrls.clear();
+          for (var b in _books) {
+            if (b.lastCheckCount > 0) _selectedBookUrls.add(b.bookUrl);
           }
-          completed++;
-          _updatingCount = onlineBooks.length - completed;
-          notifyListeners();
-        }));
-      }
-
-      await Future.wait(updateTasks);
-      _updatingCount = 0;
-      await loadBooks();
-
-      // 深度補齊：自動下載聯動 (對應 Android cacheBook)
-      final prefs = await SharedPreferences.getInstance();
-      if (prefs.getBool('auto_download_new_chapters') ?? false) {
-        // 全選所有有更新的書籍
-        _selectedBookUrls.clear();
-        for (var b in _books) {
-          if (b.lastCheckCount > 0) _selectedBookUrls.add(b.bookUrl);
+          if (_selectedBookUrls.isNotEmpty) {
+            batchDownloadChapters();
+          }
         }
-        if (_selectedBookUrls.isNotEmpty) {
-          batchDownloadChapters();
-        }
-      }
-    });
+      });
+    } finally {
+      AppEventBus().fire(AppEventBus.bookshelfRefreshEnd);
+    }
   }
 
   Future<void> importLocalBook() async {

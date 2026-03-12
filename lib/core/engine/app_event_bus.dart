@@ -10,6 +10,8 @@ class AppEventBus {
 
   // Event Names
   static const String upBookshelf = 'upBookshelf';
+  static const String bookshelfRefreshStart = 'bookshelfRefreshStart';
+  static const String bookshelfRefreshEnd = 'bookshelfRefreshEnd';
 
   void fire(String name, {dynamic data}) {
     _eventBus.fire(AppEvent(name, data: data));

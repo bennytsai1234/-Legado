@@ -27,11 +27,31 @@ class DownloadService extends ChangeNotifier {
   bool _isPaused = false;
   Completer<void>? _pauseCompleter;
   bool _isScheduling = false;
-  final int _maxConcurrent = 3; // 最大併發書籍數
-  final int _maxChapterConcurrent = 5; // 每本書最大併發章節數
+  bool _isBookshelfRefreshing = false; // 深度還原：書架刷新狀態追蹤
+  final int _maxConcurrent = 3;
+  final int _maxChapterConcurrent = 5;
 
   DownloadService._internal() {
     _loadTasks();
+    _listenEvents();
+  }
+
+  void _listenEvents() {
+    AppEventBus().onName(AppEventBus.bookshelfRefreshStart).listen((_) {
+      _isBookshelfRefreshing = true;
+      notifyListeners();
+    });
+    AppEventBus().onName(AppEventBus.bookshelfRefreshEnd).listen((_) {
+      _isBookshelfRefreshing = false;
+      notifyListeners();
+    });
+  }
+
+  Future<void> _checkPriority() async {
+    // 深度還原：若書架正在刷新目錄，下載任務主動讓路（每秒檢查一次）
+    while (_isBookshelfRefreshing) {
+      await Future.delayed(const Duration(seconds: 1));
+    }
   }
 
   List<DownloadTask> get tasks => _tasks;
@@ -50,6 +70,7 @@ class DownloadService extends ChangeNotifier {
   }
 
   Future<void> _checkPause() async {
+    await _checkPriority(); // 先檢查優先權
     if (_isPaused) {
       _pauseCompleter ??= Completer<void>();
       await _pauseCompleter!.future;
