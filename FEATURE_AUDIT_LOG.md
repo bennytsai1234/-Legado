@@ -38,6 +38,13 @@
 | **5.4 書籤編輯功能** | `BookmarkDialog.kt` | - | **Logic Gap** | Android 支援在列表直接點擊彈窗編輯書籤筆記；iOS 目前僅有跳轉與刪除，缺失編輯介面。 |
 | **5.5 JSON 序列化導出** | `AllBookmarkViewModel.kt`: L25 | - | **Logic Gap** | Android 提供標準的 JSON 備份導出路徑；iOS 僅實作了文字版 MD 分享。 |
 | **5.6 跳轉精確定位** | `BookmarkAdapter.kt` | `bookmark_list_page.dart`: L125 (_jumpToReader) | **Matched** | 均支援點擊書籤後精確跳轉至閱讀器的對應章節與字元位置。 |
+| **6.1 調度互斥與併發控制** | `CacheBook.kt`: L122 (mutex) | `download_service.dart`: L35 (_isScheduling) | **Matched** | 均採用互斥鎖機制確保下載調度任務的唯一性，防止重複啟動。 |
+| **6.2 全域暫停/恢復邏輯** | `CacheBook.kt`: L118 (workingState) | `download_service.dart`: L50 (_checkPause) | **Matched** | 均實作了基於 Completer/StateFlow 的掛起機制，可在下載中途立即暫停所有執行緒。 |
+| **6.3 目錄自動補完機制** | `CacheViewModel.kt` | `download_service.dart`: L135 (getChapterList) | **Matched** | 下載前均會檢查目錄是否為空，若為空則自動觸發目錄更新後再下載。 |
+| **6.4 雙層併發限制** | `AppConfig.threadCount` | `download_service.dart`: L30 (_maxConcurrent) | **Matched** | 均支援同時下載多本書，且每本書內部分發多個章節下載執行緒。 |
+| **6.5 書籍匯出功能** | `CacheActivity.kt`: L116 (startExport) | - | **Logic Gap** | Android 支援將快取書籍匯出為 TXT/EPUB；iOS 目前完全缺失本地書籍匯出路徑。 |
+| **6.6 設定備份加密** | `Backup.kt`: L118 (aes.encrypt) | - | **Logic Gap** | Android 支援對導出的設定檔案進行 AES 加密；iOS 目前僅為明文 JSON。 |
+
 
 
 
