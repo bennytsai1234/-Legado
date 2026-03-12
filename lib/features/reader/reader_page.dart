@@ -15,6 +15,8 @@ import '../settings/settings_page.dart';
 import '../replace_rule/replace_rule_page.dart';
 import 'click_action_config_page.dart';
 
+import 'engine/simulation_page_view.dart';
+
 class ReaderPage extends StatefulWidget {
   final Book book;
   final int chapterIndex;
@@ -161,14 +163,23 @@ class _ReaderPageState extends State<ReaderPage> {
               ],
             ],
           ),
-          child: PageView.builder(
-            controller: _pageController,
-            physics: provider.showControls ? const NeverScrollableScrollPhysics() : const BouncingScrollPhysics(),
-            scrollDirection: provider.pageTurnMode == 2 ? Axis.vertical : Axis.horizontal,
-            itemCount: provider.pages.length,
-            onPageChanged: provider.onPageChanged,
-            itemBuilder: (context, index) => PageViewWidget(page: provider.pages[index], contentStyle: contentStyle, titleStyle: titleStyle),
-          ),
+          child: provider.pageTurnMode == 3 // 仿真翻頁 (對標 Android Simulation)
+            ? SimulationPageView(
+                currentChild: PageViewWidget(page: provider.pages[provider.currentPageIndex], contentStyle: contentStyle, titleStyle: titleStyle),
+                nextChild: provider.currentPageIndex < provider.pages.length - 1 
+                    ? PageViewWidget(page: provider.pages[provider.currentPageIndex + 1], contentStyle: contentStyle, titleStyle: titleStyle)
+                    : null,
+                onTurnNext: () => provider.onPageChanged(provider.currentPageIndex + 1),
+                onTurnPrev: () => provider.onPageChanged(provider.currentPageIndex - 1),
+              )
+            : PageView.builder(
+                controller: _pageController,
+                physics: provider.showControls ? const NeverScrollableScrollPhysics() : const BouncingScrollPhysics(),
+                scrollDirection: provider.pageTurnMode == 2 ? Axis.vertical : Axis.horizontal,
+                itemCount: provider.pages.length,
+                onPageChanged: provider.onPageChanged,
+                itemBuilder: (context, index) => PageViewWidget(page: provider.pages[index], contentStyle: contentStyle, titleStyle: titleStyle),
+              ),
         ),
         if (provider.brightness < 1.0) IgnorePointer(child: Container(color: Colors.black.withValues(alpha: 1.0 - provider.brightness))),
       ]
