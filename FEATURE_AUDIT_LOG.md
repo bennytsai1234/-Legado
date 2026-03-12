@@ -126,7 +126,7 @@
 | **10.4 刷新併發 Pool 控制** | `MainViewModel.kt`: L55 | `bookshelf_provider.dart`: L335 (Pool) | **Matched** | 刷新書架時均採用併發池 (Pool) 機制控制請求頻率，防止被源站封鎖。 |
 | **10.5 滑動連續選取** | `DragSelectTouchHelper.kt` | `bookshelf_page.dart`: L20 (_handleDragUpdate) | **Matched** | 已實作滑動連續勾選書籍的手勢操作，支援選取/反選同步，高度還原 Android 管理體驗。 |
 | **10.6 分組封面自定義** | - | `group_manage_page.dart`: L130 (_showRenameDialog) | **Equivalent** | iOS 額外實作了為每個分組自定義封面的功能，Android 僅顯示文字圖標。 |
-| **11.1 封面點擊交互** | `BookInfoActivity.kt` | `book_detail_page.dart` | **Logic Gap** | Android 點擊封面可查看大圖與保存；iOS 點擊觸發換封面彈窗。 |
+| **11.1 封面點擊交互** | `BookInfoActivity.kt`: L424 | `book_detail_page.dart`: L130 (_showPhotoView) | **Matched** | 已實作與 Android 對等的封面交互：短按換封面，長按透過 Hero 動畫開啟全屏大圖預覽。 |
 | **11.2 閱讀/繼續閱讀按鈕** | `BookInfoActivity.kt`: L441 | `book_detail_page.dart`: L136 | **Matched** | 均支援根據當前進度顯示「開始/繼續閱讀」。 |
 | **11.3 加入/移出書架** | `BookInfoActivity.kt`: L456 | `book_detail_page.dart`: L29 | **Matched** | 均支援即時切換書架狀態與持久化。 |
 | **11.4 換源彈窗分發** | `ChangeBookSourceDialog.kt` | `book_detail_page.dart`: L141 | **Equivalent** | Android 使用獨立 Dialog；iOS 採用 ModalBottomSheet。 |
