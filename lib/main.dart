@@ -194,6 +194,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   int _currentIndex = 0;
   int _newChapterCount = 0;
   DateTime _lastTapTime = DateTime.now();
+  DateTime? _lastBackTime;
 
   @override
   void initState() {
@@ -371,11 +372,20 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
           _currentIndex = menuItems.length - 1;
         }
 
-        return Scaffold(
-          body: IndexedStack(
-            index: _currentIndex,
-            children: menuItems.map((item) => item['page'] as Widget).toList(),
-          ),
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) async {
+            if (didPop) return;
+            final shouldPop = await _onWillPop();
+            if (shouldPop && mounted) {
+              SystemNavigator.pop();
+            }
+          },
+          child: Scaffold(
+            body: IndexedStack(
+              index: _currentIndex,
+              children: menuItems.map((item) => item['page'] as Widget).toList(),
+            ),
           bottomNavigationBar: NavigationBar(
             selectedIndex: _currentIndex,
             onDestinationSelected: (index) {
