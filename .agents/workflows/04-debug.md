@@ -76,22 +76,21 @@ flutter analyze
 - **嚴格使用 `replace` 工具**進行精確代碼替換
 - **禁止 `write_file` 覆寫已有檔案**
 
-### Step 6：立即備份
-```powershell
-git add <modified_file> ; git commit -m "backup: update <file>"
-```
-
-### Step 7：驗證修復
+### Step 6：驗證修復
 ```powershell
 flutter analyze
 ```
 - 確認問題已消除且無新增錯誤
 - 若有相關測試：`flutter test test/<related_test>.dart`
 
-### Step 8：更新報告（若涉及已記錄模組）
+### Step 7：更新報告（若涉及已記錄模組）
 - 更新 `FEATURE_AUDIT_v2.md` 中的對應模組狀態
 
-### Step 9：正式提交
+### Step 8：段落完成後統一提交
+> [!NOTE]
+> 完成一個完整的 bug 修復（含驗證通過 + 報告更新）後，才執行一次 Git commit。
+> 不要每改一個檔案就 commit，避免產生大量碎片化提交。
+
 ```powershell
 git add -A ; git commit -m "fix: [bug 描述簡述]"
 ```
