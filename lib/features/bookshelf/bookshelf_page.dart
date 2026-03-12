@@ -331,7 +331,13 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
       ),
       trailing: provider.isBatchMode 
           ? Icon(isSelected ? Icons.check_circle : Icons.radio_button_unchecked, color: isSelected ? Colors.blue : null)
-          : (book.lastCheckCount > 0 && provider.showUnread ? const Icon(Icons.fiber_new, color: Colors.red) : null),
+          : (book.lastCheckCount > 0 && provider.showUnread 
+              ? Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(10)),
+                  child: Text('${book.lastCheckCount}', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                ) 
+              : null),
       onTap: () {
         if (provider.isBatchMode) {
           provider.toggleSelect(book.bookUrl);

@@ -82,12 +82,13 @@ class CheckSourceService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // 1. 移除舊的錯誤標籤
+      // 1. 移除舊的錯誤標記與註釋
       source.removeGroup("搜尋失效");
       source.removeGroup("目錄失效");
       source.removeGroup("正文失效");
       source.removeGroup("校驗超時");
       source.removeGroup("網站失效");
+      source.removeErrorComment();
 
       final stopwatch = Stopwatch()..start();
 
@@ -99,6 +100,7 @@ class CheckSourceService extends ChangeNotifier {
       if (searchResults.isEmpty) {
         _postLog("  └ 搜尋結果為空");
         source.addGroup("搜尋失效");
+        source.addErrorComment("搜尋結果為空 ($searchWord)");
       } else {
         _postLog("  └ 搜尋成功，找到 ${searchResults.length} 本書");
         // 3. 測試詳情與目錄 (Info & TOC Check)
@@ -116,6 +118,7 @@ class CheckSourceService extends ChangeNotifier {
         if (chapters.isEmpty) {
           _postLog("  └ 目錄抓取失敗或為空");
           source.addGroup("目錄失效");
+          source.addErrorComment("目錄抓取失敗或為空");
         } else {
           _postLog("  └ 目錄抓取成功，共 ${chapters.length} 章");
           // 4. 測試正文 (Content Check)
@@ -127,6 +130,7 @@ class CheckSourceService extends ChangeNotifier {
           if (content.isEmpty || content.length < 10) {
             _postLog("  └ 正文內容過短或為空");
             source.addGroup("正文失效");
+            source.addErrorComment("正文內容過短或為空");
           } else {
             _postLog("  └ 正文抓取成功 (長度: ${content.length})");
           }
@@ -143,11 +147,13 @@ class CheckSourceService extends ChangeNotifier {
     } on TimeoutException {
       _postLog("  ✕ [${source.bookSourceName}] 校驗超時");
       source.addGroup("校驗超時");
+      source.addErrorComment("校驗超時");
       await _sourceDao.insertOrUpdate(source);
     } catch (e) {
       _postLog("  ✕ [${source.bookSourceName}] 發生錯誤: $e");
       debugPrint("CheckSource Error [${source.bookSourceName}]: $e");
       source.addGroup("網站失效");
+      source.addErrorComment("網路發生錯誤: $e");
       await _sourceDao.insertOrUpdate(source);
     }
   }

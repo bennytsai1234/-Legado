@@ -40,6 +40,9 @@ class RssSource {
   int lastUpdateTime;
   int customOrder;
 
+  // --- 虛擬欄位 (對應 Android 動態查詢) ---
+  int unreadCount = 0;
+
   RssSource({
     required this.sourceUrl,
     this.sourceName = "",
@@ -156,5 +159,18 @@ class RssSource {
       lastUpdateTime: json['lastUpdateTime'] ?? 0,
       customOrder: json['customOrder'] ?? 0,
     );
+  }
+
+  // --- 分組操作 (對標 Android RssSource.kt) ---
+  void addGroup(String groups) {
+    var currentGroups = sourceGroup?.split(RegExp(r'[,，\s]+')).where((s) => s.isNotEmpty).toSet() ?? {};
+    currentGroups.addAll(groups.split(RegExp(r'[,，\s]+')).where((s) => s.isNotEmpty));
+    sourceGroup = currentGroups.join(',');
+  }
+
+  void removeGroup(String groups) {
+    var currentGroups = sourceGroup?.split(RegExp(r'[,，\s]+')).where((s) => s.isNotEmpty).toSet() ?? {};
+    currentGroups.removeAll(groups.split(RegExp(r'[,，\s]+')).where((s) => s.isNotEmpty));
+    sourceGroup = currentGroups.isEmpty ? null : currentGroups.join(',');
   }
 }
