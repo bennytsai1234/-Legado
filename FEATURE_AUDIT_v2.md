@@ -17,8 +17,24 @@
 ---
 
 ## 1. 核心資料實體 (Core Data Models)
-*(內容保留，已在先前步驟完成)*
-**完成度：90%** | **狀態：✅**
+
+**模組職責**：定義書籍、書源等核心資料結構及其基礎業務邏輯。
+**Legado 檔案**：`data/entities/`
+**Flutter (iOS) 對應檔案**：`core/models/`
+**完成度：100%**
+**狀態：✅**
+
+**已完成項目 ✅**：
+- ✅ 書籍 (`Book`) 基本屬性與位元運算擴展示範。
+- ✅ 書源 (`BookSource`) 完整 3.0 規則實體化。
+- ✅ JSON 序列化與反序列化邏輯（含動態類型相容）。
+- ✅ **1.1.1**：iOS `Book.migrateTo` 實作基於標題與數字的章節對齊邏輯。
+- ✅ **1.1.2**：iOS `Book.getUseReplaceRule` 已實作對 `isImage/isEpub` 的自動判定。
+- ✅ **1.2.1**：iOS `BookSource` 實作錯誤註釋 (`ErrorComment`) 的自動維護與清理。
+- ✅ **1.2.2**：iOS `BookSource` 實作「失效分組」的自動清理邏輯。
+
+**不足之處**：
+- (暫無，模組 1 已完成對齊)
 
 ---
 
@@ -52,10 +68,11 @@
 - ✅ 分頁算法：`ChapterProvider.paginate` 模擬了 Android 的文本分段邏輯。
 - ✅ WebDAV：支援進度雲端同步。
 - ✅ TTS 朗讀：整合了系統 TTS 與自定義 HTTP TTS。
+- ✅ **3.1.1**：正則處理與取代規則範圍判斷已與 Android 對齊。
+- ✅ **3.1.2**：移植了 `ContentHelp.reSegment` 核心排版優化算法。
 
 **不足之處**：
-- [ ] **3.1.1**：內容淨化規則之正則處理在 iOS 端覆蓋率不足。
-- [ ] **3.1.2**：缺少 Android 之 `ContentProcessor` 中的複雜段落合併與排版優化邏輯。
+- (暫無，核心解析邏輯已對齊)
 
 ---
 

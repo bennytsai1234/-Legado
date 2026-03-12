@@ -35,7 +35,13 @@ class Book {
   String? variable; // 自定義變量
   ReadConfig? readConfig; // 閱讀設置
   int syncTime; // 同步時間
-  bool isInBookshelf; // 是否在書架上 (iOS 特有標記，Android 依賴 type 位運算)
+  bool isInBookshelf; // 是否在書架上 (iOS 特有標記)
+
+  // --- 類型感知屬性 (對標 Android BookExtensions.kt) ---
+  bool get isAudio => (type & 2) != 0; // BookType.audio = 2
+  bool get isImage => (type & 4) != 0; // BookType.image = 4
+  bool get isEpub => bookUrl.toLowerCase().endsWith('.epub');
+  bool get isLocal => origin == "local" || origin.startsWith("webdav");
 
   Book({
     this.bookUrl = "",
@@ -79,8 +85,16 @@ class Book {
 
   String? getDisplayIntro() => (customIntro == null || customIntro!.isEmpty) ? intro : customIntro;
 
+  /// 是否使用淨化替換規則 (對標 Android Book.getUseReplaceRule)
+  /// 自動判斷：圖片類或 Epub 本地書籍默認關閉淨化，以提升性能並防止內容損壞。
   bool getUseReplaceRule() {
-    return readConfig?.useReplaceRule ?? true;
+    final explicitValue = readConfig?.useReplaceRule;
+    if (explicitValue != null) return explicitValue;
+
+    // 圖片類、音訊類或 Epub 本地書籍默認關閉
+    if (isImage || isAudio || isEpub) return false;
+    
+    return true; // 默認開啟
   }
 
   bool getReSegment() {
@@ -239,17 +253,74 @@ class Book {
   }
 
   /// 深度還原：書籍遷移邏輯 (對標 Android Book.migrateTo)
-  Book migrateTo(Book newBook) {
+  /// 在書源更新時，嘗試根據章節標題對齊閱讀進度，防止進度丟失。
+  Book migrateTo(Book newBook, List<dynamic>? newChapters) {
+    int alignedIndex = durChapterIndex;
+    if (newChapters != null && newChapters.isNotEmpty) {
+      alignedIndex = _getDurChapter(
+        durChapterIndex,
+        durChapterTitle,
+        newChapters,
+        totalChapterNum,
+      );
+    }
+
     return newBook.copyWith(
       group: group,
       order: order,
       canUpdate: canUpdate,
-      durChapterIndex: durChapterIndex,
+      durChapterIndex: alignedIndex,
       durChapterPos: durChapterPos,
-      durChapterTitle: durChapterTitle,
+      durChapterTitle: alignedIndex < (newChapters?.length ?? 0)
+          ? newChapters![alignedIndex].title
+          : durChapterTitle,
       durChapterTime: durChapterTime,
       readConfig: readConfig,
     );
+  }
+
+  /// 根據標題或索引位置找回章節進度 (對標 Android BookHelp.getDurChapter)
+  int _getDurChapter(
+    int oldIndex,
+    String? oldName,
+    List<dynamic> newChapters,
+    int oldTotalNum,
+  ) {
+    if (oldIndex <= 0) return 0;
+    if (newChapters.isEmpty) return oldIndex;
+
+    final newSize = newChapters.length;
+    // 1. 嘗試直接根據名稱完全匹配
+    if (oldName != null && oldName.isNotEmpty) {
+      for (int i = 0; i < newSize; i++) {
+        if (newChapters[i].title == oldName) return i;
+      }
+    }
+
+    // 2. 嘗試提取「第 X 章」的數字進行匹配
+    final int? oldChapterNum = _extractChapterNum(oldName);
+    if (oldChapterNum != null) {
+      for (int i = 0; i < newSize; i++) {
+        if (_extractChapterNum(newChapters[i].title) == oldChapterNum) return i;
+      }
+    }
+
+    // 3. 退而求其次，根據比例位置估計
+    int estimateIndex = oldIndex;
+    if (oldTotalNum > 0) {
+      estimateIndex = (oldIndex * newSize / oldTotalNum).round();
+    }
+
+    return estimateIndex.clamp(0, newSize - 1);
+  }
+
+  int? _extractChapterNum(String? title) {
+    if (title == null) return null;
+    final match = RegExp(r'第\s*(\d+)\s*[章节篇回集话]').firstMatch(title);
+    if (match != null) {
+      return int.tryParse(match.group(1)!);
+    }
+    return null;
   }
 }
 

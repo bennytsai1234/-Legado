@@ -94,6 +94,33 @@ class BookSource implements BaseSource {
     bookSourceGroup = currentGroups.isEmpty ? null : currentGroups.join(',');
   }
 
+  /// 移除失效的分組標記 (對標 Android removeInvalidGroups)
+  void removeInvalidGroups() {
+    if (bookSourceGroup == null) return;
+    final invalidPattern = RegExp(r'失效|校驗超時');
+    var currentGroups = bookSourceGroup!.split(RegExp(r'[,，\s]+')).where((s) => s.isNotEmpty).toList();
+    currentGroups.removeWhere((g) => invalidPattern.hasMatch(g));
+    bookSourceGroup = currentGroups.isEmpty ? null : currentGroups.join(',');
+  }
+
+  /// 清除註釋中的錯誤訊息 (對標 Android removeErrorComment)
+  void removeErrorComment() {
+    if (bookSourceComment == null) return;
+    bookSourceComment = bookSourceComment!
+        .split('\n\n')
+        .where((line) => !line.trim().startsWith('// Error:'))
+        .join('\n\n');
+  }
+
+  /// 添加錯誤訊息至註釋頂部 (對標 Android addErrorComment)
+  void addErrorComment(String error) {
+    removeErrorComment();
+    final newErrorLine = '// Error: $error';
+    bookSourceComment = bookSourceComment == null || bookSourceComment!.isEmpty
+        ? newErrorLine
+        : '$newErrorLine\n\n$bookSourceComment';
+  }
+
   String getCheckKeyword(String defaultValue) {
     return (ruleSearch?.checkKeyWord != null && ruleSearch!.checkKeyWord!.isNotEmpty) 
         ? ruleSearch!.checkKeyWord! 

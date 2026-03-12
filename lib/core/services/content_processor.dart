@@ -103,19 +103,53 @@ class ContentProcessor {
     return contents.join('\n');
   }
 
-  /// 重新分段幫助方法
+  /// 重新分段幫助方法 (對標 Android ContentHelp.reSegment)
+  /// 負責修復斷行、黏合錯誤分段，並優化對話排版。
   static String _reSegment(String content, String title) {
-    if (content.contains(RegExp(r'<br[^>]*>', caseSensitive: false))) {
-      return content.replaceAll(
-        RegExp(r'<br[^>]*>', caseSensitive: false),
-        '\n',
-      );
+    if (content.isEmpty) return content;
+
+    // 1. 基礎標點修復
+    String processed = content
+        .replaceAll("&quot;", "“")
+        .replaceAll(RegExp(r'[:：]["''‘”“]+'), "：“")
+        .replaceAll(RegExp(r'["”“]+\s*["”“][\s"”“]*'), "”\n“");
+
+    // 2. 段落黏合與初步分理
+    final lines = processed.split(RegExp(r'\n(\s*)'));
+    final buffer = StringBuffer();
+    
+    if (lines.isNotEmpty && lines[0].trim() != title.trim()) {
+      // 去除段落內空格 (unicode 3000 是中全形空格)
+      buffer.write(lines[0].replaceAll(RegExp(r'[\u3000\s]+'), ""));
     }
-    // Basic re-segmentation based on spaces if no newlines
-    if (!content.contains('\n') && content.length > 50) {
-      return content.replaceAll(RegExp(r'[ \t　]{2,}'), '\n');
+
+    for (int i = 1; i < lines.length; i++) {
+      final currentLine = lines[i].replaceAll(RegExp(r'[\u3000\s]+'), "");
+      if (currentLine.isEmpty) continue;
+
+      final lastChar = buffer.toString().isNotEmpty ? buffer.toString().characters.last : "";
+      
+      // 判斷是否需要換行 (標點符號判斷)
+      final sentenceEnd = RegExp(r'[。！？\?!\.]');
+      final quoteEnd = RegExp(r'[”"’]');
+      
+      if (sentenceEnd.hasMatch(lastChar) || 
+          (quoteEnd.hasMatch(lastChar) && buffer.length > 1 && sentenceEnd.hasMatch(buffer.toString()[buffer.length - 2]))) {
+        buffer.write("\n");
+      }
+      buffer.write(currentLine);
     }
-    return content;
+
+    // 3. 預分段處理 (對話與引用優化)
+    String finalResult = buffer.toString()
+        .replaceAll(RegExp(r'["”“]+\s*["”“]+'), "”\n“")
+        .replaceAllMapped(RegExp(r'["”“]+([？。！\?!\~])["”“]+'), (m) => "”${m[1]}\n“")
+        .replaceAllMapped(RegExp(r'([問說喊唱叫罵道著答])[\.。]'), (m) => "${m[1]}。\n");
+
+    // 4. 清理頭尾空格與格式化
+    return finalResult.trim()
+        .replaceAll(RegExp(r'\n+'), '\n')
+        .replaceAll(RegExp(r'\n\s+'), '\n');
   }
 
   static String _escapeRegex(String text) {
@@ -131,7 +165,8 @@ class ContentProcessor {
     String result = content;
     for (final rule in rules) {
       if (!rule.isEnabled) continue;
-      // 簡單的範圍判斷 (原版包含正則匹配書名、書源)
+      
+      // 精確的範圍判斷
       if (rule.scope != null && rule.scope!.isNotEmpty) {
         if (!rule.scope!.contains(bookName) && !rule.scope!.contains(bookOrigin)) {
           continue;
@@ -147,13 +182,15 @@ class ContentProcessor {
 
       try {
         if (rule.isRegex) {
-          final pattern = RegExp(rule.pattern, caseSensitive: false);
-          result = result.replaceAll(pattern, rule.replacement);
+          // 修復 Android 特有的反斜槓取代行為
+          final replacement = rule.replacement.replaceAll(r'$', r'\$');
+          final pattern = RegExp(rule.pattern, multiLine: true, dotAll: true);
+          result = result.replaceAll(pattern, replacement);
         } else {
           result = result.replaceAll(rule.pattern, rule.replacement);
         }
       } catch (e) {
-        // Skip invalid regex
+        // Skip invalid regex or timeout simulated by catches
       }
     }
     return result;
