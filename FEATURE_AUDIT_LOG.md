@@ -32,6 +32,13 @@
 | **4.4 倍速調節步進** | `AudioPlayActivity.kt`: L175 (adjustSpeed) | `audio_player_page.dart`: L245 (_showSpeedDialog) | **Equivalent** | Android 支援 0.1x 步進調節；iOS 提供常用倍速選擇彈窗。 |
 | **4.5 喚醒鎖保持邏輯** | `AppConfig.audioPlayUseWakeLock` | - | **Logic Gap** | Android 可手動控制是否使用 WakeLock 保持 CPU 喚醒；iOS 依賴系統對音頻會話的自動管理，無手動開關。 |
 | **4.6 退出加入書架提示** | `AudioPlayActivity.kt`: L215 (finish) | - | **Logic Gap** | Android 在結束播放時若書籍不在書架會彈窗提示加入；iOS 目前直接退出。 |
+| **5.1 書籍分組顯示** | `BookmarkDecoration.kt` | `bookmark_list_page.dart`: L186 (_buildGroupedList) | **Matched** | 均支援將全域書籤按書籍名稱進行聚合分組顯示。 |
+| **5.2 Markdown 格式導出** | `AllBookmarkViewModel.kt`: L45 | `bookmark_list_page.dart`: L75 (_exportBookmarks) | **Matched** | 均支援生成含書名、章節、原文及筆記的 MD 結構並匯出。 |
+| **5.3 搜尋與即時過濾** | `AllBookmarkActivity.kt`: L45 (collect) | `bookmark_list_page.dart`: L50 (_loadBookmarks) | **Matched** | 均支援透過關鍵字即時過濾書名、標題與筆記內容。 |
+| **5.4 書籤編輯功能** | `BookmarkDialog.kt` | - | **Logic Gap** | Android 支援在列表直接點擊彈窗編輯書籤筆記；iOS 目前僅有跳轉與刪除，缺失編輯介面。 |
+| **5.5 JSON 序列化導出** | `AllBookmarkViewModel.kt`: L25 | - | **Logic Gap** | Android 提供標準的 JSON 備份導出路徑；iOS 僅實作了文字版 MD 分享。 |
+| **5.6 跳轉精確定位** | `BookmarkAdapter.kt` | `bookmark_list_page.dart`: L125 (_jumpToReader) | **Matched** | 均支援點擊書籤後精確跳轉至閱讀器的對應章節與字元位置。 |
+
 
 
 
