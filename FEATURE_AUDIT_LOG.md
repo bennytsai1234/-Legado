@@ -26,5 +26,12 @@
 | **3.3 私有 Scheme 處理** | `FileAssociationActivity.kt`: L55 (onLineImportLive) | `intent_handler_service.dart`: L60 (_handleUri) | **Matched** | 均支援處理 `legado://import/` 等私有鏈接觸發聯機導入。 |
 | **3.4 強制導入機制** | `FileAssociationActivity.kt`: L90 (notSupportedLiveData) | `intent_handler_service.dart`: L142 (_showForceImportDialog) | **Matched** | 當格式無法辨識時，均支援提示用戶是否作為書籍檔案強制導入。 |
 | **3.5 多類型導入對話框** | `ImportBookSourceDialog.kt` 等 | `intent_handler_service.dart`: L163 (_showImportDialog) | **Equivalent** | Android 為每種類型準備獨立 Activity/Dialog；iOS 採用單一動態分發彈窗處理。 |
+| **4.1 播放模式完整對齊** | `AudioPlay.kt`: PlayMode | `audio_play_service.dart`: L7 (AudioPlayMode) | **Matched** | 均支援單曲、列表循環、隨機、列表結束停止四種模式，邏輯 1:1 對齊。 |
+| **4.2 定時睡眠倒數邏輯** | `TimerSliderPopup.kt` | `audio_play_service.dart`: L80 (setSleepTimer) | **Matched** | 均支援分鐘級定時，且 iOS 實作了每秒更新的剩餘時間監聽。 |
+| **4.3 跨類型遷移跳轉** | `AudioPlayActivity.kt`: L195 (migrateTo) | `change_chapter_source_sheet.dart`: L286 | **Matched** | 均支援在換源時，若來源為文本書籍則遷移進度並重啟 Activity/Page。 |
+| **4.4 倍速調節步進** | `AudioPlayActivity.kt`: L175 (adjustSpeed) | `audio_player_page.dart`: L245 (_showSpeedDialog) | **Equivalent** | Android 支援 0.1x 步進調節；iOS 提供常用倍速選擇彈窗。 |
+| **4.5 喚醒鎖保持邏輯** | `AppConfig.audioPlayUseWakeLock` | - | **Logic Gap** | Android 可手動控制是否使用 WakeLock 保持 CPU 喚醒；iOS 依賴系統對音頻會話的自動管理，無手動開關。 |
+| **4.6 退出加入書架提示** | `AudioPlayActivity.kt`: L215 (finish) | - | **Logic Gap** | Android 在結束播放時若書籍不在書架會彈窗提示加入；iOS 目前直接退出。 |
+
 
 
