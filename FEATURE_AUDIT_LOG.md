@@ -6,6 +6,39 @@
 
 | 邏輯點 | Android 證據鏈 | iOS 證據鏈 | 狀態 | 狀態描述 |
 | :--- | :--- | :--- | :--- | :--- |
+| **1.1 BNV 雙擊回頂部/壓縮邏輯** | `MainActivity.kt`: L138-157 | `lib/main.dart`: L415-425 | **Matched** | - |
+| **1.2 動態更新計數 Badge 顯示** | `MainViewModel.kt`: L166 | `lib/main.dart`: L435-460 | **Matched** | - |
+| **1.3 啟動崩潰偵測與彈窗提醒** | `MainActivity.kt`: L104 | `lib/main.dart`: L305, L45-55 | **Matched** | - |
+| **1.4 啟動版本號比對與更新日誌彈窗** | `MainActivity.kt`: L102 | `lib/main.dart`: L249-272 | **Matched** | - |
+| **1.5 啟動 WebDav 修改時間比對** | `MainActivity.kt`: L105 | `lib/main.dart`: L327-352 | **Matched** | - |
+| **2.1 閱讀時長格式化邏輯** | `ReadRecordActivity.kt`: L129 | `about_page.dart`: L236-248 | **Matched** | - |
+| **2.2 三種排序模式** | `ReadRecordActivity.kt`: L141-151 | `about_page.dart`: L183-199 | **Matched** | - |
+| **2.3 閱讀記錄連動搜尋邏輯** | `ReadRecordActivity.kt`: L183-195 | `about_page.dart`: L465-474 | **Matched** | - |
+| **2.4 全域記憶體日誌管理** | `AppLog.kt` | `about_page.dart`: L503-525 | **Matched** | - |
+| **3.1 JSON 內容特徵辨識** | `FileAssociationActivity.kt`: L71 | `intent_handler_service.dart`: L114-135 | **Matched** | - |
+| **3.2 書籍導入物理搬移** | `FileAssociationActivity.kt`: L138 | `intent_handler_service.dart`: L85-105 | **Matched** | - |
+| **3.3 格式不支援時的強制導入機制** | `FileAssociationActivity.kt`: L90 | `intent_handler_service.dart`: L142-161 | **Matched** | - |
+| **4.1 四種播放模式切換與圖示聯動** | `AudioPlayActivity.kt`: L131, L151 | `audio_play_service.dart`: L41-66 | **Matched** | - |
+| **4.2 定時睡眠倒數計時邏輯** | `AudioPlayActivity.kt`: L190 | `audio_play_service.dart`: L101-121 | **Matched** | - |
+| **4.3 跨類型遷移跳轉** | `AudioPlayViewModel.kt`: L85 | `change_chapter_source_sheet.dart`: L286 | **Matched** | - |
+| **5.1 依書籍分組顯示** | `AllBookmarkActivity.kt`: L55 | `bookmark_list_page.dart`: L186-210 | **Matched** | - |
+| **5.2 書籤 JSON 導出功能** | `AllBookmarkViewModel.kt`: L21 | - | **Logic Gap** | iOS 缺失 JSON 格式導出 |
+| **5.3 書籤內容/筆記編輯器** | `BookmarkDialog.kt` | - | **Logic Gap** | iOS 缺失書籤編輯 UI |
+| **6.1 下載併發與全域暫停控制** | `CacheBook.kt`: L128 | `download_service.dart`: L41-57 | **Matched** | - |
+| **6.2 調度互斥鎖 (Mutex)** | `CacheBook.kt`: L122 | `download_service.dart`: L136 | **Matched** | - |
+| **6.3 離線書籍匯出 (TXT/EPUB)** | `CacheActivity.kt`: L116 | - | **Logic Gap** | iOS 缺失書籍匯出功能 |
+| **7.1 並發搜尋封面演算法** | `ChangeCoverViewModel.kt`: L129 | `change_cover_provider.dart`: L67-76 | **Matched** | - |
+| **7.2 搜尋結果資料庫快取** | `ChangeCoverViewModel.kt`: L78 | - | **Logic Gap** | iOS 未優先讀取 SearchBookDao |
+| **7.3 精確過濾邏輯** | `ChangeCoverViewModel.kt`: L151 | `change_cover_provider.dart`: L83-86 | **Matched** | - |
+| **8.1 換源優選排序** | `ChangeBookSourceViewModel.kt`: L122 | `change_chapter_source_sheet.dart`: L100 | **Matched** | - |
+| **8.2 單章換源與目錄預覽** | `ChangeChapterSourceDialog.kt` | `change_chapter_source_sheet.dart` | **Matched** | - |
+| **8.3 換源搜尋分組過濾** | `ChangeBookSourceViewModel.kt`: L178 | - | **Logic Gap** | iOS 缺失換源時的分組限制 |
+| **9.1 分組過濾 UI 與解耦** | `ExploreFragment.kt`: L123 | `explore_page.dart`: L81-90 | **Matched** | - |
+| **9.2 搜尋框 group:NAME 語法** | `ExploreFragment.kt`: L155 | `explore_page.dart`: L67-73 | **Matched** | - |
+| **9.3 網格/列表切換** | `ExploreShowActivity.kt` | `explore_page.dart`: L133-141 | **Matched** | - |
+| **10.1 64 個分組上限檢核** | `GroupManageDialog.kt`: L76 | `bookshelf_provider.dart`: L268-272 | **Matched** | - |
+| **10.2 分組拖拽排序與 Order 更新** | `GroupManageDialog.kt`: L133 | `bookshelf_provider.dart`: L305-315 | **Matched** | - |
+| **10.3 批量換源與併發 Pool** | `BookshelfManageActivity.kt`: L115 | `bookshelf_provider.dart`: L316-352 | **Matched** | - |
 | **11.1 封面點擊交互** | `BookInfoActivity.kt`: L455 (OnClickListener) | `book_detail_page.dart`: L115 | **Logic Gap** | Android 支援長按查看大圖 (PhotoDialog)，iOS 僅有短按換封面。 |
 | **11.2 閱讀按鈕分發** | `BookInfoActivity.kt`: L463 (readBook) | `book_detail_page.dart`: L141 | **Matched** | 均支援根據當前進度跳轉至閱讀器。 |
 | **11.3 加入/移除書架** | `BookInfoActivity.kt`: L474 (tvShelf) | `book_detail_page.dart`: L25 | **Matched** | 邏輯一致，iOS 採用 AppBar 圖示切換。 |
