@@ -94,7 +94,35 @@ class BookDetailPage extends StatelessWidget {
     );
   }
 
+  void _showPhotoView(BuildContext context, String imageUrl) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Colors.white),
+          ),
+          body: Center(
+            child: Hero(
+              tag: 'book_cover',
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
+                fit: BoxFit.contain,
+                placeholder: (context, url) => const CircularProgressIndicator(color: Colors.white),
+                errorWidget: (context, url, error) => const Icon(Icons.broken_image, color: Colors.white, size: 100),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildHeader(BuildContext context, BookDetailProvider provider, Book book) {
+    final coverUrl = book.getDisplayCover();
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(
@@ -102,11 +130,24 @@ class BookDetailPage extends StatelessWidget {
         children: [
           GestureDetector(
             onTap: () => _showChangeCoverSheet(context, provider),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: book.getDisplayCover() != null && book.getDisplayCover()!.isNotEmpty
-                  ? CachedNetworkImage(imageUrl: book.getDisplayCover()!, width: 100, height: 140, fit: BoxFit.cover, errorWidget: (context, url, error) => _buildCoverPlaceholder())
-                  : _buildCoverPlaceholder(),
+            onLongPress: () {
+              if (coverUrl != null && coverUrl.isNotEmpty) {
+                _showPhotoView(context, coverUrl);
+              }
+            },
+            child: Hero(
+              tag: 'book_cover',
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: coverUrl != null && coverUrl.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: coverUrl, 
+                        width: 100, height: 140, 
+                        fit: BoxFit.cover, 
+                        errorWidget: (context, url, error) => _buildCoverPlaceholder(),
+                      )
+                    : _buildCoverPlaceholder(),
+              ),
             ),
           ),
           const SizedBox(width: 16),
