@@ -37,6 +37,14 @@
 | **14.6 朗讀背景服務** | `BaseReadAloudService.kt` | `reader_provider.dart`: L305 (TTSService) | **Equivalent** | Android 擁有獨立後台 Service 確保進程穩定性；iOS 依賴 Flutter 插件在背景執行，但在系統資源回收時穩定性略遜。 |
 | **14.7 全書內容搜尋** | `SearchContentActivity.kt` | `reader_provider.dart`: L330 (searchContent) | **Matched** | 均支援在已快取的章節中進行全文關鍵字搜尋。 |
 | **14.8 進度雲端同步** | `ReadBookActivity.kt`: L342 (syncProgress) | - | **Logic Gap** | iOS 目前在啟動閱讀器時缺少與雲端進度（WebDav）的比對與主動恢復提示邏輯。 |
+| **15.1 併發搜尋機制** | `SearchViewModel.kt`: L150 (coroutine) | `search_provider.dart`: L85 (Future.wait) | **Matched** | 均採用非同步併發模式在多個書源中同時進行網路搜尋。 |
+| **15.2 結果聚合與去重** | `SearchViewModel.kt`: L230 (aggregate) | `search_provider.dart`: L130 (_aggregateResults) | **Matched** | 均支援根據「書名+作者」對不同書源的搜尋結果進行聚合展示。 |
+| **15.3 搜尋歷史與建議** | `SearchActivity.kt`: L423 (upHistory) | `search_page.dart`: L83 (_buildHistory) | **Matched** | 均支援顯示最近搜尋關鍵字並提供熱搜建議。 |
+| **15.4 搜尋範圍過濾** | `SearchActivity.kt`: L115 (SearchScope) | `search_provider.dart`: L75 (setGroup) | **Equivalent** | Android 支援複雜的組合範圍選擇；iOS 目前僅支援單一分組過濾或「全部」。 |
+| **15.5 搜尋狀態手動控制** | `SearchActivity.kt`: L315 (fbStartStop) | - | **Logic Gap** | Android 提供顯式的「停止/繼續」按鈕以管理正在進行的耗時搜尋任務；iOS 僅提供進度條，無法手動中斷。 |
+| **15.6 精準搜尋模式** | `SearchActivity.kt`: R.id.menu_precision_search | - | **Logic Gap** | Android 提供「精準搜尋」開關以過濾非完全匹配的結果；iOS 目前尚未實作此過濾邏輯。 |
+| **15.7 空結果引導提示** | `SearchActivity.kt`: L523 (alert) | - | **Logic Gap** | Android 在分組搜尋為空時會主動引導切換範圍或關閉精準搜尋；iOS 僅顯示空狀態。 |
+
 
 
 
