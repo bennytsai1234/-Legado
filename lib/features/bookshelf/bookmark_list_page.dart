@@ -133,6 +133,79 @@ class _BookmarkListPageState extends State<BookmarkListPage> {
     }
   }
 
+  Future<void> _editBookmark(Bookmark bookmark) async {
+    final textController = TextEditingController(text: bookmark.bookText);
+    final contentController = TextEditingController(text: bookmark.content);
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(bookmark.chapterName, style: const TextStyle(fontSize: 16)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('原文內容', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              const SizedBox(height: 4),
+              TextField(
+                controller: textController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  contentPadding: const EdgeInsets.all(8),
+                ),
+                style: const TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              const Text('書籤筆記', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              const SizedBox(height: 4),
+              TextField(
+                controller: contentController,
+                maxLines: 5,
+                decoration: InputDecoration(
+                  hintText: '輸入筆記內容...',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  contentPadding: const EdgeInsets.all(8),
+                ),
+                style: const TextStyle(fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          Row(
+            children: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _jumpToReader(bookmark);
+                },
+                child: const Text('跳轉至正文'),
+              ),
+              const Spacer(),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+              ElevatedButton(
+                onPressed: () async {
+                  final newBookmark = bookmark.copyWith(
+                    bookText: textController.text,
+                    content: contentController.text,
+                  );
+                  await _bookmarkDao.insert(newBookmark);
+                  if (mounted) Navigator.pop(ctx);
+                  _loadBookmarks(_searchController.text);
+                },
+                child: const Text('保存'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+    textController.dispose();
+    contentController.dispose();
+  }
+
   Future<void> _jumpToReader(Bookmark bookmark) async {
     final book = await _bookDao.getByUrl(bookmark.bookUrl);
     if (!mounted) return;
@@ -346,7 +419,7 @@ class _BookmarkListPageState extends State<BookmarkListPage> {
           ],
         ),
         isThreeLine: bookmark.bookText.isNotEmpty || bookmark.content.isNotEmpty,
-        onTap: () => _jumpToReader(bookmark),
+        onTap: () => _editBookmark(bookmark),
         onLongPress: () => _deleteBookmark(bookmark),
       ),
     );
