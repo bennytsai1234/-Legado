@@ -55,6 +55,12 @@
 | **8.4 搜尋範圍分組過濾** | `AppConfig.searchGroup` | - | **Logic Gap** | Android 支援限定在特定書源分組內進行換源搜尋；iOS 目前始終在全體已啟用書源中搜尋。 |
 | **8.5 空結果切換引導** | `ChangeBookSourceViewModel.kt`: L55 (searchFinishCallback) | - | **Logic Gap** | Android 在分組搜尋為空時提示切換到全部分組；iOS 目前僅顯示「無搜尋結果」。 |
 | **8.6 跨類型（有聲/文本）遷移** | `ChangeBookSourceDialog.kt`: L200 (migrateTo) | `change_chapter_source_sheet.dart`: L286 (_showMigrationDialog) | **Matched** | 均支援在換源時偵測類型變更，並提示執行進度遷移與播放器/閱讀器跳轉。 |
+| **9.1 發現搜尋語法連動** | `ExploreFragment.kt`: L155 (group:) | `explore_page.dart`: L67 (_handleSearch) | **Matched** | 均支援在發現頁搜尋框輸入 `group:NAME` 自動切換至對應分組。 |
+| **9.2 網格/列表自動切換** | `ExploreShowActivity.kt` | `explore_page.dart`: L133 (isGrid) | **Matched** | 均支援根據書源探索規則中的 layout/style 屬性自動切換顯示模式。 |
+| **9.3 分組過濾與動態選單** | `ExploreFragment.kt`: L123 (upGroupsMenu) | `explore_page.dart`: L81 (_buildSourcePicker) | **Matched** | 均能動態提取所有具備發現規則的書源分組並供用戶過濾。 |
+| **9.4 壓縮/摺疊模式** | `ExploreAdapter.kt`: compressExplore | - | **Logic Gap** | Android 支援一鍵摺疊所有書源的探索項以節省空間；iOS 採用單一書源切換模式，無全域摺疊。 |
+| **9.5 發現頁書源管理** | `ExploreViewModel.kt`: topSource | `explore_page.dart`: L100 (TODO) | **Logic Gap** | Android 支援在發現頁直接置頂、編輯或刪除書源；iOS 目前僅有 UI 佔位，邏輯尚未實作。 |
+
 
 
 
