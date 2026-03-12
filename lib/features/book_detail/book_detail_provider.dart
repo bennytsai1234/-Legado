@@ -7,7 +7,13 @@ import '../../core/models/chapter.dart';
 import '../../core/models/book_source.dart';
 import '../../core/models/search_book.dart';
 import '../../core/services/book_source_service.dart';
+import '../../core/services/webdav_service.dart';
+import '../../core/constant/book_type.dart';
 import '../../core/engine/app_event_bus.dart';
+import '../../core/local_book/txt_parser.dart';
+import '../../core/local_book/epub_parser.dart';
+import 'dart:io';
+import 'package:path/path.dart' as p;
 
 class BookDetailProvider extends ChangeNotifier {
   final BookDao _bookDao = BookDao();
@@ -78,7 +84,39 @@ class BookDetailProvider extends ChangeNotifier {
   }
 
   Future<void> _loadChapters() async {
-    _chapters = await _chapterDao.getChapters(_book.bookUrl);
+    // 深度還原：處理本地書籍缺失時的 WebDav 同步
+    if (_book.origin == 'local') {
+      final file = File(_book.bookUrl);
+      if (!await file.exists()) {
+        final syncedFile = await WebDAVService().downloadLocalBook(_book);
+        if (syncedFile != null) {
+          _book.bookUrl = syncedFile.path;
+          if (_isInBookshelf) await _bookDao.insertOrUpdate(_book);
+        }
+      }
+      
+      // 如果檔案現在存在，則嘗試解析目錄 (比照 LocalBookProvider)
+      final currentFile = File(_book.bookUrl);
+      if (await currentFile.exists()) {
+        final ext = p.extension(currentFile.path).toLowerCase();
+        if (ext == '.txt') {
+          final parser = TxtParser(currentFile);
+          await parser.load();
+          final data = await parser.splitChapters();
+          _chapters = data.asMap().entries.map((e) => BookChapter(url: "${_book.bookUrl}#${e.key}", title: e.value['title'] ?? "", bookUrl: _book.bookUrl, index: e.key)).toList();
+        } else if (ext == '.epub') {
+          final parser = EpubParser(currentFile);
+          await parser.load();
+          final data = parser.getChapters();
+          _chapters = data.asMap().entries.map((e) => BookChapter(url: e.value['href'] ?? "", title: e.value['title'] ?? "", bookUrl: _book.bookUrl, index: e.key)).toList();
+        }
+      }
+    }
+
+    if (_chapters.isEmpty) {
+      _chapters = await _chapterDao.getChapters(_book.bookUrl);
+    }
+    
     if (_chapters.isEmpty && _currentSource != null) {
       try {
         _chapters = await _service.getChapterList(_currentSource!, _book);
@@ -93,6 +131,11 @@ class BookDetailProvider extends ChangeNotifier {
     await _bookDao.insertOrUpdate(_book);
     if (_isInBookshelf && _chapters.isNotEmpty) {
       await _chapterDao.insertChapters(_chapters);
+      
+      // 深度還原：本地書籍加入書架時上傳至 WebDav
+      if (_book.origin == 'local') {
+        WebDAVService().uploadLocalBook(_book, File(_book.bookUrl));
+      }
     }
     AppEventBus().fire(AppEventBus.upBookshelf);
     notifyListeners();

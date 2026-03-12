@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webdav_client/webdav_client.dart' as webdav;
@@ -130,7 +131,52 @@ class WebDAVService extends ChangeNotifier {
     }
   }
 
-  /// 上傳書籍閱讀進度 (對標 Android uploadBookProgress)
+  /// 上傳本地書籍檔案 (對標 Android uploadLocalBook)
+  Future<bool> uploadLocalBook(Book book, File file) async {
+    try {
+      final client = await _getClient();
+      await client.mkdir('/legado/books/');
+      
+      final ext = p.extension(file.path);
+      final remotePath = '/legado/books/${book.name}_${book.author}$ext'.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+      
+      await client.writeFromFile(file.path, remotePath);
+      return true;
+    } catch (e) {
+      debugPrint('Upload Local Book Failed: $e');
+      return false;
+    }
+  }
+
+  /// 下載本地書籍檔案 (對標 Android downloadLocalBook)
+  Future<File?> downloadLocalBook(Book book) async {
+    try {
+      final client = await _getClient();
+      final files = await client.readDir('/legado/books/');
+      final namePattern = "${book.name}_${book.author}".replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+      
+      final remoteFile = files.cast<webdav.File?>().firstWhere(
+        (f) {
+          final name = f?.name;
+          return name != null && name.startsWith(namePattern);
+        },
+        orElse: () => null
+      );
+
+      if (remoteFile != null) {
+        final appDir = await getApplicationDocumentsDirectory();
+        final localPath = "${appDir.path}/local_books/${remoteFile.name}";
+        final localFile = File(localPath);
+        if (!await localFile.parent.exists()) await localFile.parent.create(recursive: true);
+        
+        await client.read2File(remoteFile.path!, localFile.path);
+        return localFile;
+      }
+    } catch (e) {
+      debugPrint('Download Local Book Failed: $e');
+    }
+    return null;
+  }
   Future<void> uploadBookProgress(Book book) async {
     try {
       final client = await _getClient();
