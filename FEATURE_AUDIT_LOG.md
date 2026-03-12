@@ -49,6 +49,13 @@
 | **7.3 搜尋結果精確過濾** | `ChangeCoverViewModel.kt`: L151 (searchBook.name == name) | `change_cover_provider.dart`: L83 (fName == name) | **Matched** | 均實作了嚴格的「書名+作者」過濾，確保搜尋結果與原書一致。 |
 | **7.4 快取優先讀取邏輯** | `ChangeCoverViewModel.kt`: L78 (searchBookDao) | - | **Logic Gap** | Android 啟動時會先從本地資料庫讀取已有的搜尋結果；iOS 目前每次均觸發全新的網路搜尋。 |
 | **7.5 手動輸入與相簿選取** | `ChangeCoverDialog.kt` | `change_cover_sheet.dart`: L45 (_pickImage) | **Equivalent** | Android 主要依賴網路搜尋；iOS 額外整合了系統相簿選取封面與手動輸入 URL 功能。 |
+| **8.1 換源優選排序演算法** | `ChangeBookSourceViewModel.kt`: L122 (comparator) | `change_chapter_source_sheet.dart`: L100 (results.sort) | **Matched** | 均支援根據書源自定義排序、章節序號匹配（正則提取 [123]）及最新章節資訊進行自動優選。 |
+| **8.2 換源搜尋快取預加載** | `ChangeBookSourceViewModel.kt`: L105 (getDbSearchBooks) | `change_chapter_source_sheet.dart`: L75 (_searchBookDao) | **Matched** | 均支援啟動換源介面時先從本地資料庫讀取已有的搜尋結果，縮短等待時間。 |
+| **8.3 精準搜尋過濾開關** | `ChangeBookSourceDialog.kt`: R.id.menu_check_author | `change_chapter_source_sheet.dart`: L165 (_checkAuthor) | **Matched** | 均在介面提供開關，控制搜尋時是否必須強制匹配作者名。 |
+| **8.4 搜尋範圍分組過濾** | `AppConfig.searchGroup` | - | **Logic Gap** | Android 支援限定在特定書源分組內進行換源搜尋；iOS 目前始終在全體已啟用書源中搜尋。 |
+| **8.5 空結果切換引導** | `ChangeBookSourceViewModel.kt`: L55 (searchFinishCallback) | - | **Logic Gap** | Android 在分組搜尋為空時提示切換到全部分組；iOS 目前僅顯示「無搜尋結果」。 |
+| **8.6 跨類型（有聲/文本）遷移** | `ChangeBookSourceDialog.kt`: L200 (migrateTo) | `change_chapter_source_sheet.dart`: L286 (_showMigrationDialog) | **Matched** | 均支援在換源時偵測類型變更，並提示執行進度遷移與播放器/閱讀器跳轉。 |
+
 
 
 
