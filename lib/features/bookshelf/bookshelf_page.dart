@@ -5,6 +5,7 @@ import 'bookshelf_provider.dart';
 import '../search/search_page.dart';
 import '../book_detail/book_detail_page.dart';
 import '../local_book/smart_scan_page.dart';
+import '../local_book/file_picker_page.dart';
 import '../local_book/local_book_provider.dart';
 import 'group_manage_page.dart';
 import '../../core/models/book.dart';
@@ -148,6 +149,9 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
               child: const SmartScanPage(),
             )));
             break;
+          case 'file_picker':
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const FilePickerPage()));
+            break;
           case 'import_url':
             _showImportUrlDialog(context, provider);
             break;
@@ -177,6 +181,7 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
         const PopupMenuDivider(),
         const PopupMenuItem(value: 'import_local', child: Text('匯入本機書籍')),
         const PopupMenuItem(value: 'smart_scan', child: Text('智慧掃描目錄')),
+        const PopupMenuItem(value: 'file_picker', child: Text('手動瀏覽檔案')),
         const PopupMenuItem(value: 'import_url', child: Text('從 URL 匯入')),
         const PopupMenuItem(value: 'export', child: Text('導出書架 (JSON)')),
         const PopupMenuDivider(),
