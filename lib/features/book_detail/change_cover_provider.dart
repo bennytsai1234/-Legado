@@ -1,11 +1,14 @@
 import 'package:flutter/foundation.dart';
 import '../../core/database/dao/book_source_dao.dart';
+import '../../core/database/dao/search_book_dao.dart';
 import '../../core/models/book_source.dart';
 import '../../core/models/search_book.dart';
+import '../../core/models/book.dart';
 import '../../core/services/book_source_service.dart';
 
 class ChangeCoverProvider extends ChangeNotifier {
   final BookSourceDao _sourceDao = BookSourceDao();
+  final SearchBookDao _searchBookDao = SearchBookDao();
   final BookSourceService _service = BookSourceService();
 
   List<SearchBook> _covers = [];
@@ -16,6 +19,20 @@ class ChangeCoverProvider extends ChangeNotifier {
   List<SearchBook> get covers => _covers;
   bool get isSearching => _isSearching;
   double get progress => _totalSources == 0 ? 0 : _searchCount / _totalSources;
+
+  // 預設封面虛擬項 (對標 Android defaultCover)
+  SearchBook _buildDefaultCoverItem(String name, String author) {
+    return SearchBook(
+      book: Book(
+        name: name,
+        author: author,
+        bookUrl: 'use_default_cover',
+        origin: 'system',
+        originName: '恢復預設封面',
+      ),
+      sources: ['系統'],
+    );
+  }
 
   void stopSearch() {
     _isSearching = false;
@@ -30,18 +47,47 @@ class ChangeCoverProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 深度還原：快取優先加載邏輯
+  Future<void> init(String name, String author) async {
+    _covers = [_buildDefaultCoverItem(name, author)];
+    notifyListeners();
+
+    // 1. 先從資料庫加載既有封面
+    final cached = await _searchBookDao.getEnabledHasCover(name, author);
+    if (cached.isNotEmpty) {
+      for (var b in cached) {
+        if (!_covers.any((c) => c.book.coverUrl == b.book.coverUrl)) {
+          _covers.add(b);
+        }
+      }
+      notifyListeners();
+    }
+
+    // 2. 若快取為空，自動發起搜尋
+    if (cached.isEmpty) {
+      search(name, author);
+    }
+  }
+
   Future<void> search(String name, String author) async {
-    _isSearching = false; // 先停止
+    _isSearching = false; // 先停止現有任務
     notifyListeners();
     await Future.delayed(const Duration(milliseconds: 50));
 
     _isSearching = true;
-    _covers = [];
+    _covers = [_buildDefaultCoverItem(name, author)];
     _searchCount = 0;
     notifyListeners();
 
+    // 重新載入快取（防止重複）
+    final cached = await _searchBookDao.getEnabledHasCover(name, author);
+    for (var b in cached) {
+      if (!_covers.any((c) => c.book.coverUrl == b.book.coverUrl)) {
+        _covers.add(b);
+      }
+    }
+
     final enabledSources = await _sourceDao.getEnabled();
-    // 過濾掉沒有封面搜尋規則的書源 (比照 Legado ChangeCoverViewModel)
     final coverSources = enabledSources.where((s) => s.ruleSearch?.coverUrl != null && s.ruleSearch!.coverUrl!.isNotEmpty).toList();
 
     _totalSources = coverSources.length;
@@ -51,10 +97,9 @@ class ChangeCoverProvider extends ChangeNotifier {
       return;
     }
 
-    // 並發搜尋
     final List<Future<void>> tasks = [];
     for (final source in coverSources) {
-      if (!_isSearching) break; // 深度補齊：循環中斷檢查
+      if (!_isSearching) break;
       tasks.add(_searchSingleSource(source, name, author));
     }
 
@@ -64,22 +109,22 @@ class ChangeCoverProvider extends ChangeNotifier {
   }
 
   Future<void> _searchSingleSource(BookSource source, String name, String author) async {
-    if (!_isSearching) return; // 深度補齊：開始請求前檢查
+    if (!_isSearching) return;
     try {
       final List<SearchBook> books = await _service.searchBooks(
         source,
         name,
         filter: (fName, fAuthor) {
-          // 精確匹配書名與作者 (作者可模糊匹配或留空)
           return fName == name && (author.isEmpty || fAuthor.contains(author) || author.contains(fAuthor));
         },
       );
 
-      for (var book in books) {
-        if (book.coverUrl != null && book.coverUrl!.isNotEmpty) {
-          // 避免重複封面 URL
-          if (!_covers.any((c) => c.coverUrl == book.coverUrl)) {
-            _covers.add(book);
+      for (var result in books) {
+        if (result.book.coverUrl != null && result.book.coverUrl!.isNotEmpty) {
+          if (!_covers.any((c) => c.book.coverUrl == result.book.coverUrl)) {
+            _covers.add(result);
+            // 深度還原：搜尋成功後存入快取資料庫
+            await _searchBookDao.insert(result);
             notifyListeners();
           }
         }

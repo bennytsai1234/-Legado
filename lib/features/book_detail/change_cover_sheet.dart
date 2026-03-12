@@ -29,7 +29,8 @@ class _ChangeCoverSheetState extends State<ChangeCoverSheet> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final coverProvider = context.read<ChangeCoverProvider>();
-      coverProvider.search(widget.bookName, widget.author);
+      // 深度還原：呼叫 init 實現快取優先加載
+      coverProvider.init(widget.bookName, widget.author);
     });
   }
 
@@ -44,7 +45,6 @@ class _ChangeCoverSheetState extends State<ChangeCoverSheet> {
       final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
       if (image != null && mounted) {
         // 在此專案中，customCoverUrl 可以是檔案路徑或網路 URL
-        // 閱讀器端應處理 file:// 協議或直接判斷
         context.read<BookDetailProvider>().updateCover('file://${image.path}');
         Navigator.pop(context);
       }
@@ -167,18 +167,20 @@ class _ChangeCoverSheetState extends State<ChangeCoverSheet> {
           ),
           itemCount: provider.covers.length,
           itemBuilder: (context, index) {
-            final book = provider.covers[index];
-            return _buildCoverItem(book);
+            final result = provider.covers[index];
+            return _buildCoverItem(result);
           },
         );
       },
     );
   }
 
-  Widget _buildCoverItem(SearchBook book) {
+  Widget _buildCoverItem(SearchBook result) {
+    final isDefault = result.book.bookUrl == 'use_default_cover';
     return GestureDetector(
       onTap: () {
-        context.read<BookDetailProvider>().updateCover(book.coverUrl ?? '');
+        // 深度還原：點擊預設項時傳入空字串以恢復原始封面
+        context.read<BookDetailProvider>().updateCover(isDefault ? '' : (result.book.coverUrl ?? ''));
         Navigator.pop(context);
       },
       child: Column(
@@ -187,23 +189,28 @@ class _ChangeCoverSheetState extends State<ChangeCoverSheet> {
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: CachedNetworkImage(
-                imageUrl: book.coverUrl!,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  color: Colors.grey[200],
-                  child: const Icon(Icons.image, color: Colors.grey),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  color: Colors.grey[200],
-                  child: const Icon(Icons.broken_image, color: Colors.grey),
-                ),
-              ),
+              child: isDefault 
+                ? Container(
+                    color: Colors.blue.withValues(alpha: 0.1),
+                    child: const Center(child: Icon(Icons.settings_backup_restore, color: Colors.blue, size: 32)),
+                  )
+                : CachedNetworkImage(
+                    imageUrl: result.book.coverUrl!,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.image, color: Colors.grey),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.broken_image, color: Colors.grey),
+                    ),
+                  ),
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            book.originName ?? '未知來源',
+            isDefault ? '恢復預設' : (result.book.originName ?? '未知來源'),
             style: const TextStyle(fontSize: 10),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
