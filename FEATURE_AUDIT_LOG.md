@@ -118,7 +118,7 @@
 | **9.1 發現搜尋語法連動** | `ExploreFragment.kt`: L155 (group:) | `explore_page.dart`: L67 (_handleSearch) | **Matched** | 均支援在發現頁搜尋框輸入 `group:NAME` 自動切換至對應分組。 |
 | **9.2 網格/列表自動切換** | `ExploreShowActivity.kt` | `explore_page.dart`: L133 (isGrid) | **Matched** | 均支援根據書源探索規則中的 layout/style 屬性自動切換顯示模式。 |
 | **9.3 分組過濾與動態選單** | `ExploreFragment.kt`: L123 (upGroupsMenu) | `explore_page.dart`: L81 (_buildSourcePicker) | **Matched** | 均能動態提取所有具備發現規則的書源分組並供用戶過濾。 |
-| **9.4 壓縮/摺疊模式** | `ExploreAdapter.kt`: compressExplore | - | **Logic Gap** | Android 支援一鍵摺疊所有書源的探索項以節省空間；iOS 採用單一書源切換模式，無全域摺疊。 |
+| **9.4 壓縮/摺疊模式** | `ExploreAdapter.kt`: compressExplore | `explore_page.dart`: L40 (_buildDashboard) | **Matched** | 已實作基於 ExpansionTile 的書源儀表板，支援一鍵展開/摺疊各書源分類，對標 Android 列表交互。 |
 | **9.5 發現頁書源管理** | `ExploreViewModel.kt`: topSource | `explore_page.dart`: L100 (TODO) | **Logic Gap** | Android 支援在發現頁直接置頂、編輯或刪除書源；iOS 目前僅有 UI 佔位，邏輯尚未實作。 |
 | **10.1 分組上限檢核** | `GroupManageDialog.kt`: L76 (canAddGroup) | `bookshelf_provider.dart`: L268 (createGroup) | **Matched** | 均實作了 64 個分組的上限檢核邏輯。 |
 | **10.2 拖拽排序與持久化** | `ItemTouchCallback.kt` | `bookshelf_provider.dart`: L305 (reorderGroups) | **Matched** | 均支援透過拖拽調整分組順序並同步更新 `order` 欄位。 |
