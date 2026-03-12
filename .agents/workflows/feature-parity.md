@@ -1,59 +1,36 @@
+# 🔄 增量式代碼審計 SOP v3：外科手術式精確對齊 (完整版)
+
+本工作流程旨在確保 Legado (Android) 遷移至 Reader (iOS) 的過程中，所有功能與邏輯均能達到原始碼級別的完全對齊。
+
 ---
-description: "Legado Feature Parity Workflow - 逐模組還原 legado 功能至 iOS Flutter"
+
+## 階段一：建立全局地圖 (Global Mapping Phase)
+在開始具體審計前，需先理清兩個專案之間的物理檔案對應關係。
+
+1.  **清單掃描**：
+    - 列出 Android (Legado) 的完整 `ui/`, `model/`, `help/` 目錄結構。
+    - 列出 iOS (Reader) 的完整 `lib/features/`, `lib/core/` 目錄結構。
+2.  **建立 `COMPREHENSIVE_FEATURE_MAPPING.md`**：
+    - 定義「功能責任區」：明確標註 Android 的 `Activity/ViewModel/Help` 對應 iOS 的 `Page/Provider/Service/DAO`。
+
 ---
 
-# Feature Parity 工作流
+## 階段二：模組專項審計 (Incremental Audit Loop)
+針對地圖中的 **[資料夾 X]**，執行外科手術式的深度掃描：
 
-**目標**：以 `FEATURE_AUDIT_v2.md` 為追蹤器，逐一將 legado (Android) 的功能完整還原至 Flutter (iOS)。
+1.  **Android 端「互動與邏輯」提取**：
+    - 讀取 Kotlin 原始碼與相關的 XML 佈局檔案。
+    - 提取 UI 進入點、核心演算（正則、公式）、以及邊際狀態處理。
+2.  **iOS 端「直接閱讀與驗證」**：
+    - 直接讀取對應的 Dart 檔案，與 Android 的特徵清單逐條比對。
+    - 標註 `Matched` (一致), `Equivalent` (等效), `Logic Gap` (缺失)。
+3.  **單一文件增量寫入**：
+    - 將比對結果附加到 `FEATURE_AUDIT_LOG.md`。
+    - 格式：`[邏輯點] + [Android 路徑:行號] + [iOS 路徑:行號] + [狀態描述]`。
 
-## 工作流步驟（每個模組重複此循環）
+---
 
-### 步驟 1：分析 Legado 原始碼
-// turbo
-- 進入 `legado/app/src/main/java/io/legado/app/ui/<模組名>/` 目錄
-- 讀取所有 `.kt` 檔案，理解功能邏輯、UI 互動流程、資料流
-
-### 步驟 2：盤點 iOS 現有實作
-// turbo
-- 進入 `ios/lib/features/<對應模組>/` 目錄
-- 讀取所有 `.dart` 檔案，確認已實作的功能與缺失的功能
-- 對照步驟 1 的 Legado 功能清單，列出差異
-
-### 步驟 3：實作缺失功能
-- 根據差異清單，逐一在 Flutter 端實作缺失的功能
-- 每完成一個檔案的修改，立即執行 `git add <file> ; git commit -m "backup: update <file>"`
-- 確保新增的代碼遵循現有專案的架構風格
-
-### 步驟 4：驗證
-// turbo
-- 執行 `flutter analyze lib/features/<模組名>/` 確認零錯誤
-- 修復所有 warning（如 `withOpacity` → `withValues`）
-
-### 步驟 5：更新報告
-- 回到 `FEATURE_AUDIT_v2.md`
-- 更新該模組的「完成度」百分比
-- 更新「狀態」標籤
-- 在模組內容區標註已完成的項目（✅）與剩餘待辦（如有）
-- 執行 `git add FEATURE_AUDIT_v2.md ; git commit -m "docs: update module XX status"`
-
-### 步驟 6：正式提交
-- 將該模組的所有變更合併為一個正式的 conventional commit
-- 格式：`feat(<模組名>): implement full feature parity for <模組描述>`
-
-## 模組處理順序（01 ~ 10）
-
-1. **01. 主框架 (Main)** — 100%
-2. **02. 關於 (About)** — 100%
-3. **03. 外部檔案關聯 (Association)** — 100%
-4. **04. 有聲書 (Audio)** — 100%
-5. **05. 全域書籤 (Bookmark)** — 100%
-6. **06. 快取下載 (Cache)** — 100%
-7. **07. 換封面 (ChangeCover)** — 100%
-8. **08. 換源 (ChangeSource)** — 100%
-9. **09. 發現探索 (Explore)** — 100%
-10. **10. 書架分組管理 (Group/Manage)** — 100%
-
-## 注意事項
-- 若某功能因 iOS 平台限制完全無法實作（如 Android Intent），須在報告中註明原因並標記為「iOS 不適用」
-- 每次只專注在一個模組，避免交叉修改
-- 所有對話與解釋使用**繁體中文**
+## 階段三：總表同步與導航更新 (Aggregation Phase)
+1.  **更新完成度**：根據審計結果更新 `FEATURE_AUDIT_v2.md` 中的百分比。
+2.  **提取「邏輯缺口」**：將發現的 `Logic Gap` 轉化為後續開發任務清單。
+3.  **備份 (Commit)**：每完成一個模組，立即執行 Git Commit。
