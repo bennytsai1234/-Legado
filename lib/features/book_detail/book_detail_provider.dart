@@ -45,7 +45,7 @@ class BookDetailProvider extends ChangeNotifier {
     if (searchBook.book is Book) {
       _book = searchBook.book as Book;
     } else {
-      final sb = searchBook.book as SearchBook;
+      final sb = searchBook.book;
       _book = Book(
         bookUrl: sb.bookUrl,
         name: sb.name,
@@ -100,6 +100,12 @@ class BookDetailProvider extends ChangeNotifier {
 
   Future<void> updateBookInfo(String name, String author, String intro, String coverUrl) async {
     _book.name = name; _book.author = author; _book.intro = intro; _book.coverUrl = coverUrl;
+    if (_isInBookshelf) await _bookDao.insertOrUpdate(_book);
+    notifyListeners();
+  }
+
+  Future<void> updateCover(String coverUrl) async {
+    _book.customCoverUrl = coverUrl.isEmpty ? null : coverUrl;
     if (_isInBookshelf) await _bookDao.insertOrUpdate(_book);
     notifyListeners();
   }

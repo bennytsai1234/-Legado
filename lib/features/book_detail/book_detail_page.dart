@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'book_detail_provider.dart';
+import 'change_cover_sheet.dart';
 import '../../core/models/search_book.dart';
 import '../../core/models/book.dart';
-import '../../core/models/chapter.dart';
+
 import '../reader/reader_page.dart';
 import '../../core/services/export_book_service.dart';
 
@@ -39,9 +40,12 @@ class BookDetailPage extends StatelessWidget {
                       _showPreloadDialog(context, provider);
                     } else if (val == 'edit') {
                       _showEditBookInfoDialog(context, provider);
+                    } else if (val == 'change_cover') {
+                      _showChangeCoverSheet(context, provider);
                     }
                   },
                   itemBuilder: (context) => [
+                    const PopupMenuItem(value: 'change_cover', child: Text('換封面')),
                     const PopupMenuItem(value: 'export', child: Text('匯出全書 (TXT)')),
                     const PopupMenuItem(value: 'clear_cache', child: Text('清理正文快取')),
                     const PopupMenuItem(value: 'preload', child: Text('預加載後續章節')),
@@ -96,11 +100,14 @@ class BookDetailPage extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: book.coverUrl != null && book.coverUrl!.isNotEmpty
-                ? CachedNetworkImage(imageUrl: book.coverUrl!, width: 100, height: 140, fit: BoxFit.cover, errorWidget: (context, url, error) => _buildCoverPlaceholder())
-                : _buildCoverPlaceholder(),
+          GestureDetector(
+            onTap: () => _showChangeCoverSheet(context, provider),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: book.getDisplayCover() != null && book.getDisplayCover()!.isNotEmpty
+                  ? CachedNetworkImage(imageUrl: book.getDisplayCover()!, width: 100, height: 140, fit: BoxFit.cover, errorWidget: (context, url, error) => _buildCoverPlaceholder())
+                  : _buildCoverPlaceholder(),
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -111,9 +118,9 @@ class BookDetailPage extends StatelessWidget {
                 children: [
                   Text(book.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  Text('作者：${book.author ?? '未知'}', style: const TextStyle(fontSize: 16)),
+                  Text('作者：${book.author}', style: const TextStyle(fontSize: 16)),
                   const SizedBox(height: 4),
-                  Text('來源：${book.originName ?? '未知'}', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                  Text('來源：${book.originName}', style: const TextStyle(fontSize: 14, color: Colors.grey)),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -245,6 +252,17 @@ class BookDetailPage extends StatelessWidget {
             child: const Text('儲存'),
           ),
         ],
+      ),
+    );
+  }
+  void _showChangeCoverSheet(BuildContext context, BookDetailProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => ChangeCoverSheet(
+        bookName: provider.book.name,
+        author: provider.book.author,
       ),
     );
   }

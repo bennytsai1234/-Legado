@@ -12,6 +12,7 @@ import 'features/settings/settings_page.dart';
 import 'features/settings/settings_provider.dart';
 import 'features/rss/rss_source_page.dart';
 import 'features/rss/rss_source_provider.dart';
+import 'features/book_detail/change_cover_provider.dart';
 import 'core/services/default_data.dart';
 import 'core/services/tts_service.dart';
 import 'package:flutter/foundation.dart';
@@ -38,6 +39,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => ExploreProvider()),
         ChangeNotifierProvider(create: (_) => RssSourceProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => ChangeCoverProvider()),
       ],
       child: const LegadoReaderApp(),
     ),

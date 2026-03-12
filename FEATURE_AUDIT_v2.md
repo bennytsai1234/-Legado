@@ -17,7 +17,7 @@
 | [04. 有聲書 (Audio)](#04-有聲書-audio) | 40% | ⚠️ 深度不足 | P2 |
 | [05. 全域書籤 (Bookmark)](#05-全域書籤-bookmark) | 70% | ⚠️ 需要補強 | P2 |
 | [06. 快取下載 (Cache)](#06-快取下載-cache) | 65% | ⚠️ 需要補強 | P2 |
-| [07. 換封面 (ChangeCover)](#07-換封面-changecover) | 60% | ⚠️ 需要補強 | P3 |
+| [07. 換封面 (ChangeCover)](#07-換封面-changecover) | 100% | ✅ 完整實作 | P3 |
 | [08. 換源 (ChangeSource)](#08-換源-changesource) | 75% | ⚠️ 缺單章換源 | P2 |
 | [09. 發現探索 (Explore)](#09-發現探索-explore) | 75% | ⚠️ 進階功能缺失 | P3 |
 | [10. 書架分組管理 (Group/Manage)](#10-書架分組管理-groupmanage) | 45% | ⚠️ 大量功能缺失 | P1 |
@@ -241,15 +241,18 @@
 - `ui/book/changecover/CoverAdapter.kt`
 
 **Flutter (iOS) 對應檔案**：
-- 整合於 `lib/features/book_detail/book_detail_page.dart`（`_showChangeCoverDialog`）
+- `lib/features/book_detail/change_cover_sheet.dart`
+- `lib/features/book_detail/change_cover_provider.dart`
 
-**完成度：60%**
+**完成度：100%**
 
-**狀態：⚠️ 基礎功能存在，但搜索能力有限**
+**狀態：✅ 完整實作**
 
-**不足之處與後續改進計劃**：
-- [ ] 換封面對話框的候選封面自動搜索邏輯（從書源的封面搜索 URL）需補強。
-- [ ] 缺少從本地相簿選取封面的功能（Android 支援從本機相片庫導入）。
+**已完成項目 ✅**：
+- ✅ 換封面對話框候選封面自動搜索邏輯（從書源搜尋）。
+- ✅ 支援從本地相簿選取封面（整合 `image_picker`）。
+- ✅ 即時顯示搜尋進度與來源資訊。
+- ✅ 支援手動輸入封面 URL。
 
 ---
 

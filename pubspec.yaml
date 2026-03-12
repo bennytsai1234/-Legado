@@ -54,6 +54,9 @@ dependencies:
   # === Image Loading ===
   cached_network_image: ^3.4.1
 
+  # === Image Picker ===
+  image_picker: ^1.1.2
+
   # === Local File Support ===
   file_picker: ^10.3.10
 
