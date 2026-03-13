@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../core/database/dao/read_record_dao.dart';
 import '../../core/models/read_record.dart';
 
@@ -25,10 +26,13 @@ class ReadRecordPage extends StatelessWidget {
             itemCount: records.length,
             itemBuilder: (context, index) {
               final record = records[index];
+              final timeStr = DateFormat('yyyy-MM-dd HH:mm').format(
+                DateTime.fromMillisecondsSinceEpoch(record.lastRead),
+              );
               return ListTile(
                 title: Text(record.bookName),
                 subtitle: Text('累計閱讀: ${_formatDuration(record.readTime)}'),
-                trailing: Text(record.lastReadTime, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                trailing: Text(timeStr, style: const TextStyle(fontSize: 10, color: Colors.grey)),
               );
             },
           );
