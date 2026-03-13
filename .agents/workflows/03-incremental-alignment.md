@@ -1,86 +1,49 @@
 ---
-description: "[3/4] 基於功能審計報告中的 Logic Gap，逐項實作或修復程式碼以達成功能對齊"
+description: "[3/4] 根據審計報告的缺口進行代碼實作與功能對齊"
 ---
 
-# 🔧 [3/4] 增量式實作修復工作流 (Incremental Alignment) v7
+# 🔧 [3/4] 功能對齊實作工作流 (Parity Alignment) v1
 
-本工作流為遷移管線的**第三步**。以 `/02-feature-parity` 產出的審計報告為任務來源，逐項實作缺失功能或修復邏輯缺口。
-
-> **執行順序**：`01-structure-mapping` → `02-feature-parity` → `03-incremental-alignment` → `04-debug`
-
----
-
-## 核心產物
-
-- 修改/新增後的 Dart 原始碼
-- 更新後的 `FEATURE_AUDIT_v2.md`（完成度提升、Logic Gap → Matched）
+本工作流專注於將 `FEATURE_AUDIT_v2.md` 中記錄的 **Logic Gap** 或 **Placeholder** 轉化為 100% 對齊的實作。
 
 ---
 
-## 🏗️ 零簡化開發鐵律 (Zero Simplification Mandate)
+## 🏗️ 實作鐵律 (Implementation Mandate)
 
 > [!DANGER]
-> **嚴禁因「程式碼過長」或「重寫麻煩」而簡化實作。**
-> 1. **禁絕 Placeholder**：嚴禁寫入 `// ... rest of code` 或 `/* methods omitted */` 等占位符。
-> 2. **完整性優先**：對現有大型 Provider (如 ReaderProvider) 進行修改時，必須確保**原有所有業務方法、Getter、Setter 100% 保留**。
-> 3. **外科手術式修改**：除非必要，否則應優先使用 `replace` 進行局部植入，而非全量 `write_file`。
-
----
-
-## 前置條件
-
-- **必須先完成** `/02-feature-parity`，確保 `FEATURE_AUDIT_v2.md` 中有明確的「不足之處」或 `Logic Gap`
-
----
-
-## 執行模式
-
-### 模式 A：按優先級批量修復
-從 `FEATURE_AUDIT_v2.md` 頂部儀表板選取 P0/P1 模組，全面修復。
-
-### 模式 B：單點修復（預設）
-使用者指定一個具體的 Logic Gap（如 `14.8 進度雲端即時同步`），僅修復該點。
+> **1. 外科手術式修改**：優先使用 `replace` 植入邏輯，禁止無意義的 `write_file` 全量覆寫，保持檔案結構穩定。
+> **2. 零占位符協定**：嚴禁寫入 `// 同 Android` 或 `/* 此處省略 */`。所有產出的程式碼必須是完整、可編譯且邏輯閉環的。
+> **3. 嚴謹同步**：核心演算法（如：解密、緩存校驗、規則解析）必須與 Legado Android 原始碼邏輯 100% 平移。
 
 ---
 
 ## 執行步驟
 
-> [!IMPORTANT]
-> **逐項修復原則**：每完成「一個 Logic Gap」的 Step 1~6 後，必須**立即執行 `/04-debug`** 進行除錯驗證，確認無問題後才可進入下一個 Logic Gap。
+### Step 1：任務提取
+- 開啟 `FEATURE_AUDIT_v2.md`，定位到最新的「比對報告」區塊。
+- 挑選一個標註為 `❌ Logic Gap` 或 `🚨 Placeholder` 的功能點作為本次實作目標。
 
-### Step 1：從報告提取任務
-- 開啟 `FEATURE_AUDIT_v2.md`，找到目標模組的「不足之處」清單與證據鏈明細。
+### Step 2：參考實作研究
+- **讀取 Android 原始碼**：理解目標功能的資料流、邊際條件（Edge Cases）與異常處理。
+- **讀取 iOS 現狀**：確認目前的類別結構、Provider 狀態與可用的 Utility 函式。
 
-### Step 2：閱讀 Android 參考實作
-- 讀取原始碼，提取核心邏輯：演算法步驟、邊際處理、UI 行為。
+### Step 3：外科手術式實作
+- **邏輯植入**：
+  - 若為現有檔案補全：使用 `replace` 在正確的 Method 位置插入邏輯。
+  - 若為新功能：建立對應的新檔案。
+- **依賴檢查**：確保所需之 Service (如 `BookDao`, `WebDavService`) 已正確注入。
 
-### Step 3：閱讀 iOS 當前程式碼 (核心防禦)
-- **必須 `read_file` 獲取目標檔案的完整內容**（若檔案過大，需分段讀取並在記憶體中拼接）。
-- 標註出所有**不可遺失**的現有功能點。
+### Step 4：品質校核
+- **無退化驗證**：確保原子修改未影響該檔案原有的其他功能。
+- **語法自查**：檢查是否有漏掉的 `import` 或括號未閉合。
 
-### Step 4：實作修復 (結構安全模式)
-- **規範工具選用**：
-  - **優先級 1 (`replace`)**：針對單一邏輯點的局部替換。
-  - **優先級 2 (`write_file`)**：僅限於建立全新檔案，或經過 Step 3 完整讀取後的大規模重構。
-- **重構保護協議**：
-  - 若執行 `write_file`，內容必須包含該檔案**原本所有的邏輯**加上新實作的邏輯。
-  - **嚴禁在 `write_file` 參數中使用任何省略符號。**
+### Step 5：更新審計報告
+- 在 `FEATURE_AUDIT_v2.md` 對應位置將 `[ ]` 標註為 `[x]` 或變更狀態為 `✅ Matched`。
 
-### Step 5：結構校驗 (Mandatory)
-- **修改後立即回讀**：必須再次 `read_file` 該檔案。
-- **一致性比對**：確認檔案行數、閉合括號與 Step 3 標註的「不可遺失功能」是否依然存在。
-- 若發現功能遺失，**視為重大事故**，必須立即透過 `git checkout <file>` 回滾並重新實作。
-
-### Step 6：更新報告
-- 更新 `FEATURE_AUDIT_v2.md` 的狀態描述與完成度。
-
-### Step 7：🐛 執行 `/04-debug`
-- 確認 `flutter analyze` 與 `flutter test` 無新增錯誤。
-
-### Step 8：Git 備份
-- `git add <file> ; git commit -m "feat: implement [邏輯點]"`
+### Step 6：Git 備份
+- `git add <file> ; git commit -m "feat: align logic for [功能] (from audit)"`
 
 ---
 
-## 完成判定
-- 所有 Logic Gap 已修復且**無功能退化 (No Regression)**。
+## 下一步
+→ 執行 **`/04-debug-loop`** 驗證實作後的程式碼正確性。

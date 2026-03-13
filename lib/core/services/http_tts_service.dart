@@ -101,8 +101,7 @@ class HttpTtsService extends ChangeNotifier {
       }
 
       if (sources.isNotEmpty) {
-        final playlist = ConcatenatingAudioSource(children: sources);
-        await _player.setAudioSource(playlist);
+        await _player.setAudioSources(sources);
         _player.play();
       }
     } catch (e) {

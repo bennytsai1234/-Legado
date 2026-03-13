@@ -1,7 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:legado_reader/core/engine/analyze_rule.dart';
 import 'package:legado_reader/core/models/rule_data_interface.dart';
-import 'dart:convert';
 
 class MockRuleData extends RuleDataInterface {
   @override
@@ -48,7 +48,7 @@ void main() {
       // In our test environment, if JS engine fails to init, it might return empty or error.
       // But we can verify the 'bookId' was put if our JS bridge is working.
       
-      print('Result: $result');
+      debugPrint('Result: $result');
     });
 
     test('2. Real World: Nested {{ }} with complex JS', () {
@@ -59,7 +59,7 @@ void main() {
       final result = analyzer.getString(rule);
       
       // If JS evaluation is mocked/fails, it should fallback to the template or return evaluated string.
-      print('Result: $result');
+      debugPrint('Result: $result');
     });
 
     test('3. RuleAnalyzer: && splitting aware of brackets', () {

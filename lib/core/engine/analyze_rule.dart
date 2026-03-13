@@ -78,23 +78,31 @@ class AnalyzeRule {
   }
 
   AnalyzeByXPath _getAnalyzeByXPath(dynamic o) {
-    if (o != _content) return AnalyzeByXPath(o);
+    if (o != _content) {
+      return AnalyzeByXPath(o);
+    }
     return _analyzeByXPath ??= AnalyzeByXPath(_content);
   }
 
   AnalyzeByCss _getAnalyzeByJSoup(dynamic o) {
-    if (o != _content) return AnalyzeByCss(o);
+    if (o != _content) {
+      return AnalyzeByCss(o);
+    }
     return _analyzeByJSoup ??= AnalyzeByCss(_content);
   }
 
   AnalyzeByJsonPath _getAnalyzeByJSonPath(dynamic o) {
-    if (o != _content) return AnalyzeByJsonPath(o);
+    if (o != _content) {
+      return AnalyzeByJsonPath(o);
+    }
     return _analyzeByJSonPath ??= AnalyzeByJsonPath(_content);
   }
 
   /// 獲取單個元素
   dynamic getElement(String ruleStr) {
-    if (ruleStr.isEmpty) return null;
+    if (ruleStr.isEmpty) {
+      return null;
+    }
 
     _log("⇒ 執行 getElement: $ruleStr");
     var result = _content;
@@ -102,7 +110,9 @@ class AnalyzeRule {
 
     if (result != null && ruleList.isNotEmpty) {
       for (final sourceRule in ruleList) {
-        if (result == null) break;
+        if (result == null) {
+          break;
+        }
 
         sourceRule.makeUpRule(result, this);
         final rule = sourceRule.rule;
@@ -153,7 +163,9 @@ class AnalyzeRule {
 
   /// 獲取列表
   List<dynamic> getElements(String ruleStr) {
-    if (ruleStr.isEmpty) return [];
+    if (ruleStr.isEmpty) {
+      return [];
+    }
 
     _log("⇒ 執行 getElements: $ruleStr");
     var result = _content;
@@ -161,7 +173,9 @@ class AnalyzeRule {
 
     if (result != null && ruleList.isNotEmpty) {
       for (final sourceRule in ruleList) {
-        if (result == null) break;
+        if (result == null) {
+          break;
+        }
 
         sourceRule.makeUpRule(result, this);
         final rule = sourceRule.rule;
@@ -209,14 +223,20 @@ class AnalyzeRule {
       }
     }
 
-    if (result is List) return result;
-    if (result == null) return [];
+    if (result is List) {
+      return result;
+    }
+    if (result == null) {
+      return [];
+    }
     return [result];
   }
 
   /// 獲取單個字串
   String getString(String ruleStr, {bool isUrl = false, bool unescape = true}) {
-    if (ruleStr.isEmpty) return "";
+    if (ruleStr.isEmpty) {
+      return "";
+    }
 
     _log("⇒ 執行 getString: $ruleStr");
     final ruleList = _splitSourceRuleCacheString(ruleStr);
@@ -224,7 +244,9 @@ class AnalyzeRule {
 
     if (result != null && ruleList.isNotEmpty) {
       for (final sourceRule in ruleList) {
-        if (result == null) break;
+        if (result == null) {
+          break;
+        }
 
         sourceRule.makeUpRule(result, this);
         final rule = sourceRule.rule;
@@ -274,13 +296,17 @@ class AnalyzeRule {
     if (unescape && str.contains('&')) {
       str = _htmlUnescape.convert(str);
     }
-    if (isUrl && str.isEmpty) return _baseUrl ?? "";
+    if (isUrl && str.isEmpty) {
+      return _baseUrl ?? "";
+    }
     return str;
   }
 
   /// 獲取字串列表
   List<String> getStringList(String ruleStr, {bool isUrl = false}) {
-    if (ruleStr.isEmpty) return [];
+    if (ruleStr.isEmpty) {
+      return [];
+    }
     _log("⇒ 執行 getStringList: $ruleStr");
 
     final ruleList = _splitSourceRuleCacheString(ruleStr);
@@ -288,7 +314,9 @@ class AnalyzeRule {
 
     if (result != null && ruleList.isNotEmpty) {
       for (final sourceRule in ruleList) {
-        if (result == null) break;
+        if (result == null) {
+          break;
+        }
 
         sourceRule.makeUpRule(result, this);
         final rule = sourceRule.rule;
@@ -325,16 +353,24 @@ class AnalyzeRule {
     if (result is List) {
       return result.map((e) => e.toString()).toSet().toList();
     }
-    if (result == null) return [];
+    if (result == null) {
+      return [];
+    }
     final str = result.toString();
     return str.split('\n').where((s) => s.isNotEmpty).toSet().toList();
   }
 
   List<SourceRule> _splitSourceRuleCacheString(String ruleStr) {
-    if (ruleStr.isEmpty) return [];
-    if (_stringRuleCache.containsKey(ruleStr)) return _stringRuleCache[ruleStr]!;
+    if (ruleStr.isEmpty) {
+      return [];
+    }
+    if (_stringRuleCache.containsKey(ruleStr)) {
+      return _stringRuleCache[ruleStr]!;
+    }
     final ruleList = splitSourceRule(ruleStr);
-    if (_stringRuleCache.length > 50) _stringRuleCache.clear();
+    if (_stringRuleCache.length > 50) {
+      _stringRuleCache.clear();
+    }
     _stringRuleCache[ruleStr] = ruleList;
     return ruleList;
   }
@@ -362,7 +398,9 @@ class AnalyzeRule {
     }
     if (ruleStr.length > start) {
       final tmp = ruleStr.substring(start).trim();
-      if (tmp.isNotEmpty) ruleList.add(SourceRule(tmp));
+      if (tmp.isNotEmpty) {
+        ruleList.add(SourceRule(tmp));
+      }
     }
     return ruleList;
   }
@@ -498,15 +536,26 @@ class SourceRule {
     int start = 0;
     final regexPattern = RegExp(r'\$\d{1,2}');
     final matches = regexPattern.allMatches(ruleStr);
-    if (matches.isNotEmpty) { isDynamic = true; if (mode != Mode.js) mode = Mode.regex; }
+    if (matches.isNotEmpty) {
+      isDynamic = true;
+      if (mode != Mode.js) {
+        mode = Mode.regex;
+      }
+    }
     for (final match in matches) {
-      if (match.start > start) { ruleType.add(defaultRuleType); ruleParam.add(ruleStr.substring(start, match.start)); }
+      if (match.start > start) {
+        ruleType.add(defaultRuleType);
+        ruleParam.add(ruleStr.substring(start, match.start));
+      }
       ruleType.add(int.parse(match.group(0)!.substring(1)));
       ruleParam.add(match.group(0)!);
       start = match.end;
     }
-    if (ruleStr.length > start) { ruleType.add(defaultRuleType); ruleParam.add(ruleStr.substring(start)); }
-  }
+    if (ruleStr.length > start) {
+      ruleType.add(defaultRuleType);
+      ruleParam.add(ruleStr.substring(start));
+    }
+    }
 
   void makeUpRule(dynamic result, AnalyzeRule analyzer) {
     putMap.forEach((key, value) { analyzer.put(key, analyzer.getString(value)); });

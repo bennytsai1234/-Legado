@@ -2,9 +2,9 @@
 /// 對應 Android: model/analyzeRule/RuleAnalyzer.kt (15KB)
 class RuleAnalyzer {
   final String _queue;
-  int _pos = 0; 
-  int _start = 0; 
-  int _startX = 0; 
+  int _pos = 0;
+  int _start = 0;
+  int _startX = 0;
   final bool _isCode;
 
   List<String> _rule = [];
@@ -14,8 +14,8 @@ class RuleAnalyzer {
   static const int _esc = 92;
 
   RuleAnalyzer(String data, {bool isCode = false})
-    : _queue = data,
-      _isCode = isCode;
+      : _queue = data,
+        _isCode = isCode;
 
   void trim() {
     if (_pos < _queue.length &&
@@ -39,7 +39,9 @@ class RuleAnalyzer {
 
   bool _consumeTo(String seq) {
     _start = _pos;
-    if (_pos >= _queue.length) return false;
+    if (_pos >= _queue.length) {
+      return false;
+    }
     final offset = _queue.indexOf(seq, _pos);
     if (offset != -1) {
       _pos = offset;
@@ -67,7 +69,9 @@ class RuleAnalyzer {
     int pos = _pos;
     while (pos < _queue.length) {
       for (final s in seq) {
-        if (_queue[pos] == s) return pos;
+        if (_queue[pos] == s) {
+          return pos;
+        }
       }
       pos++;
     }
@@ -84,22 +88,38 @@ class RuleAnalyzer {
     final closeChar = close[0];
 
     do {
-      if (pos >= _queue.length) break;
+      if (pos >= _queue.length) {
+        break;
+      }
       final c = _queue[pos++];
       if (c.codeUnitAt(0) != _esc) {
-        if (c == "'" && !inDoubleQuote) inSingleQuote = !inSingleQuote;
-        else if (c == '"' && !inSingleQuote) inDoubleQuote = !inDoubleQuote;
-        if (inSingleQuote || inDoubleQuote) continue;
-        if (c == '[') depth++;
-        else if (c == ']') depth--;
-        else if (depth == 0) {
-          if (c == openChar) otherDepth++;
-          else if (c == closeChar) otherDepth--;
+        if (c == "'" && !inDoubleQuote) {
+          inSingleQuote = !inSingleQuote;
+        } else if (c == '"' && !inSingleQuote) {
+          inDoubleQuote = !inDoubleQuote;
         }
-      } else if (pos < _queue.length) pos++;
+        if (inSingleQuote || inDoubleQuote) {
+          continue;
+        }
+        if (c == '[') {
+          depth++;
+        } else if (c == ']') {
+          depth--;
+        } else if (depth == 0) {
+          if (c == openChar) {
+            otherDepth++;
+          } else if (c == closeChar) {
+            otherDepth--;
+          }
+        }
+      } else if (pos < _queue.length) {
+        pos++;
+      }
     } while (depth > 0 || otherDepth > 0);
 
-    if (depth > 0 || otherDepth > 0) return false;
+    if (depth > 0 || otherDepth > 0) {
+      return false;
+    }
     _pos = pos;
     return true;
   }
@@ -113,30 +133,48 @@ class RuleAnalyzer {
     final closeChar = close[0];
 
     do {
-      if (pos >= _queue.length) break;
+      if (pos >= _queue.length) {
+        break;
+      }
       final c = _queue[pos++];
-      if (c == "'" && !inDoubleQuote) inSingleQuote = !inSingleQuote;
-      else if (c == '"' && !inSingleQuote) inDoubleQuote = !inDoubleQuote;
-      if (inSingleQuote || inDoubleQuote) continue;
-      else if (c == r'\') { if (pos < _queue.length) pos++; continue; }
-      if (c == openChar) depth++;
-      else if (c == closeChar) depth--;
+      if (c == "'" && !inDoubleQuote) {
+        inSingleQuote = !inSingleQuote;
+      } else if (c == '"' && !inSingleQuote) {
+        inDoubleQuote = !inDoubleQuote;
+      }
+      if (inSingleQuote || inDoubleQuote) {
+        continue;
+      } else if (c == r'\') {
+        if (pos < _queue.length) {
+          pos++;
+        }
+        continue;
+      }
+      if (c == openChar) {
+        depth++;
+      } else if (c == closeChar) {
+        depth--;
+      }
     } while (depth > 0);
 
-    if (depth > 0) return false;
+    if (depth > 0) {
+      return false;
+    }
     _pos = pos;
     return true;
   }
 
   bool _chompBalanced(String open, String close) {
-    return _isCode ? _chompCodeBalanced(open, close) : _chompRuleBalanced(open, close);
+    return _isCode
+        ? _chompCodeBalanced(open, close)
+        : _chompRuleBalanced(open, close);
   }
 
   List<String> splitRule(List<String> split) {
     _rule = [];
     _start = _pos;
     _startX = _pos;
-    
+
     // 多分隔符切分
     while (true) {
       if (!_consumeToAny(split)) {
@@ -150,11 +188,15 @@ class RuleAnalyzer {
       bool skipMatch = false;
       while (end > _pos) {
         final st = _findToAny(['[', '(']);
-        if (st == -1 || st > end) break;
+        if (st == -1 || st > end) {
+          break;
+        }
 
         _pos = st;
         final next = _queue[_pos] == '[' ? ']' : ')';
-        if (!_chompBalanced(_queue[_pos], next)) return [_queue];
+        if (!_chompBalanced(_queue[_pos], next)) {
+          return [_queue];
+        }
 
         if (end <= _pos) {
           skipMatch = true;
@@ -168,7 +210,7 @@ class RuleAnalyzer {
         _pos = end + _step;
         _startX = _pos;
         _start = _pos;
-        
+
         // 轉向單一分隔符切分 (matching elementsType)
         return _splitRuleSingle();
       }
@@ -192,11 +234,15 @@ class RuleAnalyzer {
       bool skipMatch = false;
       while (end > _pos) {
         final st = _findToAny(['[', '(']);
-        if (st == -1 || st > end) break;
+        if (st == -1 || st > end) {
+          break;
+        }
 
         _pos = st;
         final next = _queue[_pos] == '[' ? ']' : ')';
-        if (!_chompBalanced(_queue[_pos], next)) break;
+        if (!_chompBalanced(_queue[_pos], next)) {
+          break;
+        }
 
         if (end <= _pos) {
           skipMatch = true;
@@ -216,7 +262,8 @@ class RuleAnalyzer {
     }
   }
 
-  String innerRuleRange(String startStr, String endStr, {required String? Function(String) fr}) {
+  String innerRuleRange(String startStr, String endStr,
+      {required String? Function(String) fr}) {
     final st = StringBuffer();
     while (_consumeTo(startStr)) {
       final posPre = _pos;
@@ -230,10 +277,13 @@ class RuleAnalyzer {
         balanced = _chompCodeBalanced('[', ']');
       } else {
         balanced = _consumeTo(endStr);
-        if (balanced) _pos += endStr.length; 
+        if (balanced) {
+          _pos += endStr.length;
+        }
       }
       if (balanced) {
-        final content = _queue.substring(posPre + startStr.length, _pos - endStr.length);
+        final content =
+            _queue.substring(posPre + startStr.length, _pos - endStr.length);
         final frv = fr(content);
         if (frv != null) {
           st.write(_queue.substring(_startX, posPre));
@@ -244,15 +294,20 @@ class RuleAnalyzer {
       }
       _pos = posPre + startStr.length;
     }
-    if (_startX == 0) return _queue;
+    if (_startX == 0) {
+      return _queue;
+    }
     st.write(_queue.substring(_startX));
     return st.toString();
   }
 
   String innerRule(String startStr, {required String? Function(String) fr}) {
     String endStr = "}";
-    if (startStr.startsWith('{{')) endStr = "}}";
-    else if (startStr.startsWith('[')) endStr = "]";
+    if (startStr.startsWith('{{')) {
+      endStr = "}}";
+    } else if (startStr.startsWith('[')) {
+      endStr = "]";
+    }
     return innerRuleRange(startStr, endStr, fr: fr);
   }
 }

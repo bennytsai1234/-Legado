@@ -300,28 +300,6 @@ class _ReadRecordPageState extends State<ReadRecordPage> {
     }
   }
 
-  Future<void> _deleteRecord(ReadRecordShow record) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('刪除記錄'),
-        content: Text('確定要刪除「${record.bookName}」的閱讀記錄嗎？'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('刪除', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      await _dao.deleteByName(record.bookName);
-      await _loadAllTime();
-      await _loadData(_searchController.text);
-    }
-  }
-
   String _formatDuration(int ms) {
     if (ms <= 0) return '0 秒';
     final days = ms ~/ (1000 * 60 * 60 * 24);

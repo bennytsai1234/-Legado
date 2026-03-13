@@ -1,58 +1,68 @@
 ---
-description: "[2/4] 基於結構地圖，對每個模組進行邏輯級別的語義比對分析，生成功能審計報告"
+description: "[2/4] 資料夾對位審計：針對地圖中的清單展開深度邏輯比對，產出移植規格"
 ---
 
-# 🔍 [2/4] 功能對齊分析工作流 (Feature Parity Audit) v6
+# 🔍 [2/4] 資料夾對位審計工作流 (Folder-to-Folder Audit) v2
 
-本工作流為遷移管線的**第二步**。深入每個模組進行原始碼級別的語義比對，識別「偽對齊」並產出審計報告。
-
-> **執行順序**：`01-structure-mapping` → `02-feature-parity` → `03-incremental-alignment` → `04-debug`
+本工作流緊接在 `/01-structure-mapping` 之後。既然地圖已經清點了資料夾內的所有檔案，本工作流負責進行**原始碼級別的語義比對**。
 
 ---
 
-## 🏗️ 嚴謹稽核規範 (Rigorous Audit Mandate)
+## 🎯 審計策略 (Audit Strategy)
 
-> [!DANGER]
-> **拒絕空殼對齊**：禁止因 iOS 存在同名檔案而直接標註為 `Matched`。
-> 1. **占位符搜查**：必須檢索 `_showComingSoon`, `unimplemented`, `TODO` 等關鍵字。凡有此類標識，該功能點一律視為 `Logic Gap`。
-> 2. **API 完整性矩陣 (Completeness Matrix)**：必須列出 Android 類別的所有 **Public Methods**，並在 iOS 對應檔案中逐一對照。
-> 3. **平台敏感性分析**：涉及系統權限（背景任務、儲存權限、原生 UI）的邏輯，必須單獨標註其 iOS 實作方案。
+> [!IMPORTANT]
+> **1. 以資料夾為邊界**：一次只審計一個在地圖中已完成清點的資料夾。
+> **2. 雙重路徑分析**：
+>    - **針對 `✅ Matched`**：比對 Method 簽名、核心演算法步驟、與 Android 的完成度差異。
+>    - **針對 `❌ Missing`**：讀取 Android 源碼，產出其在 iOS 端應有的「移植規格說明」（該寫在哪、需要哪些依賴）。
+> **3. 拒絕遺漏**：該資料夾下地圖列出的所有檔案，都必須在審計報告中有個案分析。
 
 ---
 
 ## 執行步驟
 
-### Step 1：讀取地圖與盤點
-- 開啟 `COMPREHENSIVE_FEATURE_MAPPING.md`。
-- 準備目標模組的 Android 原始碼與 iOS 原始碼。
+### Step 1：同步範圍 (Sync Scope)
+- 讀取 `COMPREHENSIVE_FEATURE_MAPPING.md` 的最新章節。
+- 確定本次審計的 Android 資料夾路徑。
 
-### Step 2：建立 API 完整性矩陣
-- **分析 Android 端**：列出所有業務關鍵函式。
-- **對照 iOS 端**：
-  - 存在且邏輯一致 → `Matched`
-  - 存在但功能缺失/空殼 → `🚨 Placeholder`
-  - 完全不存在 → `Logic Gap`
+### Step 2：深度對比 (Deep Dive)
+- **對於每個 Android 檔案**：
+  1. **讀取邏輯**：打開 Android 源碼，提取關鍵業務 Method (例如：`loadData`, `parseRules`)。
+  2. **尋找 iOS 證據**：
+     - 若為 `✅`：打開對應 Dart 檔案，比對邏輯對稱性。
+     - 若為 `❌`：分析其職責，判斷在 Flutter 中應該實作在 Provider、Service 還是 UI 層。
+  3. **判定缺口**：找出「雖然有檔案但漏掉的邊際處理」或「完全沒做的功能點」。
 
-### Step 3：深度邏輯比對
-- 比較關鍵演算法（如：分頁、正則處理、JS 變數傳遞）的具體步驟。
-- 檢查異常處理 (Exception Handling) 是否對齊。
+### Step 3：產出審計日誌 (Append only)
+- 準備一段 Markdown 日誌，包含檔案級別的詳細診斷。
+- **針對 `❌ Missing` 檔案的特殊處理**：產出一個「待實作清單 (Backlog)」。
 
-### Step 4：寫入 FEATURE_AUDIT_v2.md
-- **證據鏈明細升級**：
+#### 審計日誌格式
+```markdown
+<!-- AUDIT_FOLDER: [路徑] -->
+## 🔍 審計報告：[Android Folder Path]
 
-| 邏輯點 / Method | Android 證據 | iOS 證據 | 狀態 | 診斷描述 |
-| :--- | :--- | :--- | :--- | :--- |
-| `loadChapters` | `BookDao.kt`: L40 | `book_dao.dart`: L50 | ✅ Matched | 邏輯一致 |
-| `changeIcon` | `Helper.kt`: L10 | `ui.dart`: `_showSoon` | 🚨 Placeholder | UI 存在但無實作內容 |
+### 📄 檔案對比清單
+| 檔案名稱 | 狀態 | 診斷詳情 |
+|:---|:---|:---|
+| `XyzActivity.kt` | ✅ Matched | iOS 版漏掉了 `onLongClick` 的處理，標註為 `Logic Gap`。 |
+| `AbcHelper.kt` | ❌ Missing | **移植規格**：需在 `ios/util/` 新建對位類別，依賴於 `crypto` 庫。 |
 
-### Step 5：計算真實完成度
-- **計算公式**：`Matched / (Matched + Equivalent + Logic Gap + Placeholder)`
-- **注意**：`Placeholder` 絕對不計入分子。
+### 🛠️ 待辦缺口 (Todo Gaps)
+- [ ] GAP-[ID1]: 實作 Xyz 的長按選單。
+- [ ] GAP-[ID2]: 移植 AbcHelper 邏輯。
+<!-- AUDIT_FOLDER_END -->
+```
 
-### Step 6：Git 備份
-- `git add FEATURE_AUDIT_v2.md ; git commit -m "audit: update parity report"`
+### Step 4：追加至 FEATURE_AUDIT_v2.md
+- 使用 `replace` 工具將上述日誌附加至 `FEATURE_AUDIT_v2.md` 的 EOF。
+
+---
+
+## Git 備份
+`git add FEATURE_AUDIT_v2.md ; git commit -m "audit: detailed findings for [資料夾路徑]"`
 
 ---
 
 ## 下一步
-→ 執行 **`/03-incremental-alignment`** 修復 Logic Gap 與 Placeholder
+→ 執行 **`/03-incremental-alignment`** 按照上述生成的「待辦缺口」進行實作。

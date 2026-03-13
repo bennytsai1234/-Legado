@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/services.dart';
 import '../../core/database/dao/book_dao.dart';
 import '../../core/database/dao/chapter_dao.dart';
 import '../../core/database/dao/replace_rule_dao.dart';
@@ -167,64 +166,169 @@ class ReaderProvider extends ChangeNotifier {
   }
 
   void _doPaginate() {
-    if (_viewSize == null || _chapters.isEmpty || currentChapter == null) return;
-    _isLoading = true; notifyListeners();
-    final titleStyle = TextStyle(fontSize: _fontSize + 4, fontWeight: FontWeight.bold, color: currentTheme.textColor, fontFamily: _fontFamily, letterSpacing: _letterSpacing);
-    final contentStyle = TextStyle(fontSize: _fontSize, height: _lineHeight, color: currentTheme.textColor, fontFamily: _fontFamily, letterSpacing: _letterSpacing);
-    _pages = ChapterProvider.paginate(content: _content, chapter: currentChapter!, chapterIndex: _currentChapterIndex, chapterSize: _chapters.length, viewSize: _viewSize!, titleStyle: titleStyle, contentStyle: contentStyle, paragraphSpacing: _paragraphSpacing, padding: _textPadding);
-    _currentPageIndex = 0; _isLoading = false; notifyListeners();
+    if (_viewSize == null || _chapters.isEmpty || currentChapter == null) {
+      return;
+    }
+    _isLoading = true;
+    notifyListeners();
+    final titleStyle = TextStyle(
+        fontSize: _fontSize + 4,
+        fontWeight: FontWeight.bold,
+        color: currentTheme.textColor,
+        fontFamily: _fontFamily,
+        letterSpacing: _letterSpacing);
+    final contentStyle = TextStyle(
+        fontSize: _fontSize,
+        height: _lineHeight,
+        color: currentTheme.textColor,
+        fontFamily: _fontFamily,
+        letterSpacing: _letterSpacing);
+    _pages = ChapterProvider.paginate(
+        content: _content,
+        chapter: currentChapter!,
+        chapterIndex: _currentChapterIndex,
+        chapterSize: _chapters.length,
+        viewSize: _viewSize!,
+        titleStyle: titleStyle,
+        contentStyle: contentStyle,
+        paragraphSpacing: _paragraphSpacing,
+        padding: _textPadding);
+    _currentPageIndex = 0;
+    _isLoading = false;
+    notifyListeners();
   }
 
-  void setFontSize(double s) { _fontSize = s.clamp(14.0, 30.0); saveSetting('font_size', _fontSize); _doPaginate(); }
-  void setLineHeight(double h) { _lineHeight = h.clamp(1.2, 2.5); saveSetting('line_height', _lineHeight); _doPaginate(); }
-  void setParagraphSpacing(double s) { _paragraphSpacing = s.clamp(0.0, 5.0); saveSetting('paragraph_spacing', _paragraphSpacing); _doPaginate(); }
-  void setLetterSpacing(double s) { _letterSpacing = s.clamp(-1.0, 5.0); saveSetting('letter_spacing', _letterSpacing); _doPaginate(); }
-  void setTextPadding(double p) { _textPadding = p.clamp(0.0, 50.0); saveSetting('text_padding', _textPadding); _doPaginate(); }
-  
+  void setFontSize(double s) {
+    _fontSize = s.clamp(14.0, 30.0);
+    saveSetting('font_size', _fontSize);
+    _doPaginate();
+  }
+
+  void setLineHeight(double h) {
+    _lineHeight = h.clamp(1.2, 2.5);
+    saveSetting('line_height', _lineHeight);
+    _doPaginate();
+  }
+
+  void setParagraphSpacing(double s) {
+    _paragraphSpacing = s.clamp(0.0, 5.0);
+    saveSetting('paragraph_spacing', _paragraphSpacing);
+    _doPaginate();
+  }
+
+  void setLetterSpacing(double s) {
+    _letterSpacing = s.clamp(-1.0, 5.0);
+    saveSetting('letter_spacing', _letterSpacing);
+    _doPaginate();
+  }
+
+  void setTextPadding(double p) {
+    _textPadding = p.clamp(0.0, 50.0);
+    saveSetting('text_padding', _textPadding);
+    _doPaginate();
+  }
+
   void setTheme(int i) async {
     _themeIndex = i % AppTheme.readingThemes.length;
     saveSetting('theme_index', _themeIndex);
     final prefs = await SharedPreferences.getInstance();
     final isNight = _themeIndex == 1;
-    _backgroundImage = prefs.getString(isNight ? PreferKey.bgImageN : PreferKey.bgImage) ?? '';
+    _backgroundImage =
+        prefs.getString(isNight ? PreferKey.bgImageN : PreferKey.bgImage) ?? '';
     notifyListeners();
   }
 
-  void setBrightness(double v) { _brightness = v.clamp(0.0, 1.0); saveSetting('brightness', _brightness); notifyListeners(); }
-  void setPageTurnMode(int m) { _pageTurnMode = m; saveSetting('page_turn_mode', _pageTurnMode); notifyListeners(); }
-  void setChineseConvert(int v) { _chineseConvert = v; saveSetting('chinese_convert_v2', _chineseConvert); loadChapter(_currentChapterIndex); }
-  void setFontFamily(String? f) { _fontFamily = f; if (f != null) saveSetting('font_family', f); _doPaginate(); }
+  void setBrightness(double v) {
+    _brightness = v.clamp(0.0, 1.0);
+    saveSetting('brightness', _brightness);
+    notifyListeners();
+  }
 
-  void toggleControls() { _showControls = !_showControls; notifyListeners(); }
-  void onScrubbing(int index) { _scrubbingChapterIndex = index; notifyListeners(); }
-  void onScrubEnd(int index) { _scrubbingChapterIndex = -1; loadChapter(index); }
-  void setAutoPageSpeed(double speed) { _autoPageSpeed = speed.clamp(5.0, 300.0); saveSetting('auto_page_speed', _autoPageSpeed); }
-  void onPageChanged(int index) { _currentPageIndex = index; notifyListeners(); }
+  void setPageTurnMode(int m) {
+    _pageTurnMode = m;
+    saveSetting('page_turn_mode', _pageTurnMode);
+    notifyListeners();
+  }
+
+  void setChineseConvert(int v) {
+    _chineseConvert = v;
+    saveSetting('chinese_convert_v2', _chineseConvert);
+    loadChapter(_currentChapterIndex);
+  }
+
+  void setFontFamily(String? f) {
+    _fontFamily = f;
+    if (f != null) {
+      saveSetting('font_family', f);
+    }
+    _doPaginate();
+  }
+
+  void toggleControls() {
+    _showControls = !_showControls;
+    notifyListeners();
+  }
+
+  void onScrubbing(int index) {
+    _scrubbingChapterIndex = index;
+    notifyListeners();
+  }
+
+  void onScrubEnd(int index) {
+    _scrubbingChapterIndex = -1;
+    loadChapter(index);
+  }
+
+  void setAutoPageSpeed(double speed) {
+    _autoPageSpeed = speed.clamp(5.0, 300.0);
+    saveSetting('auto_page_speed', _autoPageSpeed);
+  }
+
+  void onPageChanged(int index) {
+    _currentPageIndex = index;
+    notifyListeners();
+  }
 
   Future<void> loadChapter(int index) async {
-    if (index < 0 || index >= _chapters.length) return;
-    _isLoading = true; _currentChapterIndex = index; notifyListeners();
+    if (index < 0 || index >= _chapters.length) {
+      return;
+    }
+    _isLoading = true;
+    _currentChapterIndex = index;
+    notifyListeners();
     try {
       String? cachedContent = await _chapterDao.getContent(book.bookUrl, index);
       String rawContent = "";
       if (_chapterSourceOverrides.containsKey(index)) {
-        rawContent = await _service.getContent(_chapterSourceOverrides[index]!, book, _chapters[index]);
+        rawContent = await _service.getContent(
+            _chapterSourceOverrides[index]!, book, _chapters[index]);
       } else if (cachedContent != null) {
         rawContent = cachedContent;
       } else {
-        if (_source == null) await _loadSource();
-        rawContent = await _service.getContent(_source!, book, _chapters[index]);
+        if (_source == null) {
+          await _loadSource();
+        }
+        rawContent =
+            await _service.getContent(_source!, book, _chapters[index]);
         await _chapterDao.saveContent(book.bookUrl, index, rawContent);
       }
       final enabledRules = await _replaceDao.getEnabled();
-      _content = ContentProcessor.processContent(book, _chapters[index], rawContent, rules: enabledRules, chineseConvertType: _chineseConvert);
-      await _bookDao.updateProgress(book.bookUrl, index, 0, _chapters[index].title);
+      _content = ContentProcessor.processContent(book, _chapters[index],
+          rawContent,
+          rules: enabledRules, chineseConvertType: _chineseConvert);
+      await _bookDao.updateProgress(
+          book.bookUrl, index, 0, _chapters[index].title);
       WebDAVService().uploadBookProgress(book);
       _doPaginate();
-    } catch (e) { _content = "加載失敗: $e"; _isLoading = false; notifyListeners(); }
+    } catch (e) {
+      _content = "加載失敗: $e";
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
-  Future<void> replaceChapterSource(int index, BookSource source, String content) async {
+  Future<void> replaceChapterSource(
+      int index, BookSource source, String content) async {
     _chapterSourceOverrides[index] = source;
     _content = content;
     await _chapterDao.saveContent(book.bookUrl, index, content);
@@ -233,7 +337,9 @@ class ReaderProvider extends ChangeNotifier {
 
   Future<void> _loadSource() async {
     final sources = await _sourceDao.getAll();
-    _source = sources.cast<BookSource?>().firstWhere((s) => s?.bookSourceUrl == book.origin, orElse: () => null);
+    _source = sources
+        .cast<BookSource?>()
+        .firstWhere((s) => s?.bookSourceUrl == book.origin, orElse: () => null);
   }
 
   Future<void> _loadChapters() async {
@@ -257,16 +363,30 @@ class ReaderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void nextPage() { if (_currentPageIndex < _pages.length - 1) onPageChanged(++_currentPageIndex); else nextChapter(); }
+  void nextPage() {
+    if (_currentPageIndex < _pages.length - 1) {
+      onPageChanged(++_currentPageIndex);
+    } else {
+      nextChapter();
+    }
+  }
+
   Future<void> nextChapter() => loadChapter(_currentChapterIndex + 1);
   Future<void> prevChapter() => loadChapter(_currentChapterIndex - 1);
 
   void toggleTts() async {
-    if (_ttsMode == 0) { if (tts.isPlaying) tts.stop(); else tts.speak(_content); }
-    else {
-      if (httpTts.isPlaying) httpTts.stop();
-      else if (_selectedHttpTtsId != null) {
-        final eng = _httpTtsEngines.firstWhere((e) => e.id == _selectedHttpTtsId);
+    if (_ttsMode == 0) {
+      if (tts.isPlaying) {
+        tts.stop();
+      } else {
+        tts.speak(_content);
+      }
+    } else {
+      if (httpTts.isPlaying) {
+        httpTts.stop();
+      } else if (_selectedHttpTtsId != null) {
+        final eng =
+            _httpTtsEngines.firstWhere((e) => e.id == _selectedHttpTtsId);
         await httpTts.speakList(eng, _content.split('\n'));
       }
     }
@@ -277,34 +397,71 @@ class ReaderProvider extends ChangeNotifier {
     _isAutoPaging = true;
     _autoPageTimer?.cancel();
     _autoPageTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
-      if (!_isAutoPaging) { timer.cancel(); return; }
+      if (!_isAutoPaging) {
+        timer.cancel();
+        return;
+      }
       final delta = 0.016 / _autoPageSpeed;
       _autoPageProgress += delta;
-      if (_autoPageProgress >= 1.0) { _autoPageProgress = 0.0; nextPage(); }
+      if (_autoPageProgress >= 1.0) {
+        _autoPageProgress = 0.0;
+        nextPage();
+      }
       notifyListeners();
     });
     notifyListeners();
   }
-  void stopAutoPage() { _isAutoPaging = false; _autoPageProgress = 0.0; _autoPageTimer?.cancel(); _autoPageTimer = null; notifyListeners(); }
-  void toggleAutoPage() { _isAutoPaging ? stopAutoPage() : startAutoPage(); }
+
+  void stopAutoPage() {
+    _isAutoPaging = false;
+    _autoPageProgress = 0.0;
+    _autoPageTimer?.cancel();
+    _autoPageTimer = null;
+    notifyListeners();
+  }
+
+  void toggleAutoPage() {
+    _isAutoPaging ? stopAutoPage() : startAutoPage();
+  }
 
   Future<void> toggleBookmark() async {
-    final existing = _bookmarks.cast<Bookmark?>().firstWhere((b) => b?.chapterIndex == _currentChapterIndex && b?.chapterPos == _currentPageIndex, orElse: () => null);
-    if (existing != null) await _bookmarkDao.delete(existing);
-    else await _bookmarkDao.insert(Bookmark(time: DateTime.now().millisecondsSinceEpoch, bookName: book.name, bookAuthor: book.author, chapterIndex: _currentChapterIndex, chapterPos: _currentPageIndex, chapterName: currentChapter?.title ?? "", bookUrl: book.bookUrl, content: ""));
+    final existing = _bookmarks.cast<Bookmark?>().firstWhere(
+        (b) =>
+            b?.chapterIndex == _currentChapterIndex &&
+            b?.chapterPos == _currentPageIndex,
+        orElse: () => null);
+    if (existing != null) {
+      await _bookmarkDao.delete(existing);
+    } else {
+      await _bookmarkDao.insert(Bookmark(
+          time: DateTime.now().millisecondsSinceEpoch,
+          bookName: book.name,
+          bookAuthor: book.author,
+          chapterIndex: _currentChapterIndex,
+          chapterPos: _currentPageIndex,
+          chapterName: currentChapter?.title ?? "",
+          bookUrl: book.bookUrl,
+          content: ""));
+    }
     await _loadBookmarks();
   }
 
   Future<void> autoChangeSource() async {
-    _isLoading = true; notifyListeners();
+    _isLoading = true;
+    notifyListeners();
     try {
       final sources = await _sourceDao.getEnabled();
       for (final s in sources) {
-        if (s.bookSourceUrl == _source?.bookSourceUrl) continue;
-        final searchResults = await _service.preciseSearch([s], book.name, book.author);
+        if (s.bookSourceUrl == _source?.bookSourceUrl) {
+          continue;
+        }
+        final searchResults =
+            await _service.preciseSearch([s], book.name, book.author);
         if (searchResults.isNotEmpty) {
           final bestMatch = searchResults.first;
-          book.bookUrl = bestMatch.bookUrl; book.origin = bestMatch.origin; book.originName = bestMatch.originName ?? "";
+          book.bookUrl = bestMatch.bookUrl;
+          book.origin = bestMatch.origin;
+          book.originName = bestMatch.originName ?? "";
           _source = s;
           final updatedBook = await _service.getBookInfo(s, book);
           _chapters = await _service.getChapterList(s, updatedBook);
@@ -314,7 +471,10 @@ class ReaderProvider extends ChangeNotifier {
           return;
         }
       }
-    } finally { _isLoading = false; notifyListeners(); }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<List<Map<String, dynamic>>> searchContent(String kw) async {
@@ -322,16 +482,39 @@ class ReaderProvider extends ChangeNotifier {
     for (int i = 0; i < chapters.length; i++) {
       String? c = await _chapterDao.getContent(book.bookUrl, i);
       if (c != null && c.contains(kw)) {
-        res.add({'chapterIndex': i, 'chapterTitle': chapters[i].title, 'snippet': '...${c.substring((c.indexOf(kw)-20).clamp(0, c.length), (c.indexOf(kw)+kw.length+20).clamp(0, c.length)).replaceAll('\n', ' ')}...'});
+        res.add({
+          'chapterIndex': i,
+          'chapterTitle': chapters[i].title,
+          'snippet':
+              '...${c.substring((c.indexOf(kw) - 20).clamp(0, c.length), (c.indexOf(kw) + kw.length + 20).clamp(0, c.length)).replaceAll('\n', ' ')}...'
+        });
       }
     }
     return res;
   }
 
-  void updateViewSize(Size size) { if (_viewSize != size) { _viewSize = size; _doPaginate(); } }
-  void toggleReverseContent() { _reverseContent = !_reverseContent; loadChapter(_currentChapterIndex); }
-  void toggleRemoveSameTitle() { _removeSameTitle = !_removeSameTitle; loadChapter(_currentChapterIndex); }
-  
+  void updateViewSize(Size size) {
+    if (_viewSize != size) {
+      _viewSize = size;
+      _doPaginate();
+    }
+  }
+
+  void toggleReverseContent() {
+    _reverseContent = !_reverseContent;
+    loadChapter(_currentChapterIndex);
+  }
+
+  void toggleRemoveSameTitle() {
+    _removeSameTitle = !_removeSameTitle;
+    loadChapter(_currentChapterIndex);
+  }
+
   @override
-  void dispose() { tts.stop(); httpTts.stop(); _autoPageTimer?.cancel(); super.dispose(); }
+  void dispose() {
+    tts.stop();
+    httpTts.stop();
+    _autoPageTimer?.cancel();
+    super.dispose();
+  }
 }
