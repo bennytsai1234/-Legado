@@ -26,3 +26,4 @@
 - [x] GAP-CONST-06: 實作 `lib/core/services/app_log.dart` 用於捕捉全域錯誤。 ✅ Done in 2026-03-13
 - [x] GAP-CONST-07: 在 `app_const.dart` 補齊 `PlaybackStatus` 與 `AppTheme` 列舉。 ✅ Done in 2026-03-13
 - [x] GAP-CONST-08: 執行二次深度審計，補齊 `PreferKey` (190+ 鍵名) 與 `BookType` 遮罩。 ✅ Verified 100% on 2026-03-13
+- [x] GAP-CONST-09: 執行第三次極致審計 (Pass 3: Final Assurance)，清理冗餘類定義並補齊日期格式與版本變體邏輯。 ✅ Verified 100% on 2026-03-13
