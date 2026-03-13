@@ -45,8 +45,8 @@ class BookGroup {
       groupName: json['groupName'] ?? "",
       coverPath: json['coverPath'],
       order: json['order'] ?? 0,
-      enableRefresh: json['enableRefresh'] ?? true,
-      show: json['show'] ?? true,
+      enableRefresh: json['enableRefresh'] == 1 || json['enableRefresh'] == true,
+      show: json['show'] == 1 || json['show'] == true,
       bookSort: json['bookSort'] ?? -1,
     );
   }
