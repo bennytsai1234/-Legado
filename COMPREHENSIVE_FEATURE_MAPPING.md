@@ -19,12 +19,16 @@
 | **15** | **啟動歡迎頁** | `ui/welcome/` | `features/welcome/` | ✅ | |
 | **16** | **書源關聯** | `ui/association/` | `features/association/` | ✅ | |
 | **17** | **本地書籍掃描** | `ui/file/` | `features/local_book/` | ✅ | |
+| **18** | **解析引擎 (Rhino)** | `modules/rhino/` (JS Engine) | `core/engine/` (rule_analyzer.dart) | ✅ | iOS 使用 Flutter JS 通道 |
+| **19** | **Web 控制台** | `modules/web/` | `core/services/web_service.dart` | ⚠️ | iOS 僅實現部分 API 控制台 |
+| **20** | **網路/HTML 解析** | `modules/book/` (src/main/java/me) | `core/engine/analyze_rule.dart` | ✅ | |
 
 ## 掃描摘要
 - **掃描日期**: 2026-03-13
-- **Android 根路徑**: `legado/app/src/main/java/io/legado/app/`
+- **Android 根路徑**: `legado/app/src/main/java/io/legado/app/` 及 `legado/modules/`
 - **iOS 根路徑**: `reader/ios/lib/`
 - **主要差異**:
-  - Android 使用多 Activity/Fragment 結構。
-  - iOS (Flutter) 使用單 Activity + Navigator 結構，模組劃分更傾向於 `features/` 模式。
-  - 核心邏輯 (Services/Models) 在 iOS 中被整合在 `core/` 下。
+  - Android 使用多模組 (`modules/`) 拆分引擎與 Web 端，提供更完整的 Web 遠端管理。
+  - iOS (Flutter) 將核心解析邏輯集中在 `core/engine/` 與 `core/services/` 下，結構較扁平。
+  - 模組劃分更傾向於 `features/` 模式。
+
