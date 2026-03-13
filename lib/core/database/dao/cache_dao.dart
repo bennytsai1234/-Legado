@@ -10,7 +10,7 @@ class CacheDao {
   /// 建立表格
   static String createTableQuery() {
     return '''
-      CREATE TABLE $tableName (
+      CREATE TABLE IF NOT EXISTS $tableName (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL,
         deadline INTEGER DEFAULT 0
