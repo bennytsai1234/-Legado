@@ -199,12 +199,22 @@ class ContentProcessor {
 
       try {
         if (rule.isRegex) {
-          final replacement = rule.replacement.replaceAll(r'$', r'\$');
           final pattern = RegExp(rule.pattern, multiLine: true, dotAll: true);
-          
-          // 在 Dart 中 replaceAll 是原子的，目前無法中斷單一正則執行
-          // 但我們可以防止多個規則連鎖導致的長時間掛起
-          result = result.replaceAll(pattern, replacement);
+          result = result.replaceAllMapped(pattern, (match) {
+            // 用正則匹配 replacement 中的 $1, $2... 或 \$
+            return rule.replacement.replaceAllMapped(RegExp(r'\\\$|\$(\d+)'), (m) {
+              final hit = m.group(0)!;
+              if (hit == r'\$') {
+                return r'$'; // \$ -> $
+              } else {
+                final groupIndex = int.tryParse(m.group(1)!) ?? 0;
+                if (groupIndex > 0 && groupIndex <= match.groupCount) {
+                  return match.group(groupIndex) ?? '';
+                }
+                return hit; // 如果群組索引無效，保留原狀
+              }
+            });
+          });
         } else {
           result = result.replaceAll(rule.pattern, rule.replacement);
         }

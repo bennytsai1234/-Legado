@@ -7,6 +7,7 @@ import 'theme_settings_page.dart';
 import 'welcome_settings_page.dart';
 import 'icon_settings_page.dart';
 import 'font_manager_page.dart';
+import '../dict/dict_rule_page.dart';
 import 'other_settings_page.dart';
 import 'aloud_settings_page.dart';
 import '../cache_manager/download_manager_page.dart';
@@ -88,6 +89,17 @@ class SettingsPage extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const FontManagerPage()),
+                  );
+                },
+              ),
+              _buildListTile(
+                context,
+                icon: Icons.translate_outlined,
+                title: '字典管理',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const DictRulePage()),
                   );
                 },
               ),

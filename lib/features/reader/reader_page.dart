@@ -9,7 +9,7 @@ import '../../core/models/book.dart';
 import '../../core/models/chapter.dart';
 import '../../core/models/bookmark.dart';
 import '../../core/database/dao/bookmark_dao.dart';
-import '../../core/services/dictionary_service.dart';
+import '../dict/dict_dialog.dart';
 import '../../shared/theme/app_theme.dart';
 import '../settings/font_manager_page.dart';
 import '../settings/settings_page.dart';
@@ -170,7 +170,7 @@ class _ReaderPageState extends State<ReaderPage> {
             buttonItems: [
               ...state.contextMenuButtonItems,
               if (_selectedText.isNotEmpty) ...[
-                if (num.tryParse(_selectedText) == null) ContextMenuButtonItem(label: '查詞', onPressed: () { state.hideToolbar(); DictionaryService().lookup(_selectedText); }),
+                if (num.tryParse(_selectedText) == null) ContextMenuButtonItem(label: '查詞', onPressed: () { state.hideToolbar(); DictDialog.show(context, _selectedText); }),
                 ContextMenuButtonItem(label: '筆記', onPressed: () { state.hideToolbar(); _showAnnotationDialog(context, provider, _selectedText); }),
               ],
             ],

@@ -51,4 +51,10 @@ class TxtTocRuleDao {
     );
     return maps.map((m) => TxtTocRule.fromJson(m)).toList();
   }
+
+  Future<List<TxtTocRule>> getAll() async {
+    final db = await _db;
+    final maps = await db.query(tableName, orderBy: 'serialNumber ASC');
+    return maps.map((m) => TxtTocRule.fromJson(m)).toList();
+  }
 }

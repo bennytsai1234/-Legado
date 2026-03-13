@@ -9,7 +9,17 @@ import '../database/dao/replace_rule_dao.dart';
 import '../database/dao/book_group_dao.dart';
 import '../database/dao/bookmark_dao.dart';
 import '../database/dao/read_record_dao.dart';
+import '../database/dao/rss_source_dao.dart';
+import '../database/dao/rss_star_dao.dart';
+import '../database/dao/dict_rule_dao.dart';
+import '../database/dao/http_tts_dao.dart';
+import '../database/dao/txt_toc_rule_dao.dart';
 import '../models/book.dart';
+import '../models/rss_source.dart';
+import '../models/rss_star.dart';
+import '../models/dict_rule.dart';
+import '../models/http_tts.dart';
+import '../models/txt_toc_rule.dart';
 import '../models/book_source.dart';
 import '../models/replace_rule.dart';
 import '../models/bookmark.dart';
@@ -31,6 +41,11 @@ class RestoreService {
   final BookGroupDao _groupDao = BookGroupDao();
   final BookmarkDao _bookmarkDao = BookmarkDao();
   final ReadRecordDao _recordDao = ReadRecordDao();
+  final RssSourceDao _rssSourceDao = RssSourceDao();
+  final RssStarDao _rssStarDao = RssStarDao();
+  final DictRuleDao _dictRuleDao = DictRuleDao();
+  final HttpTtsDao _httpTtsDao = HttpTtsDao();
+  final TxtTocRuleDao _txtTocRuleDao = TxtTocRuleDao();
   final BackupAESService _aesService = BackupAESService();
 
   /// 從備份包 (ZIP) 恢復所有數據
@@ -85,6 +100,22 @@ class RestoreService {
           case 'readRecords.json':
           case 'readRecord.json':
             await _recordDao.insert(ReadRecord.fromJson(item));
+            break;
+          case 'rssSource.json':
+          case 'rssSources.json':
+            await _rssSourceDao.insertOrUpdate(RssSource.fromJson(item));
+            break;
+          case 'rssStar.json':
+            await _rssStarDao.insert(RssStar.fromJson(item));
+            break;
+          case 'dictRule.json':
+            await _dictRuleDao.insertOrUpdate(DictRule.fromJson(item));
+            break;
+          case 'httpTts.json':
+            await _httpTtsDao.insertOrUpdate(HttpTTS.fromJson(item));
+            break;
+          case 'txtTocRule.json':
+            await _txtTocRuleDao.insertOrUpdate(TxtTocRule.fromJson(item));
             break;
           case 'config.json':
             final prefs = await SharedPreferences.getInstance();

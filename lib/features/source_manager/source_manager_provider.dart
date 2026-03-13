@@ -297,14 +297,39 @@ class SourceManagerProvider extends ChangeNotifier {
       try {
         final response = await dio.get(u);
         if (response.data != null) {
-          // Dio 會根據 Content-Type 自動解析 JSON 為 Map 或 List
-          // 如果已經是解析好的物件，直接使用 importFromData
-          totalCount += await importFromData(response.data);
+          // 處理 Legado 可能的各種回傳格式 (直接 JSON, 或包含在 data 欄位)
+          dynamic data = response.data;
+          if (data is String) data = jsonDecode(data);
+          
+          if (data is Map && data.containsKey('data')) {
+            data = data['data'];
+          }
+          
+          totalCount += await importFromData(data);
         }
       } catch (e) {
         debugPrint('從 URL 匯入書源失敗 ($u): $e');
       }
     }
     return totalCount;
+  }
+
+  /// 從 QR Code 掃描結果匯入
+  Future<int> importFromQr(String code) async {
+    if (code.isEmpty) return 0;
+    
+    // 1. 處理直接是 JSON 的情況
+    if (code.startsWith('[') || code.startsWith('{')) {
+      return await importFromText(code);
+    }
+    
+    // 2. 處理加密書源 (legado://) 或 URL
+    if (code.startsWith('http') || code.startsWith('legado://')) {
+      // 若是 URL 則直接呼叫 importFromUrl
+      final url = code.replaceFirst('legado://import/source?src=', '');
+      return await importFromUrl(Uri.decodeComponent(url));
+    }
+    
+    return 0;
   }
 }

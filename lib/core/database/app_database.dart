@@ -35,7 +35,20 @@ class AppDatabase {
     return await _lock.synchronized(() async {
       if (_database != null && _database!.isOpen) return _database!;
       debugPrint('Database: Starting initialization...');
-      _database = await _initDatabase();
+      try {
+        _database = await _initDatabase();
+      } catch (e) {
+        debugPrint('Database: First initialization attempt failed: $e');
+        // 如果是因為併發導致的事務錯誤 (如 "no current transaction" 或 "database is locked")
+        // 這通常是因為另一個 Isolate 正在或已經完成了初始化
+        if (e.toString().contains('no current transaction') || 
+            e.toString().contains('database is locked')) {
+          await Future.delayed(const Duration(milliseconds: 500));
+          _database = await _initDatabase();
+        } else {
+          rethrow;
+        }
+      }
       debugPrint('Database: Initialization completed.');
       return _database!;
     });
@@ -64,9 +77,10 @@ class AppDatabase {
   }
 
   static Future<void> _onCreate(Database db, int version) async {
+    final batch = db.batch();
     // Core tables
     debugPrint('Database: Creating core tables...');
-    await db.execute('''
+    batch.execute('''
       CREATE TABLE IF NOT EXISTS book_sources (
         bookSourceUrl TEXT PRIMARY KEY,
         bookSourceName TEXT NOT NULL,
@@ -76,6 +90,7 @@ class AppDatabase {
         loginUrl TEXT,
         loginUi TEXT,
         loginCheckJs TEXT,
+        coverDecodeJs TEXT,
         bookUrlPattern TEXT,
         header TEXT,
         variableComment TEXT,
@@ -101,7 +116,7 @@ class AppDatabase {
       )
     ''');
 
-    await db.execute('''
+    batch.execute('''
       CREATE TABLE IF NOT EXISTS books (
         bookUrl TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -140,7 +155,7 @@ class AppDatabase {
       )
     ''');
 
-    await db.execute('''
+    batch.execute('''
       CREATE TABLE IF NOT EXISTS chapters (
         url TEXT NOT NULL,
         title TEXT NOT NULL,
@@ -162,7 +177,7 @@ class AppDatabase {
       )
     ''');
 
-    await db.execute('''
+    batch.execute('''
       CREATE TABLE IF NOT EXISTS chapter_contents (
         bookUrl TEXT NOT NULL,
         chapterIndex INTEGER NOT NULL,
@@ -171,7 +186,7 @@ class AppDatabase {
       )
     ''');
 
-    await db.execute('''
+    batch.execute('''
       CREATE TABLE IF NOT EXISTS replace_rules (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -189,7 +204,7 @@ class AppDatabase {
       )
     ''');
 
-    await db.execute('''
+    batch.execute('''
       CREATE TABLE IF NOT EXISTS download_tasks (
         bookUrl TEXT PRIMARY KEY,
         bookName TEXT,
@@ -204,7 +219,7 @@ class AppDatabase {
       )
     ''');
 
-    await db.execute('''
+    batch.execute('''
       CREATE TABLE IF NOT EXISTS search_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         keyword TEXT NOT NULL UNIQUE,
@@ -212,7 +227,7 @@ class AppDatabase {
       )
     ''');
 
-    await db.execute('''
+    batch.execute('''
       CREATE TABLE IF NOT EXISTS cookies (
         url TEXT PRIMARY KEY,
         cookie TEXT NOT NULL
@@ -221,20 +236,22 @@ class AppDatabase {
 
     // DAO Tables
     debugPrint('Database: Creating DAO tables...');
-    await db.execute(BookmarkDao.createTableQuery());
-    await db.execute(CacheDao.createTableQuery());
-    await db.execute(ReadRecordDao.createTableQuery());
-    await db.execute(BookGroupDao.createTableQuery());
-    await db.execute(RssSourceDao.createTableQuery());
-    await db.execute(RssArticleDao.createTableQuery());
-    await db.execute(DictRuleDao.createTableQuery());
-    await db.execute(HttpTtsDao.createTableQuery());
-    await db.execute(RssStarDao.createTableQuery());
-    await db.execute(RuleSubDao.createTableQuery());
-    await db.execute(SearchKeywordDao.createTableQuery());
-    await db.execute(TxtTocRuleDao.createTableQuery());
-    await db.execute(RssReadRecordDao.createTableQuery());
-    await db.execute(KeyboardAssistDao.createTableQuery());
+    batch.execute(BookmarkDao.createTableQuery());
+    batch.execute(CacheDao.createTableQuery());
+    batch.execute(ReadRecordDao.createTableQuery());
+    batch.execute(BookGroupDao.createTableQuery());
+    batch.execute(RssSourceDao.createTableQuery());
+    batch.execute(RssArticleDao.createTableQuery());
+    batch.execute(DictRuleDao.createTableQuery());
+    batch.execute(HttpTtsDao.createTableQuery());
+    batch.execute(RssStarDao.createTableQuery());
+    batch.execute(RuleSubDao.createTableQuery());
+    batch.execute(SearchKeywordDao.createTableQuery());
+    batch.execute(TxtTocRuleDao.createTableQuery());
+    batch.execute(RssReadRecordDao.createTableQuery());
+    batch.execute(KeyboardAssistDao.createTableQuery());
+
+    await batch.commit(noResult: true);
   }
 
   static Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -244,7 +261,6 @@ class AppDatabase {
       try {
         switch (i) {
           case 2:
-            // Recreate txt_toc_rules table to fix missing columns (example, serialNumber, enable)
             await db.execute('DROP TABLE IF EXISTS txt_toc_rules');
             await db.execute(TxtTocRuleDao.createTableQuery());
             break;
@@ -258,12 +274,10 @@ class AppDatabase {
             try { await db.execute('ALTER TABLE chapters ADD COLUMN endFragmentId TEXT'); } catch (_) {}
             break;
           case 5:
-            // Ensure http_tts table exists
             await db.execute('DROP TABLE IF EXISTS http_tts');
             await db.execute(HttpTtsDao.createTableQuery());
             break;
           case 6:
-            // Add missing fields to books table
             try { await db.execute('ALTER TABLE books ADD COLUMN customTag TEXT'); } catch (_) {}
             try { await db.execute('ALTER TABLE books ADD COLUMN customCoverUrl TEXT'); } catch (_) {}
             try { await db.execute('ALTER TABLE books ADD COLUMN customIntro TEXT'); } catch (_) {}
@@ -271,26 +285,22 @@ class AppDatabase {
             try { await db.execute('ALTER TABLE books ADD COLUMN syncTime INTEGER DEFAULT 0'); } catch (_) {}
             break;
           case 7:
-            // Add missing fields to chapters table
             try { await db.execute('ALTER TABLE chapters ADD COLUMN baseUrl TEXT DEFAULT ""'); } catch (_) {}
             try { await db.execute('ALTER TABLE chapters ADD COLUMN wordCount TEXT'); } catch (_) {}
             try { await db.execute('ALTER TABLE chapters ADD COLUMN start INTEGER'); } catch (_) {}
             try { await db.execute('ALTER TABLE chapters ADD COLUMN "end" INTEGER'); } catch (_) {}
             break;
           case 8:
-            // Add missing fields to book_sources table
             try { await db.execute('ALTER TABLE book_sources ADD COLUMN coverDecodeJs TEXT'); } catch (_) {}
             try { await db.execute('ALTER TABLE book_sources ADD COLUMN exploreScreen TEXT'); } catch (_) {}
             try { await db.execute('ALTER TABLE book_sources ADD COLUMN ruleReview TEXT'); } catch (_) {}
             break;
           case 9:
-            // Add missing fields to replace_rules table
             try { await db.execute('ALTER TABLE replace_rules ADD COLUMN scopeTitle INTEGER DEFAULT 0'); } catch (_) {}
             try { await db.execute('ALTER TABLE replace_rules ADD COLUMN excludeScope TEXT'); } catch (_) {}
             try { await db.execute('ALTER TABLE replace_rules ADD COLUMN timeoutMillisecond INTEGER DEFAULT 3000'); } catch (_) {}
             break;
           case 10:
-            // Ensure download_tasks table exists
             await db.execute('DROP TABLE IF EXISTS download_tasks');
             await db.execute('''
               CREATE TABLE IF NOT EXISTS download_tasks (
@@ -308,7 +318,6 @@ class AppDatabase {
             ''');
             break;
           case 11:
-            // Add bookText to bookmarks table
             try { await db.execute('ALTER TABLE bookmarks ADD COLUMN bookText TEXT'); } catch (_) {}
             break;
         }

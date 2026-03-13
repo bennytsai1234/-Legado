@@ -8,11 +8,10 @@ class DictRuleDao {
   static String createTableQuery() {
     return '''
       CREATE TABLE IF NOT EXISTS $tableName (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        url TEXT NOT NULL,
-        dictType INTEGER DEFAULT 0,
-        customOrder INTEGER DEFAULT 0,
+        name TEXT PRIMARY KEY,
+        urlRule TEXT NOT NULL,
+        showRule TEXT,
+        sortNumber INTEGER DEFAULT 0,
         enabled INTEGER DEFAULT 1
       )
     ''';
@@ -44,7 +43,17 @@ class DictRuleDao {
 
   Future<List<DictRule>> getAll() async {
     final db = await _db;
-    final maps = await db.query(tableName, orderBy: 'customOrder ASC');
+    final maps = await db.query(tableName, orderBy: 'sortNumber ASC');
     return maps.map((m) => DictRule.fromJson(m)).toList();
   }
+
+  Future<void> delete(String name) async {
+    final db = await _db;
+    await db.delete(
+      tableName,
+      where: 'name = ?',
+      whereArgs: [name],
+    );
+  }
 }
+

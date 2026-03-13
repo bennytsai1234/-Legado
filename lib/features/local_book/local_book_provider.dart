@@ -90,6 +90,10 @@ class LocalBookProvider extends ChangeNotifier {
 
     final List<BookChapter> chapters = [];
     final List<Map<String, dynamic>> contents = [];
+    
+    // 深度還原：分批寫入資料庫，防止大量匯入導致的 UI 凍結或 OOM
+    const int batchSize = 100;
+    
     for (int i = 0; i < chaptersData.length; i++) {
       final item = chaptersData[i];
       final chapter = BookChapter(
@@ -104,10 +108,19 @@ class LocalBookProvider extends ChangeNotifier {
         'chapterIndex': i,
         'content': item['content'] ?? "",
       });
+      
+      if (chapters.length >= batchSize) {
+        await _chapterDao.insertChapters(List.from(chapters));
+        await _chapterDao.insertContents(List.from(contents));
+        chapters.clear();
+        contents.clear();
+      }
     }
     
-    await _chapterDao.insertChapters(chapters);
-    await _chapterDao.insertContents(contents);
+    if (chapters.isNotEmpty) {
+      await _chapterDao.insertChapters(chapters);
+      await _chapterDao.insertContents(contents);
+    }
   }
 
   Future<void> _importEpub(File file) async {
@@ -128,6 +141,8 @@ class LocalBookProvider extends ChangeNotifier {
 
     final List<BookChapter> chapters = [];
     final List<Map<String, dynamic>> contents = [];
+    const int batchSize = 100;
+
     for (int i = 0; i < chaptersData.length; i++) {
       final item = chaptersData[i];
       final href = item['href'] ?? "";
@@ -145,9 +160,18 @@ class LocalBookProvider extends ChangeNotifier {
         'chapterIndex': i,
         'content': content,
       });
+
+      if (chapters.length >= batchSize) {
+        await _chapterDao.insertChapters(List.from(chapters));
+        await _chapterDao.insertContents(List.from(contents));
+        chapters.clear();
+        contents.clear();
+      }
     }
     
-    await _chapterDao.insertChapters(chapters);
-    await _chapterDao.insertContents(contents);
+    if (chapters.isNotEmpty) {
+      await _chapterDao.insertChapters(chapters);
+      await _chapterDao.insertContents(contents);
+    }
   }
 }

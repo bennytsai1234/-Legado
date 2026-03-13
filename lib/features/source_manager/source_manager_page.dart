@@ -402,12 +402,7 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
     );
 
     if (result != null && result.isNotEmpty && context.mounted) {
-      int count = 0;
-      if (result.startsWith('http')) {
-        count = await provider.importFromUrl(result);
-      } else {
-        count = await provider.importFromText(result);
-      }
+      final count = await provider.importFromQr(result);
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

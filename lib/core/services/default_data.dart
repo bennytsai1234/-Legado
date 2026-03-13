@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:synchronized/synchronized.dart';
 import '../database/app_database.dart';
 import '../database/dao/book_source_dao.dart';
 import '../database/dao/txt_toc_rule_dao.dart';
@@ -20,8 +21,15 @@ import 'webdav_service.dart';
 /// 對應 Android: help/DefaultData.kt
 class DefaultData {
   DefaultData._();
+  static final _initLock = Lock();
 
   static Future<void> init() async {
+    await _initLock.synchronized(() async {
+      await _init();
+    });
+  }
+
+  static Future<void> _init() async {
     // 1. 確保資料庫初始化 (對應 Android appDb 初始化)
     await AppDatabase.database;
 

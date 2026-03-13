@@ -16,9 +16,9 @@ import 'features/source_manager/source_manager_provider.dart';
 import 'features/search/search_provider.dart';
 import 'features/settings/settings_page.dart';
 import 'features/settings/settings_provider.dart';
+import 'features/dict/dict_provider.dart';
 import 'features/rss/rss_source_page.dart';
 import 'features/rss/rss_source_provider.dart';
-import 'features/about/about_page.dart';
 import 'features/about/app_log_page.dart';
 import 'features/book_detail/change_cover_provider.dart';
 import 'features/association/intent_handler_service.dart';
@@ -68,6 +68,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => RssSourceProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => ChangeCoverProvider()),
+        ChangeNotifierProvider(create: (_) => DictProvider()),
         ChangeNotifierProvider(create: (_) => TTSService()),
       ],
       child: const LegadoReaderApp(),
@@ -259,8 +260,8 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
       _checkLocalPassword();
       _checkBackupSync();
       _checkVersionUpdate();
+      _autoRefreshBookshelf();
     });
-    _autoRefreshBookshelf();
   }
 
   Future<void> _checkVersionUpdate() async {

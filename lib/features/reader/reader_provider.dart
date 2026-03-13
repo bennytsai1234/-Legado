@@ -158,10 +158,17 @@ class ReaderProvider extends ChangeNotifier {
 
   Future<void> saveSetting(String key, dynamic value) async {
     final prefs = await SharedPreferences.getInstance();
-    if (value is double) await prefs.setDouble('reader_$key', value);
-    if (value is int) await prefs.setInt('reader_$key', value);
-    if (value is bool) await prefs.setBool('reader_$key', value);
-    if (value is String) await prefs.setString('reader_$key', value);
+    if (value == null) {
+      await prefs.remove('reader_$key');
+    } else if (value is double) {
+      await prefs.setDouble('reader_$key', value);
+    } else if (value is int) {
+      await prefs.setInt('reader_$key', value);
+    } else if (value is bool) {
+      await prefs.setBool('reader_$key', value);
+    } else if (value is String) {
+      await prefs.setString('reader_$key', value);
+    }
     notifyListeners();
   }
 

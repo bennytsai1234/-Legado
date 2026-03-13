@@ -8,6 +8,16 @@ import 'package:webdav_client/webdav_client.dart' as webdav;
 import 'package:archive/archive_io.dart';
 
 import '../database/dao/book_dao.dart';
+import '../database/dao/book_source_dao.dart';
+import '../database/dao/replace_rule_dao.dart';
+import '../database/dao/book_group_dao.dart';
+import '../database/dao/bookmark_dao.dart';
+import '../database/dao/read_record_dao.dart';
+import '../database/dao/rss_source_dao.dart';
+import '../database/dao/rss_star_dao.dart';
+import '../database/dao/dict_rule_dao.dart';
+import '../database/dao/http_tts_dao.dart';
+import '../database/dao/txt_toc_rule_dao.dart';
 import '../models/book.dart';
 import '../models/book_progress.dart';
 import '../constant/prefer_key.dart';
@@ -86,7 +96,46 @@ class WebDAVService extends ChangeNotifier {
       final books = await _bookDao.getAll();
       _addJsonToZip(encoder, 'bookshelf.json', books.map((e) => e.toJson()).toList(), dir);
       
-      // ... 其他 DAO 資料備份邏輯 (目前略過以簡化)
+      final sources = await BookSourceDao().getAll();
+      _addJsonToZip(encoder, 'bookSource.json', sources.map((e) => e.toJson()).toList(), dir);
+
+      final replaceRules = await ReplaceRuleDao().getAll();
+      _addJsonToZip(encoder, 'replaceRule.json', replaceRules.map((e) => e.toJson()).toList(), dir);
+
+      final groups = await BookGroupDao().getAll();
+      _addJsonToZip(encoder, 'bookGroup.json', groups.map((e) => e.toJson()).toList(), dir);
+
+      final bookmarks = await BookmarkDao().getAll();
+      _addJsonToZip(encoder, 'bookmark.json', bookmarks.map((e) => e.toJson()).toList(), dir);
+
+      final readRecords = await ReadRecordDao().getAll();
+      _addJsonToZip(encoder, 'readRecord.json', readRecords.map((e) => e.toJson()).toList(), dir);
+
+      final rssSources = await RssSourceDao().getAll();
+      _addJsonToZip(encoder, 'rssSource.json', rssSources.map((e) => e.toJson()).toList(), dir);
+
+      final rssStars = await RssStarDao().getAll();
+      _addJsonToZip(encoder, 'rssStar.json', rssStars.map((e) => e.toJson()).toList(), dir);
+
+      final dictRules = await DictRuleDao().getAll();
+      _addJsonToZip(encoder, 'dictRule.json', dictRules.map((e) => e.toJson()).toList(), dir);
+
+      final httpTts = await HttpTtsDao().getAll();
+      _addJsonToZip(encoder, 'httpTts.json', httpTts.map((e) => e.toJson()).toList(), dir);
+
+      final txtTocRules = await TxtTocRuleDao().getAll();
+      _addJsonToZip(encoder, 'txtTocRule.json', txtTocRules.map((e) => e.toJson()).toList(), dir);
+
+      // 備份配置 (SharedPreferences)
+      final prefs = await SharedPreferences.getInstance();
+      final keys = prefs.getKeys();
+      final Map<String, dynamic> config = {};
+      for (final key in keys) {
+        if (!key.startsWith('reader_')) { // 避開 ReaderProvider 內部狀態
+          config[key] = prefs.get(key);
+        }
+      }
+      _addJsonToZip(encoder, 'config.json', [config], dir);
 
       encoder.close();
 
@@ -94,7 +143,6 @@ class WebDAVService extends ChangeNotifier {
       await client.writeFromFile(zipPath, '/legado/legado_backup.zip');
       
       // 3. 備份成功後更新時間戳
-      final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('last_backup', DateTime.now().millisecondsSinceEpoch);
 
       _isSyncing = false;
