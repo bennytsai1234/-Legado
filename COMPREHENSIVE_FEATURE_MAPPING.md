@@ -144,6 +144,25 @@
 
 ---
 
+## 📂 資料夾路徑：legado/app/src/main/java/io/legado/app/ui (UI 功能對位)
+
+| Android 資料夾 | 職責描述 | iOS/Flutter 對位路徑 | 狀態 |
+|:---|:---|:---|:---|
+| `ui/main` | 主界面、書架、底部導航 | `lib/features/bookshelf` | ✅ Matched |
+| `ui/book` | 閱讀介面、章節列表、書籍詳情 | `lib/features/reader` & `book_detail` | ✅ Matched |
+| `ui/rss` | RSS 訂閱列表、內容展示 | `lib/features/rss` | ✅ Matched |
+| `ui/replace` | 替換規則管理界面 | `lib/features/replace_rule` | ✅ Matched |
+| `ui/welcome` | 啟動頁 (Splash Screen) | `lib/features/welcome` | ✅ Matched |
+| `ui/about` | 關於頁面、版本資訊 | `lib/features/about` | ✅ Matched |
+| `ui/config` | 設置中心、書源管理、分組管理 | `lib/features/settings` & `source_manager` | ✅ Matched |
+| `ui/file` | 文件選擇器、本地書匯入 | `lib/features/local_book` | ✅ Matched |
+| `ui/browser` | 內建瀏覽器 (用於登入書源) | - | ❌ Missing |
+| `ui/qrcode` | 掃描與生成二維碼 | - | ❌ Missing |
+| `ui/widget` | 桌面小部件 (Widget) | - | ❌ Missing |
+| `ui/login` | 網頁登入 (Cookie 獲取) | - | ❌ Missing |
+
+---
+
 ## 遞迴進度回報
 - [x] `constant`
 - [x] `exception`
@@ -152,4 +171,4 @@
 - [x] `model`
 - [x] `data` (entities)
 - [x] `service`
-- [ ] `ui`
+- [x] `ui`
