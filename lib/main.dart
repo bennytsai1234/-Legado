@@ -87,6 +87,7 @@ class LegadoReaderApp extends StatelessWidget {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: settings.themeMode,
+          locale: settings.locale,
           home: const SplashPage(),
         );
       },

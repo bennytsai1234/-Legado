@@ -13,6 +13,9 @@ class SettingsProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
   ThemeMode get themeMode => _themeMode;
 
+  Locale? _locale;
+  Locale? get locale => _locale;
+
   // WebDAV
   String _webdavUrl = '';
   String _webdavUser = '';
@@ -123,7 +126,7 @@ class SettingsProvider extends ChangeNotifier {
   double speechPitch = 1.0;
   double speechVolume = 1.0;
 
-  // --- 歡迎介面設定 (高度還原 Android) ---
+  // --- 歡迎介面設定 ---
   String welcomeImage = '';
   String welcomeImageDark = '';
   bool welcomeShowText = true;
@@ -142,6 +145,9 @@ class SettingsProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final mode = prefs.getString(PreferKey.themeMode) ?? 'system';
     _themeMode = _parseThemeMode(mode);
+
+    final lang = prefs.getString(PreferKey.language) ?? 'system';
+    _locale = _parseLocale(lang);
 
     welcomeImage = prefs.getString(PreferKey.welcomeImage) ?? '';
     welcomeImageDark = prefs.getString(PreferKey.welcomeImageDark) ?? '';
@@ -245,6 +251,19 @@ class SettingsProvider extends ChangeNotifier {
       case 'dark': return ThemeMode.dark;
       default: return ThemeMode.system;
     }
+  }
+
+  Locale? _parseLocale(String lang) {
+    if (lang == 'system') return null;
+    final parts = lang.split('_');
+    if (parts.length == 2) return Locale(parts[0], parts[1]);
+    return Locale(lang);
+  }
+
+  Future<void> setLanguage(String lang) async {
+    _locale = _parseLocale(lang);
+    await _save(PreferKey.language, lang);
+    notifyListeners();
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {

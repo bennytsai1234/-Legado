@@ -15,9 +15,9 @@ class OtherSettingsPage extends StatelessWidget {
             children: [
               ListTile(
                 title: const Text('語言 (Language)'),
-                subtitle: const Text('跟隨系統 / 繁體中文 / 简体中文 / English'),
+                subtitle: Text(_getLanguageName(settings.locale)),
                 leading: const Icon(Icons.language),
-                onTap: () => _showComingSoon(context),
+                onTap: () => _showLanguageDialog(context, settings),
               ),
               const Divider(),
               _buildSectionTitle('主介面'),
@@ -128,17 +128,17 @@ class OtherSettingsPage extends StatelessWidget {
               SwitchListTile(
                 title: const Text('自動清理過期數據'),
                 value: settings.autoClearExpired,
-                onChanged: (v) => setSettingsProvider(context, (s) => s.setAutoClearExpired(v)),
+                onChanged: (v) => settings.setAutoClearExpired(v),
               ),
               SwitchListTile(
                 title: const Text('顯示加入書架提示'),
                 value: settings.showAddToShelfAlert,
-                onChanged: (v) => setSettingsProvider(context, (s) => s.setShowAddToShelfAlert(v)),
+                onChanged: (v) => settings.setShowAddToShelfAlert(v),
               ),
               SwitchListTile(
                 title: const Text('顯示漫畫 UI'),
                 value: settings.showMangaUi,
-                onChanged: (v) => setSettingsProvider(context, (s) => s.setShowMangaUi(v)),
+                onChanged: (v) => settings.setShowMangaUi(v),
               ),
               ListTile(
                 title: const Text('Web 服務連接埠 (Port)'),
@@ -166,17 +166,17 @@ class OtherSettingsPage extends StatelessWidget {
               SwitchListTile(
                 title: const Text('加入系統文字選擇選單'),
                 value: settings.processText,
-                onChanged: (v) => setSettingsProvider(context, (s) => s.setProcessText(v)),
+                onChanged: (v) => settings.setProcessText(v),
               ),
               SwitchListTile(
                 title: const Text('記錄除錯日誌 (Log)'),
                 value: settings.recordLog,
-                onChanged: (v) => setSettingsProvider(context, (s) => s.setRecordLog(v)),
+                onChanged: (v) => settings.setRecordLog(v),
               ),
               SwitchListTile(
                 title: const Text('記錄 Heap Dump'),
                 value: settings.recordHeapDump,
-                onChanged: (v) => setSettingsProvider(context, (s) => s.setRecordHeapDump(v)),
+                onChanged: (v) => settings.setRecordHeapDump(v),
               ),
             ],
           );
@@ -185,8 +185,52 @@ class OtherSettingsPage extends StatelessWidget {
     );
   }
 
-  void setSettingsProvider(BuildContext context, Function(SettingsProvider) callback) {
-    callback(context.read<SettingsProvider>());
+  String _getLanguageName(Locale? locale) {
+    if (locale == null) return '跟隨系統';
+    final code = locale.languageCode;
+    final country = locale.countryCode;
+    if (code == 'zh') {
+      if (country == 'TW' || country == 'HK') return '繁體中文';
+      return '简体中文';
+    }
+    if (code == 'en') return 'English';
+    return locale.toString();
+  }
+
+  void _showLanguageDialog(BuildContext context, SettingsProvider settings) {
+    final languages = [
+      {'label': '跟隨系統', 'value': 'system'},
+      {'label': '繁體中文', 'value': 'zh_TW'},
+      {'label': '简体中文', 'value': 'zh_CN'},
+      {'label': 'English', 'value': 'en'},
+    ];
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('選擇語言'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: languages.map((lang) {
+            final isSelected = (lang['value'] == 'system' && settings.locale == null) ||
+                (settings.locale != null && (
+                  lang['value'] == settings.locale!.languageCode ||
+                  lang['value'] == '${settings.locale!.languageCode}_${settings.locale!.countryCode}'
+                ));
+            
+            return RadioListTile<String>(
+              title: Text(lang['label']!),
+              value: lang['value']!,
+              groupValue: isSelected ? lang['value'] : null,
+              onChanged: (val) {
+                settings.setLanguage(val!);
+                Navigator.pop(context);
+              },
+            );
+          }).toList(),
+        ),
+      ),
+    );
   }
 
   Widget _buildSectionTitle(String title) {
@@ -341,4 +385,3 @@ class OtherSettingsPage extends StatelessWidget {
     );
   }
 }
-

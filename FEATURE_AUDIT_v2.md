@@ -4,7 +4,7 @@
 ## 總覽儀表板
 | ID | 模組名稱 | 完成度 | 狀態 | 核心邏輯比對結果 |
 |:---|:---|:---|:---|:---|
-| **01** | **系統與 UI 設定** | 90% | ✅ | 已實作圖標、歡迎界面、顏色與 UA 連動，模組核心功能已對齊 |
+| **01** | **系統與 UI 設定** | 95% | ✅ | 已實作圖標、歡迎界面、顏色、語言與 UA 連動，僅餘部分維護功能 |
 <!-- END_DASHBOARD -->
 
 <!-- BEGIN_AUDIT_01 -->
@@ -14,6 +14,7 @@
 **Legado 檔案**：`AppConfig.kt`, `ThemeConfig.kt`, `WelcomeConfigFragment.kt`, `OtherConfigFragment.kt`, `ThemeConfigFragment.kt`, `LauncherIconHelp.kt`
 **Flutter (iOS) 對應檔案**：`settings_provider.dart`, `theme_settings_page.dart`, `welcome_settings_page.dart`, `other_settings_page.dart`, `icon_settings_page.dart`
 **完成度：90%**
+**完成度：95%**
 **狀態：✅ 高度對齊**
 
 **已完成項目 ✅**：
@@ -24,6 +25,7 @@
 - ✅ **歡迎界面自定義**：實作了圖片選擇與啟動頁 (SplashPage) 的動態連動 (01.2)。
 - ✅ **主題顏色選取**：實作了顏色選取對話框並與 Provider 雙向綁定 (01.3)。
 - ✅ **User Agent 連動**：實作了全域 HttpClient 攔截器，動態注入自定義 UA (01.6)。
+- ✅ **語言切換邏輯**：實作了 Locale 管理與 MaterialApp 連動，支援即時切換語言 (01.5)。
 
 **不足之處**：
 - [ ] **維護功能缺失**：資料庫壓縮、快取清理邏輯尚未實作。
@@ -37,6 +39,6 @@
 | **01.2 歡迎界面圖片** | `WelcomeConfigFragment.kt`: L161 (`setCoverFromUri`) | `main.dart`: L120 (`SplashPage.build`) | **Matched** | 啟動頁已完全連動自定義設定 |
 | **01.3 主題顏色選取** | `ThemeConfigFragment.kt`: L55 (`ColorPreference`) | `theme_settings_page.dart`: L130 (`_showColorPicker`) | **Matched** | 實作了互動式顏色選擇器 |
 | **01.4 書籍存放目錄** | `OtherConfigFragment.kt`: L100 (`HandleFileContract.DIR_SYS`) | `other_settings_page.dart`: L65 (`_showComingSoon`) | **Logic Gap** | 無法設定自定義目錄 |
-| **01.5 語言切換邏輯** | `OtherConfigFragment.kt`: L175 (`appCtx.restart`) | `other_settings_page.dart`: L18 (`_showComingSoon`) | **Logic Gap** | 點擊切換語言無任何回應 |
+| **01.5 語言切換邏輯** | `OtherConfigFragment.kt`: L175 (`appCtx.restart`) | `settings_provider.dart`: L185 (`setLanguage`) | **Matched** | 實作了 Locale 動態切換與 MaterialApp 連動 |
 | **01.6 User Agent 連動** | `OtherConfigFragment.kt`: L215 (`putPrefString`) | `http_client.dart`: L33 (`onRequest`) | **Matched** | 實作了攔截器動態注入自定義 UA |
 <!-- END_AUDIT_01 -->
