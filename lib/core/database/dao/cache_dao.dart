@@ -1,23 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import '../app_database.dart';
-
-/// Cache 模型
-class Cache {
-  final String key;
-  final String value;
-  final int deadline;
-
-  Cache({required this.key, required this.value, required this.deadline});
-
-  Map<String, dynamic> toJson() => {
-    'key': key,
-    'value': value,
-    'deadline': deadline,
-  };
-
-  factory Cache.fromJson(Map<String, dynamic> json) =>
-      Cache(key: json['key'], value: json['value'], deadline: json['deadline']);
-}
+import '../../models/cache.dart';
 
 /// CacheDao - 快取資料表操作
 /// 對應 Android: data/dao/CacheDao.kt
@@ -62,7 +45,7 @@ class CacheDao {
     return null;
   }
 
-  Future<void> insert(Cache cache) async {
+  Future<void> insertOrUpdate(Cache cache) async {
     final db = await AppDatabase.database;
     await db.insert(
       tableName,

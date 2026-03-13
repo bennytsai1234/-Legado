@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 
 /// CrashHandler - 全域異常捕獲與日誌記錄
 /// 對應 Android: help/CrashHandler.kt
@@ -70,7 +69,7 @@ class CrashHandler {
       if (_userAgent != null) {
         buffer.writeln('WebView UA: $_userAgent');
       }
-      buffer.writeln('Memory Limit: ${ProcessInfo.maxMemory ~/ (1024 * 1024)} MB');
+      buffer.writeln('Memory Usage: ${ProcessInfo.currentRss ~/ (1024 * 1024)} MB');
       
       buffer.writeln('\n=== Error Info ===');
       buffer.writeln('Crash Time: ${DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now())}');

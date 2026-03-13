@@ -58,6 +58,19 @@ class RssSourceDao {
     );
   }
 
+  Future<void> insertOrUpdateAll(List<RssSource> sources) async {
+    final db = await _db;
+    final batch = db.batch();
+    for (final source in sources) {
+      batch.insert(
+        tableName,
+        source.toJson(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
   Future<List<RssSource>> getAll() async {
     final db = await _db;
     final List<Map<String, dynamic>> maps = await db.query(tableName, orderBy: 'customOrder ASC, lastUpdateTime DESC');

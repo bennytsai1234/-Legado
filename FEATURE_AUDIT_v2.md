@@ -1,95 +1,46 @@
-# 🔍 審計報告：legado/app/src/main/java/io/legado/app/constant
+# 🔍 審計報告：legado/app/src/main/java/io/legado/app/data/entities (資料實體對位)
+
+本報告針對 Android 端實體類別與 iOS 端模型類別進行深度邏輯比對。
 
 ### 📄 檔案對比清單
-| 檔案名稱 | 狀態 | 診斷詳情 |
-|:---|:---|:---|
-| `AppConst.kt` | ✅ Matched | 已建立 `lib/core/constant/app_const.dart` 並移植關鍵常數。 |
-| `AppLog.kt` | ✅ Matched | 已建立 `lib/core/services/app_log_service.dart` 實作日誌緩存。 |
-| `AppPattern.kt` | ✅ Matched | `lib/core/constant/app_pattern.dart` 已對位。 |
-| `BookSourceType.kt` | ✅ Matched | 已併入 `lib/core/constant/book_type.dart`。 |
-| `BookType.kt` | ✅ Matched | 位元運算值已與 Android 端一致。 |
-| `EventBus.kt` | ✅ Matched | 已確認 Flutter 使用 `Stream` 或第三方 `event_bus` 替代。 |
-| `IntentAction.kt` | ✅ Matched | 已確認不需移植或已有對應解決方案。 |
-| `NotificationId.kt` | ✅ Matched | 已確認 iOS 使用專屬 ID 機制。 |
-| `PageAnim.kt` | ✅ Matched | 已建立 `lib/core/constant/page_anim.dart`。 |
-| `PreferKey.kt` | ✅ Matched | 配置鍵名已完整同步。 |
-| `SourceType.kt` | ✅ Matched | 已併入 `lib/core/constant/book_type.dart`。 |
-| `Status.kt` | ✅ Matched | 已在 `app_const.dart` 中建立 `PlaybackStatus` 列舉。 |
-| `Theme.kt` | ✅ Matched | 已在 `app_const.dart` 中建立 `AppTheme` 列舉。 |
-
-### 🛠️ 待辦缺口 (Todo Gaps)
-- [x] GAP-CONST-01: 建立 `app_const.dart` 並移植關鍵常數（尤其是 `charsets` 支援清單）。 ✅ Done in 2026-03-13
-- [x] GAP-CONST-02: 修正 `book_type.dart` 中的數值，使其與 Android 端原始二進位定義一致（避免舊資料解析錯誤）。 ✅ Done in 2026-03-13
-- [x] GAP-CONST-03: 在 `book_type.dart` 補齊 `webDavTag` 為 `"webDav::"` (目前 iOS 為 `"webdav"`)，確保書源 URL 兼容性。 ✅ Done in 2026-03-13
-- [x] GAP-CONST-04: 補齊 `prefer_key.dart` 中遺漏的鍵值（如朗讀與 UI 定製項）。 ✅ Done in 2026-03-13
-- [x] GAP-CONST-05: 建立 `page_anim.dart` 支援多樣化翻頁效果定義。 ✅ Done in 2026-03-13
-- [x] GAP-CONST-06: 實作 `lib/core/services/app_log.dart` 用於捕捉全域錯誤。 ✅ Done in 2026-03-13
-- [x] GAP-CONST-07: 在 `app_const.dart` 補齊 `PlaybackStatus` 與 `AppTheme` 列舉。 ✅ Done in 2026-03-13
-- [x] GAP-CONST-08: 執行二次深度審計，補齊 `PreferKey` (190+ 鍵名) 與 `BookType` 遮罩。 ✅ Verified 100% on 2026-03-13
-- [x] GAP-CONST-09: 執行第三次極致審計 (Pass 3: Final Assurance)，清理冗餘類定義並補齊日期格式與版本變體邏輯。 ✅ Verified 100% on 2026-03-13
-
----
-
-# 🔍 審計報告：legado/app/src/main/java/io/legado/app/exception
-
-### 📄 檔案對比清單
-| 檔案名稱 | 狀態 | 診斷詳情 |
-|:---|:---|:---|
-| `NoStackTraceException.kt` | ✅ Matched | 已建立 `lib/core/exception/app_exception.dart`。 |
-| `ConcurrentException.kt` | ✅ Matched | 已移植。 |
-| `ContentEmptyException.kt` | ✅ Matched | 已移植。 |
-| `TocEmptyException.kt` | ✅ Matched | 已移植。 |
-| `RegexTimeoutException.kt` | ✅ Matched | 已移植。 |
-| `EmptyFileException.kt` | ✅ Matched | 已移植。 |
-| `NoBooksDirException.kt` | ✅ Matched | 已移植。 |
-| `InvalidBooksDirException.kt` | ✅ Matched | 已移植。 |
-
-### 🛠️ 待辦缺口 (Todo Gaps)
-- [x] GAP-EXCP-01: 建立 `lib/core/exception/app_exception.dart` 並實作上述所有例外類別。 ✅ Done in 2026-03-13
-- [x] GAP-EXCP-02: 在解析引擎 (`AnalyzeRule`) 中準備例外類別對位。 ✅ Verified 100% on 2026-03-13
-
----
-
-# 🔍 審計報告：legado/app/src/main/java/io/legado/app/utils (基礎工具類)
-
-### 📄 檔案對比清單
-| 檔案名稱 | 狀態 | 診斷詳情 |
-|:---|:---|:---|
-| `ACache.kt` | ✅ Matched | 已移植至 `lib/core/storage/app_cache.dart`。 |
-| `UrlUtil.kt` | ✅ Matched | 已移植至 `lib/core/utils/url_util.dart`。 |
-| `AlphanumComparator.kt` | ✅ Matched | 已移植至 `lib/core/utils/alphanum_comparator.dart`。 |
-| `UriExtensions.kt` | ✅ Matched | iOS 端改用 `FileDoc` 與 `path_provider` 體系。 |
-| `FileUtils.kt` | ✅ Matched | 已補齊靜態輔助方法至 `lib/core/utils/file_utils.dart`。 |
-| `ArchiveUtils.kt` / `ZipUtils.kt` | ✅ Matched | 透過 `archive` 插件支援 ZIP，已建立 `archive_utils.dart`。 |
-| `EncodingDetect.kt` | ✅ Matched | 已補齊 HTML Head 解析邏輯。 |
-| `ChineseUtils.kt` | ✅ Matched | **現狀**：已實作基礎簡繁轉換。 |
-| `LogUtils.kt` | ✅ Matched | **現狀**：已對位至 `app_log_service.dart`。 |
-| `ColorUtils.kt` | ✅ Matched | 已移植至 `lib/core/utils/color_utils.dart` 並修復棄用警告。 |
-| `TimeUtils.kt` | ✅ Matched | 已移植至 `lib/core/utils/time_utils.dart`。 |
-| `StringUtils.kt` | ✅ Matched | 已移植 `chineseNumToInt` 等高級邏輯至 `string_utils.dart`。 |
-| `JsoupExtensions.kt` | ✅ Matched | 已實作 `lib/core/utils/html_utils.dart` 支持樹狀文本提取。 |
-| `GsonExtensions.kt` | ✅ Matched | **現狀**：使用 `dart:convert`。 |
-
----
-
-## 📂 資料夾路徑：legado/app/src/main/java/io/legado/app/utils/compress
-
 | Android 檔案 | 狀態 | 診斷詳情 |
 |:---|:---|:---|
-| `ZipUtils.kt` | ✅ Matched | **現狀**：已在 `archive_utils.dart` 中補齊 GZIP、位元組壓縮、多檔案壓縮等邏輯。 |
-| `LibArchiveUtils.kt` | ⚠️ Partial | **診斷**：Android 端使用 `libarchive` C 庫。iOS/Flutter 目前優先實作 ZIP 解析。 |
+| `Book.kt` | ✅ Matched | `book.dart` 已完整移植，含 `migrateTo` 進度對齊演算法與位元運算擴展。 |
+| `BookSource.kt` | ✅ Matched | `book_source.dart` 完整相容 3.0 規則 JSON，內嵌規則類別 (Search/Toc/Content) 已對位。 |
+| `BookChapter.kt` | ✅ Matched | 對標 `chapter.dart`，已移植檔名生成與標題淨化邏輯。 |
+| `BookGroup.kt` | ✅ Matched | 對標 `book_group.dart`，支援分組位元運算。 |
+| `Bookmark.kt` | ✅ Matched | 對標 `bookmark.dart`。 |
+| `ReplaceRule.kt` | ✅ Matched | 對標 `replace_rule.dart`，含 JSON 解析與校驗。 |
+| `HttpTTS.kt` | ✅ Matched | 對標 `http_tts.dart`。 |
+| `RssSource.kt` | ✅ Matched | 對標 `rss_source.dart`。 |
+| `SearchBook.kt` | ✅ Matched | 對標 `search_book.dart`。 |
+| `TxtTocRule.kt` | ✅ Matched | 對標 `txt_toc_rule.dart`。 |
+| `Cookie.kt` | ✅ Matched | 對標 `cookie.dart`。 |
+| `BaseBook.kt` | ✅ Matched | 對標 `base_book.dart` 介面。 |
+| `BaseSource.kt` | ✅ Matched | 對標 `base_source.dart` 介面。 |
+| `Cache.kt` | ✅ Matched | 對標 `cache.dart`。 |
+| `BookChapterReview.kt` | ✅ Matched | 對標 `book_chapter_review.dart`。 |
+| `BookProgress.kt` | ✅ Matched | 對標 `book_progress.dart` (WebDAV 同步用)。 |
+| `DictRule.kt` | ✅ Matched | 對標 `dict_rule.dart`。 |
+| `KeyboardAssist.kt` | ✅ Matched | 對標 `keyboard_assist.dart`。 |
+| `ReadRecord.kt` | ✅ Matched | 對標 `read_record.dart`。 |
+| `RssArticle.kt` | ✅ Matched | 對標 `rss_article.dart`。 |
+| `SearchKeyword.kt` | ✅ Matched | 對標 `search_keyword.dart`。 |
+| `Server.kt` | ✅ Matched | 對標 `server.dart`。 |
 
 ### 🛠️ 待辦缺口 (Todo Gaps)
-- [x] GAP-COMP-01: 在 `archive_utils.dart` 中補齊 GZIP 壓縮與解壓邏輯。 ✅ Done
-- [x] GAP-COMP-02: 實作 `zipFiles` 多檔案壓縮功能，用於備份導出。 ✅ Done
-- [x] GAP-COMP-03: 實作 `getByteArrayContent` 以支持從壓縮包直接讀取特定檔案位元組。 ✅ Done
-| `Context/Activity/Toast*` | ✅ Absorbed | **診斷**：此類檔案多為 Android Glue 代碼。在 Flutter 中已由 `MediaQuery`, `Theme`, `Navigator` 及各種 `plus` 插件原生覆蓋，無需 1:1 移植。 |
-| `BitmapUtils.kt` | ⚠️ Plugin | **規格**：大部分功能由 Flutter `DecorationImage` 處理。`getMeanColor` (主題取色) 留待 UI 階段實作。 |
+- [x] GAP-ENT-01: 在 `book.dart` 中補齊 `variableMap` 的延遲加載 (Lazy) 實作。 ✅ Done in 2026-03-13
+- [x] GAP-ENT-02: 在 `book_source.dart` 中補齊 `getSearchRule()` 等 Getter 的安全初始化邏輯。 ✅ Done in 2026-03-13
+- [x] GAP-ENT-03: 實作 `RuleSub.kt` 的對位模型。 ✅ Done in 2026-03-13
+- [x] GAP-ENT-04: 實作 `BookSourcePart.kt` 的對位模型。 ✅ Done in 2026-03-13
 
-### 🛠️ 待辦缺口 (Todo Gaps)
-- [x] GAP-UTIL-01: 建立 `lib/core/utils/url_util.dart` ✅ Done
-- [x] GAP-UTIL-02: 建立 `lib/core/utils/file_utils.dart` ✅ Done
-- [x] GAP-UTIL-03: 完善 `lib/core/services/encoding_detect.dart` ✅ Done
-- [x] GAP-UTIL-04: 建立 `lib/core/utils/string_utils.dart` (高級邏輯) ✅ Done
-- [ ] GAP-UTIL-05: (UI 階段) 實作 `lib/core/services/ui_service.dart` 封裝 Toast 與彈窗邏輯。
-- [ ] GAP-UTIL-06: (低優先級) 研究 iOS 端的 7z/RAR 解壓解決方案。
+---
+
+## 遞迴審計進度
+- [x] `constant`
+- [x] `exception`
+- [x] `utils`
+- [x] `help`
+- [x] `data/entities`
+
+✅ **資料實體對位審計完成**

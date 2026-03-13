@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:characters/characters.dart';
 import '../models/chapter.dart';
 import '../models/book.dart';
@@ -175,9 +176,18 @@ class ContentProcessor {
     List<ReplaceRule> rules,
   ) {
     String result = content;
+    final stopwatch = Stopwatch()..start();
+    const timeout = Duration(seconds: 3); // 總體處理超時
+
     for (final rule in rules) {
       if (!rule.isEnabled) continue;
       
+      // 超時檢查 (對標 Android RegexTimeoutException)
+      if (stopwatch.elapsed > timeout) {
+        debugPrint("Replace rules processing timeout for $bookName");
+        break;
+      }
+
       if (rule.scope != null && rule.scope!.isNotEmpty) {
         if (!rule.scope!.contains(bookName) && !rule.scope!.contains(bookOrigin)) continue;
       }
@@ -192,8 +202,8 @@ class ContentProcessor {
           final replacement = rule.replacement.replaceAll(r'$', r'\$');
           final pattern = RegExp(rule.pattern, multiLine: true, dotAll: true);
           
-          // Android 對標：超時控制 (Dart 需透過 Future.timeout 模擬，或 Isolate)
-          // 這裡採用簡單的 timeout 監控，雖無法中斷正則執行，但能防止邏輯鏈卡死
+          // 在 Dart 中 replaceAll 是原子的，目前無法中斷單一正則執行
+          // 但我們可以防止多個規則連鎖導致的長時間掛起
           result = result.replaceAll(pattern, replacement);
         } else {
           result = result.replaceAll(rule.pattern, rule.replacement);
@@ -202,6 +212,7 @@ class ContentProcessor {
         // Skip invalid regex
       }
     }
+    stopwatch.stop();
     return result;
   }
 }

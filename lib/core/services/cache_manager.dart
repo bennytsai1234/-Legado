@@ -6,7 +6,7 @@ import '../database/dao/cache_dao.dart';
 import '../models/cache.dart';
 
 /// LruMemoryCache - 簡易 LRU 記憶體快取
-/// 對應 Android: LruCache<String, Any>(1024 * 1024 * 50)
+/// 對應 Android: LruCache (String, Any)
 class LruMemoryCache {
   final int maxSize;
   int _currentSize = 0;

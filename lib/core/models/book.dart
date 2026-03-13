@@ -37,6 +37,30 @@ class Book {
   int syncTime; // 同步時間
   bool isInBookshelf; // 是否在書架上 (iOS 特有標記)
 
+  // --- 延遲加載屬性 (對標 Android Book.variableMap) ---
+  Map<String, String>? _variableMap;
+  Map<String, String> get variableMap {
+    if (_variableMap == null) {
+      if (variable != null && variable!.isNotEmpty) {
+        try {
+          final decoded = jsonDecode(variable!);
+          if (decoded is Map) {
+            _variableMap = decoded.map((k, v) => MapEntry(k.toString(), v.toString()));
+          }
+        } catch (_) {}
+      }
+      _variableMap ??= {};
+    }
+    return _variableMap!;
+  }
+
+  void setVariable(String key, String value) {
+    final map = Map<String, String>.from(variableMap);
+    map[key] = value;
+    _variableMap = map;
+    variable = jsonEncode(map);
+  }
+
   // --- 類型感知屬性 (對標 Android BookExtensions.kt) ---
   bool get isAudio => (type & 2) != 0; // BookType.audio = 2
   bool get isImage => (type & 4) != 0; // BookType.image = 4

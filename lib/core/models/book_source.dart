@@ -81,6 +81,14 @@ class BookSource implements BaseSource {
   @override
   String getKey() => bookSourceUrl;
 
+  // --- 安全規則獲取 (對標 Android BookSource.get*Rule) ---
+  SearchRule getSearchRule() => ruleSearch ??= SearchRule();
+  ExploreRule getExploreRule() => ruleExplore ??= ExploreRule();
+  BookInfoRule getBookInfoRule() => ruleBookInfo ??= BookInfoRule();
+  TocRule getTocRule() => ruleToc ??= TocRule();
+  ContentRule getContentRule() => ruleContent ??= ContentRule();
+  ReviewRule getReviewRule() => ruleReview ??= ReviewRule();
+
   // 分組操作邏輯 (高度還原 Android)
   void addGroup(String groups) {
     var currentGroups = bookSourceGroup?.split(RegExp(r'[,，\s]+')).where((s) => s.isNotEmpty).toSet() ?? {};

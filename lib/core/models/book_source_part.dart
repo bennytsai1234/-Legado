@@ -1,4 +1,4 @@
-/// BookSourcePart - 書源部分欄位模型 (用於列表顯示)
+/// BookSourcePart - 書源局部模型 (用於列表顯示或局部更新)
 /// 對應 Android: data/entities/BookSourcePart.kt
 class BookSourcePart {
   String bookSourceUrl;
@@ -27,20 +27,12 @@ class BookSourcePart {
     this.hasExploreUrl = false,
   });
 
-  Map<String, dynamic> toJson() {
-    return {
-      'bookSourceUrl': bookSourceUrl,
-      'bookSourceName': bookSourceName,
-      'bookSourceGroup': bookSourceGroup,
-      'customOrder': customOrder,
-      'enabled': enabled,
-      'enabledExplore': enabledExplore,
-      'hasLoginUrl': hasLoginUrl,
-      'lastUpdateTime': lastUpdateTime,
-      'respondTime': respondTime,
-      'weight': weight,
-      'hasExploreUrl': hasExploreUrl,
-    };
+  String getDisplayNameGroup() {
+    if (bookSourceGroup == null || bookSourceGroup!.isEmpty) {
+      return bookSourceName;
+    } else {
+      return "$bookSourceName ($bookSourceGroup)";
+    }
   }
 
   factory BookSourcePart.fromJson(Map<String, dynamic> json) {
@@ -49,13 +41,29 @@ class BookSourcePart {
       bookSourceName: json['bookSourceName'] ?? "",
       bookSourceGroup: json['bookSourceGroup'],
       customOrder: json['customOrder'] ?? 0,
-      enabled: json['enabled'] ?? true,
-      enabledExplore: json['enabledExplore'] ?? true,
-      hasLoginUrl: json['hasLoginUrl'] ?? false,
+      enabled: json['enabled'] == 1 || json['enabled'] == true,
+      enabledExplore: json['enabledExplore'] == 1 || json['enabledExplore'] == true,
+      hasLoginUrl: json['hasLoginUrl'] == 1 || json['hasLoginUrl'] == true,
       lastUpdateTime: json['lastUpdateTime'] ?? 0,
       respondTime: json['respondTime'] ?? 180000,
       weight: json['weight'] ?? 0,
-      hasExploreUrl: json['hasExploreUrl'] ?? false,
+      hasExploreUrl: json['hasExploreUrl'] == 1 || json['hasExploreUrl'] == true,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'bookSourceUrl': bookSourceUrl,
+      'bookSourceName': bookSourceName,
+      'bookSourceGroup': bookSourceGroup,
+      'customOrder': customOrder,
+      'enabled': enabled ? 1 : 0,
+      'enabledExplore': enabledExplore ? 1 : 0,
+      'hasLoginUrl': hasLoginUrl ? 1 : 0,
+      'lastUpdateTime': lastUpdateTime,
+      'respondTime': respondTime,
+      'weight': weight,
+      'hasExploreUrl': hasExploreUrl ? 1 : 0,
+    };
   }
 }

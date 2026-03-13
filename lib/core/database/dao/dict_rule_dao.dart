@@ -29,6 +29,19 @@ class DictRuleDao {
     );
   }
 
+  Future<void> insertOrUpdateAll(List<DictRule> rules) async {
+    final db = await _db;
+    final batch = db.batch();
+    for (final rule in rules) {
+      batch.insert(
+        tableName,
+        rule.toJson(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
   Future<List<DictRule>> getAll() async {
     final db = await _db;
     final maps = await db.query(tableName, orderBy: 'customOrder ASC');

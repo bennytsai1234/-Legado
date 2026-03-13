@@ -37,6 +37,21 @@ class HttpTtsDao {
     );
   }
 
+  Future<void> insertOrUpdateAll(List<HttpTTS> ttsList) async {
+    final db = await _db;
+    final batch = db.batch();
+    for (final tts in ttsList) {
+      final map = tts.toJson();
+      map['enabledCookieJar'] = (map['enabledCookieJar'] == true) ? 1 : 0;
+      batch.insert(
+        tableName,
+        map,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
   Future<List<HttpTTS>> getAll() async {
     final db = await _db;
     final maps = await db.query(tableName);

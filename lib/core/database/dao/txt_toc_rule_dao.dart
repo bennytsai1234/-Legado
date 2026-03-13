@@ -29,6 +29,19 @@ class TxtTocRuleDao {
     );
   }
 
+  Future<void> insertOrUpdateAll(List<TxtTocRule> rules) async {
+    final db = await _db;
+    final batch = db.batch();
+    for (final rule in rules) {
+      batch.insert(
+        tableName,
+        rule.toJson(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
   Future<List<TxtTocRule>> getEnabled() async {
     final db = await _db;
     final maps = await db.query(

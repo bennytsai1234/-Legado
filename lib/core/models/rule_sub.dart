@@ -1,7 +1,7 @@
-/// RuleSub - 規則訂閱模型 (例如訂閱正則或解析規則)
+/// RuleSub - 規則訂閱模型
 /// 對應 Android: data/entities/RuleSub.kt
 class RuleSub {
-  final int id;
+  int id;
   String name;
   String url;
   int type;
@@ -19,6 +19,18 @@ class RuleSub {
     this.update = 0,
   });
 
+  factory RuleSub.fromJson(Map<String, dynamic> json) {
+    return RuleSub(
+      id: json['id'] ?? DateTime.now().millisecondsSinceEpoch,
+      name: json['name'] ?? "",
+      url: json['url'] ?? "",
+      type: json['type'] ?? 0,
+      customOrder: json['customOrder'] ?? 0,
+      autoUpdate: json['autoUpdate'] == 1 || json['autoUpdate'] == true,
+      update: json['update'] ?? 0,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -26,20 +38,8 @@ class RuleSub {
       'url': url,
       'type': type,
       'customOrder': customOrder,
-      'autoUpdate': autoUpdate,
+      'autoUpdate': autoUpdate ? 1 : 0,
       'update': update,
     };
-  }
-
-  factory RuleSub.fromJson(Map<String, dynamic> json) {
-    return RuleSub(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? "",
-      url: json['url'] ?? "",
-      type: json['type'] ?? 0,
-      customOrder: json['customOrder'] ?? 0,
-      autoUpdate: json['autoUpdate'] ?? false,
-      update: json['update'] ?? 0,
-    );
   }
 }
