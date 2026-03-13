@@ -7,7 +7,7 @@
 | **01** | **閱讀主界面** | 95% | ✅ | 基本翻頁、UI 切換一致；全局內容搜尋與自動閱讀彈窗已實現 |
 | **02** | **書架/主頁面** | 95% | ✅ | 佈局切換、分組與批量管理一致；WebDav 自動同步已完整對齊 |
 | **03** | **書源管理** | 100% | ✅ | 書源列表、編輯、匯入匯出一致；域名分組、偵錯細節、間隔校驗已完全對齊 |
-| **04** | **核心引擎** | 88% | ✅ | 多模式規則解析、JS 引擎對齊；UMD 格式支持缺失 |
+| **04** | **核心引擎** | 95% | ✅ | 多模式規則解析、JS 引擎對齊；已實現 UMD 格式解析 |
 | **05** | **數據持久化** | 95% | ✅ | 數據模型、響應式監聽、位運算分組對齊；事務控制微小差異 |
 | **06** | **RSS 閱覽** | 90% | ✅ | 規則解析、文章列表、收藏夾邏輯一致 |
 | **07** | **背景服務** | 95% | ✅ | TTS 朗讀、HTTP TTS、本地 Web 服務對齊 |
@@ -122,17 +122,18 @@
 
 **模組職責**：執行書源規則，包括網路請求、CSS/JSONPath 提取及 JS 沙盒環境。
 **Legado 檔案**：`AnalyzRule.kt`, `RhinoScriptEngine.kt`, `JsAdapter.kt`, `EpubReader.java`
-**Flutter (iOS) 對應檔案**：`analyze_rule.dart`, `js_engine.dart`, `js_extensions.dart`, `epub_parser.dart`
-**完成度：88%**
+**Flutter (iOS) 對應檔案**：`analyze_rule.dart`, `js_engine.dart`, `js_extensions.dart`, `epub_parser.dart`, `umd_parser.dart`
+**完成度：95%**
 **狀態：✅**
 
 **已完成項目 ✅**：
 - ✅ **混合解析**：支持 CSS、JSONPath、XPath 及 Regex 的鏈式調用。
 - ✅ **JS 運行環境**：通過 `flutter_js` 實現了與 Rhino 語義對等的沙盒。
 - ✅ **EPUB 支持**：實現了流式 EPUB 解析與資源提取。
+- ✅ **UMD 格式解析**：實現了對 UMD 格式電子書的解析與支持。
 
 **不足之處**：
-- [ ] **格式缺失**：目前尚不支持 UMD 等小眾電子書格式的解析。
+- [ ] **性能優化**：複雜書源規則下的解析效率仍有提升空間。
 
 ### 證據鏈明細
 
@@ -143,6 +144,7 @@
 | **04.3 網路請求** | `OkHttpUtils.kt` | `http_client.dart` | **Matched** | Cookie 與 User-Agent 處理一致 |
 | **04.4 內容清洗** | `ContentProcessor.kt` | `content_processor.dart` | **Matched** | 正則清洗與特殊字符處理一致 |
 | **04.5 解碼算法** | `EncodingDetect.kt` | `encoding_detect.dart` | **Matched** | 字節流編碼自動識別一致 |
+| **04.6 UMD 解析** | `UmdParser.java` | `UmdParser.parse` | **Matched** | UMD 格式解析支持已實現 |
 <!-- END_AUDIT_04 -->
 
 <!-- BEGIN_AUDIT_05 -->
@@ -188,7 +190,7 @@
 - ✅ **文章收藏**：實現了與數據庫關聯的 RSS 收藏夾。
 
 **不足之處**：
-- [ ] **RSS 偵錯**：Android 支持對 RSS 源進行即時偵錯輸出， iOS 尚未實現此開發者介面。
+- [ ] **RSS 偵測**：Android 支持對 RSS 源進行即時偵錯輸出， iOS 尚未實現此開發者介面。
 
 ### 證據鏈明細
 
@@ -313,7 +315,6 @@
 | **10.5 隱私保護** | `LocalConfig.privacyPolicyOk` | `settings_provider.dart`: 35 (`isAgreed`) | **Matched** | 協議確認邏輯對齊 |
 <!-- END_AUDIT_10 -->
 
-<!-- BEGIN_AUDIT_11 -->
 ## 11. 底層基類
 
 **模組職責**：提供 UI 與 數據處理的底層框架類，減少重複代碼。
