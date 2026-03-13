@@ -163,6 +163,16 @@
 
 ---
 
+## 📂 資料夾路徑：legado/modules (核心模組對位)
+
+| Android 模組 | 職責描述 | iOS/Flutter 對位路徑 | 狀態 |
+|:---|:---|:---|:---|
+| `modules/book` | 各類電子書格式解析 (EPUB, UMD, TXT) | `lib/core/local_book` | ✅ Matched |
+| `modules/rhino` | Rhino JS 引擎封裝與橋接 | `lib/core/engine/js` | ⚠️ Partial |
+| `modules/web` | 基於 OkHttp 的網路請求擴展 | `lib/core/services/web_service.dart` (部分) | ⚠️ Partial |
+
+---
+
 ## 遞迴進度回報
 - [x] `constant`
 - [x] `exception`
@@ -172,3 +182,6 @@
 - [x] `data` (entities)
 - [x] `service`
 - [x] `ui`
+- [x] `modules`
+
+✅ **100% 遞迴映射完成**
