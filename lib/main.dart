@@ -288,27 +288,38 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
 
   void _checkLocalPassword() {
     final settings = context.read<SettingsProvider>();
-    if (settings.localPassword.isEmpty) {
+    if (settings.localPassword.isNotEmpty) {
       final ctrl = TextEditingController();
       showDialog(
         context: context,
+        barrierDismissible: false, // 強制驗證
         builder: (ctx) => AlertDialog(
-          title: const Text('設定本地密碼'),
+          title: const Text('身份驗證'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('為了保護您的備份安全，建議設定一個本地密碼。', style: TextStyle(fontSize: 12)),
+              const Text('請輸入本地密碼以解鎖書架。', style: TextStyle(fontSize: 12)),
               const SizedBox(height: 12),
               TextField(
                 controller: ctrl,
                 decoration: const InputDecoration(hintText: '輸入密碼', isDense: true, border: OutlineInputBorder()),
                 obscureText: true,
+                onSubmitted: (val) {
+                  if (val.trim() == settings.localPassword) {
+                    Navigator.pop(ctx);
+                  }
+                },
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () { settings.setLocalPassword(""); Navigator.pop(ctx); }, child: const Text('不設定')),
-            ElevatedButton(onPressed: () { settings.setLocalPassword(ctrl.text.trim()); Navigator.pop(ctx); }, child: const Text('確定')),
+            ElevatedButton(onPressed: () { 
+              if (ctrl.text.trim() == settings.localPassword) {
+                Navigator.pop(ctx);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('密碼錯誤'), backgroundColor: Colors.red));
+              }
+            }, child: const Text('確定')),
           ],
         ),
       );

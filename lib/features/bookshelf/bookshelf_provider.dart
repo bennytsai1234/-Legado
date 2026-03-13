@@ -53,7 +53,6 @@ class BookshelfProvider extends ChangeNotifier {
   BookshelfProvider() {
     _init();
     _eventSub = AppEventBus().onName(AppEventBus.upBookshelf).listen((_) => loadBooks());
-    // 監聽外部匯入請求 (如來自 WebService)
     AppEventBus().onName('importLocalBook').listen((event) {
       if (event.data is String) {
         importLocalBookPath(event.data);
@@ -111,14 +110,14 @@ class BookshelfProvider extends ChangeNotifier {
     try {
       List<Book> allBooks = await _bookDao.getAllInBookshelf();
       
-      // 1. 分組過濾 (位運算，比照 Android)
+      // 1. 分組過濾 (修正邏輯：-1 表示全部，>0 表示特定分組)
       if (_currentGroupId > 0) {
         allBooks = allBooks.where((b) => (b.group & _currentGroupId) != 0).toList();
-      } else if (_currentGroupId == -1) { // 未分組
+      } else if (_currentGroupId == 0) { // 僅未分組
         allBooks = allBooks.where((b) => b.group == 0).toList();
       }
       
-      // 2. 排序邏輯 (深度還原 Android 排序)
+      // 2. 排序邏輯
       switch (_sortMode) {
         case 1: // 最後閱讀
           allBooks.sort((a, b) => b.durChapterTime.compareTo(a.durChapterTime));
@@ -147,7 +146,6 @@ class BookshelfProvider extends ChangeNotifier {
     }
   }
 
-  // --- UI 輔助方法 (修復報錯) ---
   void toggleLayout() {
     isGridLayout = !isGridLayout;
     SharedPreferences.getInstance().then((p) => p.setBool('bookshelf_is_grid', isGridLayout));
@@ -204,7 +202,6 @@ class BookshelfProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- 業務方法 (修復報錯) ---
   Future<void> deleteSelected() async {
     for (var url in _selectedBookUrls) {
       await _bookDao.deleteByUrl(url);
@@ -248,14 +245,10 @@ class BookshelfProvider extends ChangeNotifier {
   }
 
   Future<void> reorderGroups(int oldIdx, int newIdx) async {
-    // 深度還原：過濾出可排序的自定義分組
     final customGroups = _groups.where((g) => g.groupId > 0).toList();
     if (oldIdx < newIdx) newIdx -= 1;
-    
     final movedGroup = customGroups.removeAt(oldIdx);
     customGroups.insert(newIdx, movedGroup);
-    
-    // 重新計算並更新所有分組的 Order
     for (int i = 0; i < customGroups.length; i++) {
       customGroups[i].order = i;
       await _groupDao.update(customGroups[i]);
@@ -337,6 +330,7 @@ class BookshelfProvider extends ChangeNotifier {
     if (existingBook != null && existingBook.isInBookshelf) return;
 
     _isLoading = true;
+    _isProcessingBooks = true;
     notifyListeners();
 
     try {
@@ -345,7 +339,7 @@ class BookshelfProvider extends ChangeNotifier {
         final parser = TxtParser(file);
         await parser.load();
         final chaptersData = await parser.splitChapters();
-        book = Book(bookUrl: bookUrl, name: p.basenameWithoutExtension(path), origin: 'local', originName: '本地', isInBookshelf: true, type: 0);
+        book = Book(bookUrl: bookUrl, name: p.basenameWithoutExtension(path), author: '本地', origin: 'local', originName: '本地', isInBookshelf: true, type: 0);
         await _bookDao.insertOrUpdate(book);
         final List<BookChapter> bookChapters = [];
         final List<Map<String, dynamic>> bookContents = [];
@@ -372,6 +366,7 @@ class BookshelfProvider extends ChangeNotifier {
       debugPrint('匯入本地書籍失敗: $e');
     } finally {
       _isLoading = false;
+      _isProcessingBooks = false;
       notifyListeners();
     }
   }
@@ -388,23 +383,16 @@ class BookshelfProvider extends ChangeNotifier {
 
   Future<void> importBookshelfFromUrl(String url) async {
     _isLoading = true;
+    _isProcessingBooks = true;
     notifyListeners();
     try {
       final input = url.trim();
       if (input.startsWith('http') && !input.contains('[')) {
-        // 單個書籍 URL 匯入
         final uri = Uri.parse(input);
         final baseUrl = "${uri.scheme}://${uri.host}";
         final sources = await _sourceDao.getEnabled();
-        
-        // 尋找匹配書源 (比照 Android NetworkUtils.getBaseUrl 邏輯)
-        BookSource? source = sources.cast<BookSource?>().firstWhere(
-          (s) => s?.bookSourceUrl.contains(baseUrl) ?? false, 
-          orElse: () => null
-        );
-
+        BookSource? source = sources.cast<BookSource?>().firstWhere((s) => s?.bookSourceUrl.contains(baseUrl) ?? false, orElse: () => null);
         if (source == null) {
-          // 嘗試使用 bookUrlPattern 匹配
           for (var s in sources) {
             if (s.bookUrlPattern != null && RegExp(s.bookUrlPattern!).hasMatch(input)) {
               source = s;
@@ -412,18 +400,15 @@ class BookshelfProvider extends ChangeNotifier {
             }
           }
         }
-
         if (source != null) {
           var book = Book(bookUrl: input, name: "加載中...", author: "", origin: source.bookSourceUrl, originName: source.bookSourceName, isInBookshelf: true);
           book = await _service.getBookInfo(source, book);
           final chapters = await _service.getChapterList(source, book);
-          
           await _bookDao.insertOrUpdate(book);
           await ChapterDao().insertChapters(chapters);
           await loadBooks();
         }
       } else {
-        // 原有 JSON 陣列匯入
         final response = await Dio().get(input);
         if (response.data != null) {
           final jsonStr = response.data is String ? response.data : jsonEncode(response.data);
@@ -448,6 +433,7 @@ class BookshelfProvider extends ChangeNotifier {
       debugPrint('從 URL 匯入書架失敗: $e'); 
     } finally {
       _isLoading = false;
+      _isProcessingBooks = false;
       notifyListeners();
     }
   }

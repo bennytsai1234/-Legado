@@ -1,21 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'search_provider.dart';
 import '../book_detail/book_detail_page.dart';
 import '../../core/models/book_source.dart';
+import '../../core/widgets/book_cover_widget.dart';
 
-class SearchPage extends StatefulWidget {
+class SearchPage extends StatelessWidget {
   final String? initialQuery;
   final BookSource? initialSource;
 
   const SearchPage({super.key, this.initialQuery, this.initialSource});
 
   @override
-  State<SearchPage> createState() => _SearchPageState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => SearchProvider(),
+      child: _SearchPageContent(initialQuery: initialQuery, initialSource: initialSource),
+    );
+  }
 }
 
-class _SearchPageState extends State<SearchPage> {
+class _SearchPageContent extends StatefulWidget {
+  final String? initialQuery;
+  final BookSource? initialSource;
+
+  const _SearchPageContent({this.initialQuery, this.initialSource});
+
+  @override
+  State<_SearchPageContent> createState() => _SearchPageContentState();
+}
+
+class _SearchPageContentState extends State<_SearchPageContent> {
   final TextEditingController _controller = TextEditingController();
 
   @override
@@ -24,10 +39,11 @@ class _SearchPageState extends State<SearchPage> {
     if (widget.initialQuery != null || widget.initialSource != null) {
       _controller.text = widget.initialQuery ?? "";
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        final provider = context.read<SearchProvider>();
         if (widget.initialSource != null) {
-          context.read<SearchProvider>().searchInSource(widget.initialSource!, _controller.text);
+          provider.searchInSource(widget.initialSource!, _controller.text);
         } else {
-          context.read<SearchProvider>().search(_controller.text);
+          provider.search(_controller.text);
         }
       });
     }
@@ -47,72 +63,85 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => SearchProvider(),
-      child: Scaffold(
-        appBar: AppBar(
-          title: TextField(
-            controller: _controller,
-            decoration: const InputDecoration(
-              hintText: '搜尋書名或作者',
-              border: InputBorder.none,
-              hintStyle: TextStyle(color: Colors.white70),
-            ),
-            style: const TextStyle(color: Colors.white),
-            textInputAction: TextInputAction.search,
-            onSubmitted: _onSearch,
-            onChanged: (v) => setState(() {}),
+    return Scaffold(
+      appBar: AppBar(
+        title: TextField(
+          controller: _controller,
+          decoration: const InputDecoration(
+            hintText: '搜尋書名或作者',
+            border: InputBorder.none,
+            hintStyle: TextStyle(color: Colors.white70),
           ),
-          actions: [
-            Consumer<SearchProvider>(
-              builder: (context, provider, child) {
-                return IconButton(
-                  icon: Icon(provider.isSearching ? Icons.stop_circle_outlined : Icons.search, color: provider.isSearching ? Colors.red : null),
-                  onPressed: () {
-                    if (provider.isSearching) {
-                      provider.stopSearch();
-                    } else {
-                      _onSearch(_controller.text);
-                    }
-                  },
-                );
-              },
-            ),
-            Consumer<SearchProvider>(
-              builder: (context, provider, child) {
-                return PopupMenuButton<String>(
-                  tooltip: '搜尋範圍',
-                  icon: const Icon(Icons.filter_alt),
-                  onSelected: provider.setGroup,
-                  itemBuilder: (context) {
-                    return provider.sourceGroups.map((group) {
-                      return CheckedPopupMenuItem<String>(
-                        value: group,
-                        checked: provider.selectedGroup == group,
-                        child: Text(group),
-                      );
-                    }).toList();
-                  },
-                );
-              },
-            ),
-          ],
+          style: const TextStyle(color: Colors.white),
+          textInputAction: TextInputAction.search,
+          onSubmitted: _onSearch,
         ),
-        body: Consumer<SearchProvider>(
-          builder: (context, provider, child) {
-            return Column(
-              children: [
-                if (provider.isSearching)
-                  LinearProgressIndicator(value: provider.progress),
-                Expanded(
-                  child: provider.results.isEmpty && !provider.isSearching
-                      ? _buildHistory(provider)
-                      : _buildResults(provider),
+        actions: [
+          Consumer<SearchProvider>(
+            builder: (context, provider, child) {
+              return IconButton(
+                icon: Icon(provider.isSearching ? Icons.stop_circle_outlined : Icons.search, color: provider.isSearching ? Colors.red : null),
+                onPressed: () {
+                  if (provider.isSearching) {
+                    provider.stopSearch();
+                  } else {
+                    _onSearch(_controller.text);
+                  }
+                },
+              );
+            },
+          ),
+          Consumer<SearchProvider>(
+            builder: (context, provider, child) {
+              return PopupMenuButton<String>(
+                tooltip: '搜尋分組',
+                icon: const Icon(Icons.filter_alt),
+                onSelected: provider.setGroup,
+                itemBuilder: (context) {
+                  return provider.sourceGroups.map((group) {
+                    return CheckedPopupMenuItem<String>(
+                      value: group,
+                      checked: provider.selectedGroup == group,
+                      child: Text(group),
+                    );
+                  }).toList();
+                },
+              );
+            },
+          ),
+        ],
+      ),
+      body: Consumer<SearchProvider>(
+        builder: (context, provider, child) {
+          return Column(
+            children: [
+              if (provider.isSearching)
+                LinearProgressIndicator(value: provider.progress),
+              if (provider.selectedGroup != '全部')
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  color: Colors.blue.withValues(alpha: 0.1),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.filter_list, size: 14, color: Colors.blue),
+                      const SizedBox(width: 8),
+                      Text('正在過濾分組: ${provider.selectedGroup}', style: const TextStyle(fontSize: 12, color: Colors.blue)),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () => provider.setGroup('全部'),
+                        child: const Text('重設', style: TextStyle(fontSize: 12, color: Colors.blue, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            );
-          },
-        ),
+              Expanded(
+                child: provider.results.isEmpty && !provider.isSearching
+                    ? _buildHistory(provider)
+                    : _buildResults(provider),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -179,20 +208,13 @@ class _SearchPageState extends State<SearchPage> {
         final result = provider.results[index];
         final book = result.book;
         return ListTile(
-          leading: ClipRRect(
+          leading: BookCoverWidget(
+            coverUrl: book.coverUrl,
+            bookName: book.name,
+            author: book.author,
+            width: 45,
+            height: 60,
             borderRadius: BorderRadius.circular(4),
-            child: book.coverUrl != null && book.coverUrl!.isNotEmpty
-                ? CachedNetworkImage(
-                    imageUrl: book.coverUrl!,
-                    width: 45,
-                    height: 60,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => const Center(
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                    errorWidget: (context, url, error) => const Icon(Icons.book),
-                  )
-                : const Icon(Icons.book, size: 45),
           ),
           title: Text(book.name),
           subtitle: Column(

@@ -1,46 +1,27 @@
-# 🔍 審計報告：legado/app/src/main/java/io/legado/app/model (業務邏輯對位)
+# 🔍 審計報告：legado/app/src/main/java/io/legado/app/ui (UI 功能對位)
 
-本報告針對 Android 端業務邏輯核心 (Model) 及其子目錄進行深度對比。
+本報告針對 Android 端 Activity/Fragment 體系與 iOS 端 Page/Widget 體系進行深度邏輯比對。
 
-### 📄 檔案對比清單
-| Android 檔案 | 狀態 | 診斷詳情 |
-|:---|:---|:---|
-| `AudioPlay.kt` | ✅ Matched | `audio_play_service.dart` 已實作，包含定時睡眠與播放模式切換。 |
-| `CacheBook.kt` | ✅ Matched | `download_service.dart` 實作了多執行緒書籍快取與持久化。 |
-| `CheckSource.kt` | ✅ Matched | `check_source_service.dart` 完整對位。 |
-| `Download.kt` | ✅ Matched | `download_service.dart` 完整對位。 |
-| `ReadAloud.kt` | ✅ Matched | `tts_service.dart` 已支援語音朗讀。 |
-| `ReadBook.kt` | ✅ Matched | 閱讀器核心狀態管理已整合至 `reader_provider.dart`，功能完整。 |
-| `SharedJsScope.kt` | ✅ Matched | `shared_js_scope.dart` 提供 JS 引擎共用變數支援。 |
-| `BookCover.kt` | ⚠️ Partial | **診斷**：Flutter 的 `image_loader.dart` 缺乏 Android 端對預設純文字封面的生成邏輯 (Canvas 繪製文字圖片)。 |
-| `Debug.kt` | ⚠️ Partial | **診斷**：缺乏完整的書源解析日誌收集與 WebSocket 輸出邏輯。 |
-| `ReadManga.kt` | ⚠️ Partial | **診斷**：漫畫閱讀器 `manga_reader_page.dart` 尚未實作 Android 端完整的頁面預載入與手勢縮放機制。 |
-
-### 📂 子資料夾審計：analyzeRule (解析引擎)
-| Android 檔案 | 狀態 | 診斷詳情 |
-|:---|:---|:---|
-| `AnalyzeRule.kt` 等 | ✅ Matched | 支援 JSONPath, CSS, XPath, Regex 解析，且 `RuleAnalyzer` 已高度還原，功能完善。 |
-
-### 📂 子資料夾審計：localBook (本地書籍)
-| Android 檔案 | 狀態 | 診斷詳情 |
-|:---|:---|:---|
-| `EpubFile.kt` | ✅ Matched | 使用 `epubx` 套件支援。 |
-| `TextFile.kt` | ✅ Matched | 支援 TXT 檔案分章。 |
-| `UmdFile.kt` | ✅ Matched | 支援 UMD 格式解析。 |
-| `MobiFile.kt` | ❌ Missing | **移植規格**：尚未找到合適的 Dart Mobi 解析庫，建議標記為未來特性或利用 C/Rust 庫透過 FFI 解析。 |
-| `PdfFile.kt` | ❌ Missing | **移植規格**：缺乏本地 PDF 解析與提取文字的實作。 |
-
-### 📂 子資料夾審計：rss & webBook (網路解析)
-| Android 檔案 | 狀態 | 診斷詳情 |
-|:---|:---|:---|
-| `rss/*` | ✅ Matched | RSS 訂閱解析 `rss_parser.dart` 實作完整。 |
-| `webBook/*` | ✅ Matched | `book_source_engine.dart` 與相關模型已完成網路書源的目錄/詳情解析。 |
+### 📄 功能模組對比清單
+| Android 模組 | 職責描述 | iOS/Flutter 對位 | 狀態 |
+|:---|:---|:---|:---|
+| `ui/main` | 主導航、書架、發現、我的 | `lib/features/bookshelf` 等 | ✅ Matched |
+| `ui/book/read` | 閱讀器核心 (分頁、手勢、菜單) | `lib/features/reader` | ✅ Matched |
+| `ui/book/info` | 書籍詳情、換源、緩存管理 | `lib/features/book_detail` | ✅ Matched |
+| `ui/book/source` | 書源列表、編輯、匯入 | `lib/features/source_manager` | ✅ Matched |
+| `ui/config` | 全域配置中心 | `lib/features/settings` | ✅ Matched |
+| `ui/replace` | 替換規則管理 | `lib/features/replace_rule` | ✅ Matched |
+| `ui/rss` | RSS 列表與文章閱讀 | `lib/features/rss` | ✅ Matched |
+| `ui/about` | 關於、日誌、更新檢查 | `lib/features/about` | ✅ Matched |
+| `ui/dict` | 閱讀查詞、字典規則管理 | - | ❌ Missing |
+| `ui/font` | 字體管理、下載、預覽 | - | ⚠️ Partial |
+| `ui/browser` | 內置瀏覽器與 Web 規則調試 | - | ❌ Missing |
 
 ### 🛠️ 待辦缺口 (Todo Gaps)
-- [x] GAP-MOD-01: 補齊 `BookCover.kt` 的預設文字封面生成邏輯 (BookCoverWidget)。 ✅ Done in 2026-03-13
-- [x] GAP-MOD-02: 完善 `Debug.kt` 邏輯，已透過 `DebugPage` 與事件總線整合完成。 ✅ Done in 2026-03-13
-- [x] GAP-MOD-03: `ReadManga.kt` 漫畫閱讀模式優化 (手勢雙擊縮放與水平方向反轉)。 ✅ Done in 2026-03-13
-- [x] GAP-MOD-04: 針對 `Mobi` 與 `Pdf` 支援進行可行性評估，建立解析器佔位符。 ✅ Done in 2026-03-13
+- [x] GAP-UI-01: 補齊 `search_page.dart` 的書源分組篩選功能。 ✅ Done in 2026-03-13
+- [ ] GAP-UI-02: 實作閱讀器文字長按彈窗中的「查字典」功能 (對標 ui/dict)。
+- [ ] GAP-UI-03: 完善 `settings_page.dart` 中的字體預覽與管理。
+- [x] GAP-UI-04: 加入「匯入書源」介面的二維碼掃描與檔案匯入整合。 ✅ Done in 2026-03-13
 
 ---
 
@@ -51,5 +32,6 @@
 - [x] `help`
 - [x] `data/entities`
 - [x] `model`
+- [x] `ui`
 
-✅ **業務邏輯對位審計完成**
+✅ **UI 層級對位審計完成**

@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
 import 'source_manager_provider.dart';
 import 'source_editor_page.dart';
 import 'source_login_page.dart';
@@ -60,6 +62,8 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
                       onSelected: (value) {
                         if (value == 'url') {
                           _showImportDialog(context, isUrl: true);
+                        } else if (value == 'file') {
+                          _importFromFile(context);
                         } else if (value == 'clipboard') {
                           _importFromClipboard(context);
                         } else if (value == 'qr') {
@@ -82,6 +86,7 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
                       },
                       itemBuilder: (context) => [
                         const PopupMenuItem(value: 'url', child: Text('網路匯入')),
+                        const PopupMenuItem(value: 'file', child: Text('本地匯入')),
                         const PopupMenuItem(
                             value: 'clipboard', child: Text('剪貼簿匯入')),
                         const PopupMenuItem(value: 'qr', child: Text('掃碼匯入')),
@@ -408,6 +413,35 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
         SnackBar(
             content: Text(count > 0 ? '成功匯入 $count 個書源' : '未找到有效書源')),
       );
+    }
+  }
+
+  Future<void> _importFromFile(BuildContext context) async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json', 'txt'],
+      );
+
+      if (result != null && result.files.single.path != null && context.mounted) {
+        final file = File(result.files.single.path!);
+        final content = await file.readAsString();
+        if (!context.mounted) return;
+        final provider = context.read<SourceManagerProvider>();
+        final count = await provider.importFromText(content);
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(count > 0 ? '從檔案匯入 $count 個書源' : '檔案無有效書源')),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('選取檔案出錯: $e')),
+        );
+      }
     }
   }
 
