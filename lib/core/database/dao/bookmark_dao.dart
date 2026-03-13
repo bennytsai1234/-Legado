@@ -11,7 +11,7 @@ class BookmarkDao {
   /// 建立表格 (由 [AppDatabase] 調用)
   static String createTableQuery() {
     return '''
-      CREATE TABLE $tableName (
+      CREATE TABLE IF NOT EXISTS $tableName (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         bookName TEXT NOT NULL,
         bookAuthor TEXT NOT NULL,
