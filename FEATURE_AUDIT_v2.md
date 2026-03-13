@@ -18,8 +18,8 @@
 | `Theme.kt` | ❌ Missing | **移植規格**：iOS 端 `themeMode` 目前使用 String，應統一為 `enum Theme { dark, light, auto }`。 |
 
 ### 🛠️ 待辦缺口 (Todo Gaps)
-- [ ] GAP-CONST-01: 建立 `app_const.dart` 並移植關鍵常數（尤其是 `charsets` 支援清單）。
-- [ ] GAP-CONST-02: 修正 `book_type.dart` 中的數值，使其與 Android 端原始二進位定義一致（避免舊資料解析錯誤）。
-- [ ] GAP-CONST-03: 在 `book_type.dart` 補齊 `webDavTag` 為 `"webDav::"` (目前 iOS 為 `"webdav"`)，確保書源 URL 兼容性。
-- [ ] GAP-CONST-04: 補齊 `prefer_key.dart` 中遺漏的鍵值（如朗讀與 UI 定製項）。
-- [ ] GAP-CONST-05: 建立 `page_anim.dart` 支援多樣化翻頁效果定義。
+- [x] GAP-CONST-01: 建立 `app_const.dart` 並移植關鍵常數（尤其是 `charsets` 支援清單）。 ✅ Done in 2026-03-13
+- [x] GAP-CONST-02: 修正 `book_type.dart` 中的數值，使其與 Android 端原始二進位定義一致（避免舊資料解析錯誤）。 ✅ Done in 2026-03-13
+- [x] GAP-CONST-03: 在 `book_type.dart` 補齊 `webDavTag` 為 `"webDav::"` (目前 iOS 為 `"webdav"`)，確保書源 URL 兼容性。 ✅ Done in 2026-03-13
+- [x] GAP-CONST-04: 補齊 `prefer_key.dart` 中遺漏的鍵值（如朗讀與 UI 定製項）。 ✅ Done in 2026-03-13
+- [x] GAP-CONST-05: 建立 `page_anim.dart` 支援多樣化翻頁效果定義。 ✅ Done in 2026-03-13

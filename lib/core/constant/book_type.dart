@@ -1,16 +1,19 @@
 /// BookType - 書籍類型遮罩 (對標 Android constant/BookType.kt)
 /// 採用位元運算以支援多重類型
 class BookType {
-  static const int text = 1; // 文本
-  static const int audio = 2; // 音訊
-  static const int image = 4; // 圖片
-  static const int file = 8; // 文件
-  static const int local = 16; // 本地
-  static const int updateError = 32; // 更新錯誤
-  static const int notShelf = 64; // 不在書架 (例如搜尋結果)
+  // AI_PORT: GAP-CONST-02 derived from [BookType.kt]
+  static const int text = 0x08; // 8: 文本
+  static const int updateError = 0x10; // 16: 更新失敗
+  static const int audio = 0x20; // 32: 音訊
+  static const int image = 0x40; // 64: 圖片
+  static const int webFile = 0x80; // 128: 只提供下載服務的網站
+  static const int local = 0x100; // 256: 本地
+  static const int archive = 0x200; // 512: 壓縮包
+  static const int notShelf = 0x400; // 1024: 未加入書架
   
-  static const String localTag = "local";
-  static const String webDavTag = "webdav";
+  // AI_PORT: GAP-CONST-03 derived from [BookType.kt]
+  static const String localTag = "loc_book";
+  static const String webDavTag = "webDav::";
 }
 
 /// BookSourceType - 書源類型 (對標 Android constant/BookSourceType.kt)

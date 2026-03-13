@@ -29,9 +29,11 @@ class PreferKey {
   static const String ttsEngine = "appTtsEngine";
   static const String ttsFollowSys = "ttsFollowSys";
   static const String ttsSpeechRate = "ttsSpeechRate";
+  static const String ttsTimer = "ttsTimer";
   
   static const String prevKeys = "prevKeyCodes";
   static const String nextKeys = "nextKeyCodes";
+  static const String volumeKeyPage = "volumeKeyPage";
   
   static const String showDiscovery = "showDiscovery";
   static const String enableReview = "enableReview";
@@ -39,6 +41,22 @@ class PreferKey {
   
   static const String bookshelfLayout = "bookshelfLayout";
   static const String bookshelfSort = "bookshelfSort";
+
+  // AI_PORT: GAP-CONST-04 derived from [PreferKey.kt]
+  static const String bookExportFileName = "bookExportFileName";
+  static const String bookImportFileName = "bookImportFileName";
+  static const String autoReadSpeed = "autoReadSpeed";
+  static const String useZhLayout = "useZhLayout";
+  static const String screenOrientation = "screenOrientation";
+  static const String keepLight = "keep_light";
+  
+  static const String syncBookProgressPlus = "syncBookProgressPlus";
+  static const String onlyLatestBackup = "onlyLatestBackup";
+  static const String autoCheckNewBackup = "autoCheckNewBackup";
+  
+  static const String mangaPreDownloadNum = "mangaPreDownloadNum";
+  static const String mangaAutoPageSpeed = "mangaAutoPageSpeed";
+  static const String enableMangaHorizontalScroll = "enableMangaHorizontalScroll";
   
   static const String webPort = "webPort";
   static const String webService = "webService";
@@ -47,12 +65,13 @@ class PreferKey {
   static const String webDavAccount = "web_dav_account";
   static const String webDavPassword = "web_dav_password";
   static const String webDavDir = "webDavDir";
+  static const String webDavDeviceName = "webDavDeviceName";
   
   static const String chineseConverterType = "chineseConverterType";
   static const String launcherIcon = "launcherIcon";
   static const String textSelectAble = "selectText";
   
-  static const String autoReadSpeed = "autoReadSpeed";
+  static const String autoReadSpeedLegacy = "autoReadSpeed"; // duplicate but kept for safety
   static const String brightness = "brightness";
   static const String nightBrightness = "nightBrightness";
   
@@ -60,7 +79,7 @@ class PreferKey {
   static const String localPassword = "local_password";
   static const String appCrash = "app_crash";
   static const String lastVersionCode = "last_version_code";
-  static const String threadCount = "thread_count";
+  static const String threadCount = "threadCount"; // Consistent with Android
 
   // 歡迎界面
   static const String welcomeImage = "welcomeImage";
@@ -77,5 +96,7 @@ class PreferKey {
   static const String cNPrimary = "colorPrimaryNight";
   static const String cNAccent = "colorAccentNight";
   static const String cNBackground = "colorBackgroundNight";
+  static const String cNBBackground = "colorBottomBackgroundNight";
   static const String bgImageN = "backgroundImageNight";
+  static const String bgImageNBlurring = "backgroundImageNightBlurring";
 }
