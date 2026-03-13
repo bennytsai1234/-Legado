@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../core/database/dao/read_record_dao.dart';
 import '../../core/database/dao/book_dao.dart';
 import '../../core/models/search_book.dart';
+import '../../core/services/crash_handler.dart';
 import '../search/search_page.dart';
 import '../book_detail/book_detail_page.dart';
 import '../settings/settings_provider.dart';
@@ -69,7 +70,7 @@ class AboutPage extends StatelessWidget {
             context,
             icon: Icons.bug_report_outlined,
             title: '應用程式日誌',
-            subtitle: '查看 Debug 日誌',
+            subtitle: '查看運行 Debug 日誌',
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const AppLogPage()),
@@ -79,7 +80,7 @@ class AboutPage extends StatelessWidget {
             context,
             icon: Icons.report_problem_outlined,
             title: '崩潰日誌',
-            subtitle: '查看錯誤記錄',
+            subtitle: '查看硬碟錯誤記錄 (持久化)',
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const CrashLogPage()),
@@ -395,36 +396,19 @@ class _ReadRecordPageState extends State<ReadRecordPage> {
       ),
       body: Column(
         children: [
-          // 總閱讀時間標題欄
           Container(
             width: double.infinity,
             color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
-                Icon(
-                  Icons.timer_outlined,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 20,
-                ),
+                Icon(Icons.timer_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
                 const SizedBox(width: 10),
-                Text(
-                  '累計閱讀時長：',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
-                ),
-                Text(
-                  _formatDuration(_allTime),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
+                Text('累計閱讀時長：', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7))),
+                Text(_formatDuration(_allTime), style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
               ],
             ),
           ),
-          // 搜尋欄
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
             child: TextField(
@@ -432,129 +416,37 @@ class _ReadRecordPageState extends State<ReadRecordPage> {
               decoration: InputDecoration(
                 hintText: '搜尋書名...',
                 prefixIcon: const Icon(Icons.search, size: 20),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, size: 18),
-                        onPressed: () {
-                          _searchController.clear();
-                          _loadData();
-                        },
-                      )
-                    : null,
+                suffixIcon: _searchController.text.isNotEmpty ? IconButton(icon: const Icon(Icons.clear, size: 18), onPressed: () { _searchController.clear(); _loadData(); }) : null,
                 contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide.none,
-                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                 filled: true,
               ),
               onChanged: (val) => _loadData(val),
             ),
           ),
-          // 列表
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _records.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.history_toggle_off,
-                                size: 72,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withValues(alpha: 0.2)),
-                            const SizedBox(height: 16),
-                            Text(
-                              '暫無閱讀記錄',
-                              style: TextStyle(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withValues(alpha: 0.4),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
+                    ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.history_toggle_off, size: 72, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2)), const SizedBox(height: 16), Text('暫無閱讀記錄', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4)))]))
                     : ListView.separated(
                         padding: const EdgeInsets.only(top: 4, bottom: 24),
                         itemCount: _records.length,
-                        separatorBuilder: (_, __) =>
-                            const Divider(height: 1, indent: 16, endIndent: 16),
+                        separatorBuilder: (_, __) => const Divider(height: 1, indent: 16, endIndent: 16),
                         itemBuilder: (context, index) {
                           final record = _records[index];
-                          return Dismissible(
-                            key: Key(record.bookName),
-                            direction: DismissDirection.endToStart,
-                            background: Container(
-                              alignment: Alignment.centerRight,
-                              padding: const EdgeInsets.only(right: 20),
-                              color: Colors.red.shade400,
-                              child: const Icon(Icons.delete_outline,
-                                  color: Colors.white),
-                            ),
-                            confirmDismiss: (_) async {
-                              await _deleteRecord(record);
-                              return false; // 手動在 _deleteRecord 裡重載，不讓 Dismissible 自動移除
+                          return ListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                            leading: CircleAvatar(backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12), child: Text(record.bookName.isNotEmpty ? record.bookName[0] : '？', style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold))),
+                            title: Text(record.bookName, maxLines: 1, overflow: TextOverflow.ellipsis),
+                            subtitle: Row(children: [const Icon(Icons.timer_outlined, size: 13, color: Colors.grey), const SizedBox(width: 4), Text(_formatDuration(record.readTime), style: const TextStyle(fontSize: 12))]),
+                            trailing: record.lastRead > 0 ? Text(_formatDate(record.lastRead), style: const TextStyle(fontSize: 12, color: Colors.grey)) : null,
+                            onTap: () async {
+                              final bookList = await _bookDao.findByName(record.bookName);
+                              if (!context.mounted) return;
+                              if (bookList.isEmpty) { Navigator.push(context, MaterialPageRoute(builder: (_) => SearchPage(initialQuery: record.bookName))); }
+                              else { Navigator.push(context, MaterialPageRoute(builder: (_) => BookDetailPage(searchBook: AggregatedSearchBook(book: SearchBook(bookUrl: bookList.first.bookUrl, name: bookList.first.name, author: bookList.first.author, origin: bookList.first.origin, originName: bookList.first.originName), sources: [bookList.first.originName])))); }
                             },
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 6),
-                              leading: CircleAvatar(
-                                backgroundColor: Theme.of(context)
-                                    .colorScheme
-                                    .primary
-                                    .withValues(alpha: 0.12),
-                                child: Text(
-                                  record.bookName.isNotEmpty
-                                      ? record.bookName[0]
-                                      : '？',
-                                  style: TextStyle(
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              title: Text(
-                                record.bookName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              subtitle: Row(
-                                children: [
-                                  const Icon(Icons.timer_outlined,
-                                      size: 13,
-                                      color: Colors.grey),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    _formatDuration(record.readTime),
-                                    style: const TextStyle(fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                              trailing: record.lastRead > 0
-                                  ? Text(
-                                      _formatDate(record.lastRead),
-                                      style: const TextStyle(
-                                          fontSize: 12, color: Colors.grey),
-                                    )
-                                  : null,
-                              onTap: () async {
-                                // 深度補齊：連動搜尋邏輯 (對應 Android findByName)
-                                final bookList = await _bookDao.findByName(record.bookName);
-                                if (!context.mounted) return;
-                                if (bookList.isEmpty) {
-                                  Navigator.push(context, MaterialPageRoute(builder: (_) => SearchPage(initialQuery: record.bookName)));
-                                } else {
-                                  Navigator.push(context, MaterialPageRoute(builder: (_) => BookDetailPage(searchBook: AggregatedSearchBook(book: SearchBook(bookUrl: bookList.first.bookUrl, name: bookList.first.name, author: bookList.first.author, origin: bookList.first.origin, originName: bookList.first.originName), sources: [bookList.first.originName]))));
-                                }
-                              },
-                              onLongPress: () => _deleteRecord(record),
-                            ),
                           );
                         },
                       ),
@@ -567,7 +459,6 @@ class _ReadRecordPageState extends State<ReadRecordPage> {
 
 // ----------------------------------------------------------------
 // AppLog - 全域記憶體日誌管理
-// 對應 Android: constant/AppLog.kt
 // ----------------------------------------------------------------
 
 class AppLog {
@@ -575,35 +466,29 @@ class AppLog {
   static List<AppLogEntry> get logs => List.unmodifiable(_logs);
 
   static void put(String message, [Object? error]) {
-    _logs.add(AppLogEntry(
-      time: DateTime.now(),
-      message: message,
-      error: error,
-    ));
-    // 最多保留 500 條
+    _logs.add(AppLogEntry(time: DateTime.now(), message: message, error: error));
     if (_logs.length > 500) _logs.removeAt(0);
     debugPrint('[AppLog] $message');
   }
 
   static void clear() => _logs.clear();
 
-  /// 導出日誌 (深度還原 Android 導出 logs.zip)
   static Future<void> exportLogs() async {
     try {
       final buffer = StringBuffer();
+      buffer.writeln('=== RUNTIME LOGS ===');
       for (var log in _logs) {
         buffer.writeln('[${log.time}] ${log.message}');
         if (log.error != null) buffer.writeln('Error: ${log.error}');
       }
+      buffer.writeln('\n=== PERSISTENT CRASH LOGS ===\n');
+      buffer.writeln(await CrashHandler.readLogs());
       
       final tempDir = await getTemporaryDirectory();
       final file = File('${tempDir.path}/logs.txt');
       await file.writeAsString(buffer.toString());
-      
       await Share.shareXFiles([XFile(file.path)], subject: 'Reader Logs');
-    } catch (e) {
-      debugPrint('導出日誌失敗: $e');
-    }
+    } catch (e) { debugPrint('導出日誌失敗: $e'); }
   }
 }
 
@@ -611,65 +496,35 @@ class AppLogEntry {
   final DateTime time;
   final String message;
   final Object? error;
-
   AppLogEntry({required this.time, required this.message, this.error});
 }
 
-// ----------------------------------------------------------------
-// AppLogPage - 應用程式日誌頁
-// 對應 Android: ui/about/AppLogDialog.kt
-// ----------------------------------------------------------------
-
 class AppLogPage extends StatefulWidget {
   const AppLogPage({super.key});
-
   @override
   State<AppLogPage> createState() => _AppLogPageState();
 }
 
 class _AppLogPageState extends State<AppLogPage> {
   final TextEditingController _searchController = TextEditingController();
-  List<AppLogEntry> _logs = [];
   List<AppLogEntry> _filteredLogs = [];
 
   @override
   void initState() {
     super.initState();
-    _logs = AppLog.logs.toList().reversed.toList();
-    _filteredLogs = _logs;
+    _filteredLogs = AppLog.logs.toList().reversed.toList();
   }
 
   @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
+  void dispose() { _searchController.dispose(); super.dispose(); }
 
   void _filterLogs(String query) {
     setState(() {
-      if (query.isEmpty) {
-        _filteredLogs = _logs;
-      } else {
-        _filteredLogs = _logs.where((log) => 
-          log.message.toLowerCase().contains(query.toLowerCase()) ||
-          (log.error?.toString().toLowerCase().contains(query.toLowerCase()) ?? false)
-        ).toList();
+      if (query.isEmpty) { _filteredLogs = AppLog.logs.toList().reversed.toList(); }
+      else {
+        _filteredLogs = AppLog.logs.where((log) => log.message.toLowerCase().contains(query.toLowerCase()) || (log.error?.toString().toLowerCase().contains(query.toLowerCase()) ?? false)).toList().reversed.toList();
       }
     });
-  }
-
-  void _clearLogs() {
-    AppLog.clear();
-    setState(() {
-      _logs = [];
-      _filteredLogs = [];
-    });
-  }
-
-  String _formatTime(DateTime dt) {
-    return '${dt.hour.toString().padLeft(2, '0')}:'
-        '${dt.minute.toString().padLeft(2, '0')}:'
-        '${dt.second.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -678,26 +533,8 @@ class _AppLogPageState extends State<AppLogPage> {
       appBar: AppBar(
         title: const Text('應用程式日誌'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.download_rounded),
-            tooltip: '導出日誌檔案',
-            onPressed: () => AppLog.exportLogs(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: '重新整理',
-            onPressed: () {
-              setState(() {
-                _logs = AppLog.logs.toList().reversed.toList();
-                _filterLogs(_searchController.text);
-              });
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_sweep_outlined),
-            tooltip: '清除日誌',
-            onPressed: _clearLogs,
-          ),
+          IconButton(icon: const Icon(Icons.download_rounded), onPressed: () => AppLog.exportLogs()),
+          IconButton(icon: const Icon(Icons.delete_sweep_outlined), onPressed: () { AppLog.clear(); setState(() => _filteredLogs = []); }),
         ],
       ),
       body: Column(
@@ -706,96 +543,22 @@ class _AppLogPageState extends State<AppLogPage> {
             padding: const EdgeInsets.all(12.0),
             child: TextField(
               controller: _searchController,
-              decoration: InputDecoration(
-                hintText: '搜尋日誌內容...',
-                prefixIcon: const Icon(Icons.search, size: 20),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, size: 18),
-                        onPressed: () {
-                          _searchController.clear();
-                          _filterLogs('');
-                        },
-                      )
-                    : null,
-                contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-              ),
+              decoration: InputDecoration(hintText: '搜尋日誌內容...', prefixIcon: const Icon(Icons.search, size: 20), border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none), filled: true),
               onChanged: _filterLogs,
             ),
           ),
           Expanded(
             child: _filteredLogs.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.check_circle_outline,
-                            size: 64,
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2)),
-                        const SizedBox(height: 16),
-                        Text(
-                          _logs.isEmpty ? '目前沒有日誌記錄' : '找不到匹配的日誌',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
+                ? const Center(child: Text('目前沒有日誌記錄'))
                 : ListView.separated(
-                    padding: const EdgeInsets.only(bottom: 24),
                     itemCount: _filteredLogs.length,
                     separatorBuilder: (_, __) => const Divider(height: 1, indent: 16, endIndent: 16),
                     itemBuilder: (context, index) {
                       final log = _filteredLogs[index];
-                      final hasError = log.error != null;
                       return ListTile(
                         dense: true,
-                        leading: Icon(
-                          hasError ? Icons.error_outline : Icons.info_outline,
-                          color: hasError ? Colors.red : Colors.grey,
-                          size: 20,
-                        ),
-                        title: Text(
-                          log.message,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: hasError ? Colors.red : null,
-                          ),
-                        ),
-                        subtitle: Text(
-                          _formatTime(log.time),
-                          style: const TextStyle(fontSize: 11, color: Colors.grey),
-                        ),
-                        onTap: hasError
-                            ? () {
-                                showDialog(
-                                  context: context,
-                                  builder: (ctx) => AlertDialog(
-                                    title: const Text('錯誤詳情'),
-                                    content: SingleChildScrollView(
-                                      child: SelectableText(
-                                        '${log.message}\n\n${log.error}',
-                                        style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-                                      ),
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(ctx),
-                                        child: const Text('關閉'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }
-                            : null,
+                        title: Text(log.message, style: TextStyle(fontSize: 13, color: log.error != null ? Colors.red : null)),
+                        subtitle: Text(log.time.toString(), style: const TextStyle(fontSize: 11, color: Colors.grey)),
                       );
                     },
                   ),
@@ -806,69 +569,37 @@ class _AppLogPageState extends State<AppLogPage> {
   }
 }
 
-// ----------------------------------------------------------------
-// CrashLogPage - 崩潰日誌頁
-// 對應 Android: ui/about/CrashLogsDialog.kt
-// ----------------------------------------------------------------
-
 class CrashLogPage extends StatefulWidget {
   const CrashLogPage({super.key});
-
   @override
   State<CrashLogPage> createState() => _CrashLogPageState();
 }
 
 class _CrashLogPageState extends State<CrashLogPage> {
-  List<AppLogEntry> _errors = [];
+  String _logs = "載入中...";
 
   @override
-  void initState() {
-    super.initState();
-    _errors = AppLog.logs.where((e) => e.error != null).toList().reversed.toList();
-  }
+  void initState() { super.initState(); _load(); }
 
-  void _shareLogs() {
-    if (_errors.isEmpty) return;
-    final text = _errors.map((e) => '[${e.time}] ${e.message}\nError: ${e.error}').join('\n\n---\n\n');
-    Share.share(text, subject: 'Legado Reader iOS Crash Logs');
+  Future<void> _load() async {
+    final l = await CrashHandler.readLogs();
+    if (mounted) setState(() => _logs = l);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('崩潰日誌'),
+        title: const Text('崩潰日誌 (持久化)'),
         actions: [
-          if (_errors.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.share),
-              onPressed: _shareLogs,
-            ),
+          IconButton(icon: const Icon(Icons.share), onPressed: () => Share.share(_logs)),
+          IconButton(icon: const Icon(Icons.delete_forever), onPressed: () async { await CrashHandler.clearLogs(); _load(); }),
         ],
       ),
-      body: _errors.isEmpty
-          ? const Center(child: Text('目前沒有錯誤記錄', style: TextStyle(color: Colors.grey)))
-          : ListView.separated(
-              itemCount: _errors.length,
-              separatorBuilder: (_, __) => const Divider(),
-              itemBuilder: (ctx, idx) {
-                final err = _errors[idx];
-                return ListTile(
-                  title: Text(err.message, style: const TextStyle(color: Colors.red, fontSize: 13)),
-                  subtitle: Text(err.time.toString(), style: const TextStyle(fontSize: 11)),
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (c) => AlertDialog(
-                        title: const Text('錯誤詳情'),
-                        content: SingleChildScrollView(child: SelectableText(err.error.toString())),
-                        actions: [TextButton(onPressed: () => Navigator.pop(c), child: const Text('關閉'))],
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: SelectableText(_logs, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+      ),
     );
   }
 }

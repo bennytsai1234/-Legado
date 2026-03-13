@@ -83,10 +83,14 @@ class BookshelfProvider extends ChangeNotifier {
   }
 
   Future<void> loadGroups() async {
-    _groups = await _groupDao.getAll();
-    if (_groups.isEmpty) {
-      await _groupDao.initDefaultGroups();
+    try {
       _groups = await _groupDao.getAll();
+      if (_groups.isEmpty) {
+        await _groupDao.initDefaultGroups();
+        _groups = await _groupDao.getAll();
+      }
+    } catch (e) {
+      debugPrint('加載書架分組失敗: $e');
     }
     notifyListeners();
   }
@@ -96,41 +100,51 @@ class BookshelfProvider extends ChangeNotifier {
     await loadBooks();
   }
 
+  bool _isProcessingBooks = false;
   Future<void> loadBooks() async {
+    if (_isProcessingBooks) return;
+    _isProcessingBooks = true;
+    
     _isLoading = true;
     notifyListeners();
     
-    List<Book> allBooks = await _bookDao.getAllInBookshelf();
-    
-    // 1. 分組過濾 (位運算，比照 Android)
-    if (_currentGroupId > 0) {
-      allBooks = allBooks.where((b) => (b.group & _currentGroupId) != 0).toList();
-    } else if (_currentGroupId == -1) { // 未分組
-      allBooks = allBooks.where((b) => b.group == 0).toList();
-    }
-    
-    // 2. 排序邏輯 (深度還原 Android 排序)
-    switch (_sortMode) {
-      case 1: // 最後閱讀
-        allBooks.sort((a, b) => b.durChapterTime.compareTo(a.durChapterTime));
-        break;
-      case 2: // 最晚更新
-        allBooks.sort((a, b) => b.latestChapterTime.compareTo(a.latestChapterTime));
-        break;
-      case 3: // 書名
-        allBooks.sort((a, b) => a.name.compareTo(b.name));
-        break;
-      case 4: // 作者
-        allBooks.sort((a, b) => a.author.compareTo(b.author));
-        break;
-      default: // 手動
-        allBooks.sort((a, b) => a.order.compareTo(b.order));
-        break;
-    }
+    try {
+      List<Book> allBooks = await _bookDao.getAllInBookshelf();
+      
+      // 1. 分組過濾 (位運算，比照 Android)
+      if (_currentGroupId > 0) {
+        allBooks = allBooks.where((b) => (b.group & _currentGroupId) != 0).toList();
+      } else if (_currentGroupId == -1) { // 未分組
+        allBooks = allBooks.where((b) => b.group == 0).toList();
+      }
+      
+      // 2. 排序邏輯 (深度還原 Android 排序)
+      switch (_sortMode) {
+        case 1: // 最後閱讀
+          allBooks.sort((a, b) => b.durChapterTime.compareTo(a.durChapterTime));
+          break;
+        case 2: // 最晚更新
+          allBooks.sort((a, b) => b.latestChapterTime.compareTo(a.latestChapterTime));
+          break;
+        case 3: // 書名
+          allBooks.sort((a, b) => a.name.compareTo(b.name));
+          break;
+        case 4: // 作者
+          allBooks.sort((a, b) => a.author.compareTo(b.author));
+          break;
+        default: // 手動
+          allBooks.sort((a, b) => a.order.compareTo(b.order));
+          break;
+      }
 
-    _books = allBooks;
-    _isLoading = false;
-    notifyListeners();
+      _books = allBooks;
+    } catch (e) {
+      debugPrint('加載書籍失敗: $e');
+    } finally {
+      _isLoading = false;
+      _isProcessingBooks = false;
+      notifyListeners();
+    }
   }
 
   // --- UI 輔助方法 (修復報錯) ---

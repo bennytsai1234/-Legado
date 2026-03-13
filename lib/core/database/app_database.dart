@@ -5,6 +5,7 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:synchronized/synchronized.dart';
 
 import 'dao/bookmark_dao.dart';
 import 'dao/cache_dao.dart';
@@ -25,11 +26,15 @@ class AppDatabase {
   static const String _dbName = 'legado_reader.db';
   static const int _dbVersion = 11;
   static Database? _database;
+  static final _lock = Lock();
 
   static Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDatabase();
-    return _database!;
+    return await _lock.synchronized(() async {
+      if (_database != null) return _database!;
+      _database = await _initDatabase();
+      return _database!;
+    });
   }
 
   static Future<Database> _initDatabase() async {

@@ -121,6 +121,17 @@ class SettingsProvider extends ChangeNotifier {
   double speechPitch = 1.0;
   double speechVolume = 1.0;
 
+  // --- 歡迎介面設定 (高度還原 Android) ---
+  String welcomeImage = '';
+  String welcomeImageDark = '';
+  bool welcomeShowText = true;
+  bool welcomeShowIcon = true;
+  bool welcomeShowTextDark = true;
+  bool welcomeShowIconDark = true;
+
+  // --- 啟動圖標設定 ---
+  String launcherIcon = '';
+
   SettingsProvider() {
     _loadSettings();
   }
@@ -129,6 +140,14 @@ class SettingsProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final mode = prefs.getString(PreferKey.themeMode) ?? 'system';
     _themeMode = _parseThemeMode(mode);
+
+    welcomeImage = prefs.getString(PreferKey.welcomeImage) ?? '';
+    welcomeImageDark = prefs.getString(PreferKey.welcomeImageDark) ?? '';
+    welcomeShowText = prefs.getBool(PreferKey.welcomeShowText) ?? true;
+    welcomeShowIcon = prefs.getBool(PreferKey.welcomeShowIcon) ?? true;
+    welcomeShowTextDark = prefs.getBool('welcome_show_text_dark') ?? true;
+    welcomeShowIconDark = prefs.getBool('welcome_show_icon_dark') ?? true;
+    launcherIcon = prefs.getString(PreferKey.launcherIcon) ?? '';
 
     _webdavUrl = prefs.getString(PreferKey.webDavUrl) ?? '';
     _webdavUser = prefs.getString(PreferKey.webDavAccount) ?? '';
@@ -314,6 +333,17 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setSpeechRate(double v) async { speechRate = v; await _save(PreferKey.ttsSpeechRate, v); notifyListeners(); }
   Future<void> setSpeechPitch(double v) async { speechPitch = v; await _save('speech_pitch', v); notifyListeners(); }
   Future<void> setSpeechVolume(double v) async { speechVolume = v; await _save('speech_volume', v); notifyListeners(); }
+
+  // --- 歡迎介面 Setter ---
+  Future<void> setWelcomeImage(String v) async { welcomeImage = v; await _save(PreferKey.welcomeImage, v); notifyListeners(); }
+  Future<void> setWelcomeImageDark(String v) async { welcomeImageDark = v; await _save(PreferKey.welcomeImageDark, v); notifyListeners(); }
+  Future<void> setWelcomeShowText(bool v) async { welcomeShowText = v; await _save(PreferKey.welcomeShowText, v); notifyListeners(); }
+  Future<void> setWelcomeShowIcon(bool v) async { welcomeShowIcon = v; await _save(PreferKey.welcomeShowIcon, v); notifyListeners(); }
+  Future<void> setWelcomeShowTextDark(bool v) async { welcomeShowTextDark = v; await _save('welcome_show_text_dark', v); notifyListeners(); }
+  Future<void> setWelcomeShowIconDark(bool v) async { welcomeShowIconDark = v; await _save('welcome_show_icon_dark', v); notifyListeners(); }
+
+  // --- 啟動圖標 Setter ---
+  Future<void> setLauncherIcon(String v) async { launcherIcon = v; await _save(PreferKey.launcherIcon, v); notifyListeners(); }
 
   /// 資料庫操作
   Future<String?> backupDatabase() async {

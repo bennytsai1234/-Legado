@@ -22,6 +22,7 @@ import 'features/book_detail/change_cover_provider.dart';
 import 'features/association/intent_handler_service.dart';
 import 'core/services/tts_service.dart';
 import 'core/services/webdav_service.dart';
+import 'core/services/crash_handler.dart';
 import 'core/engine/app_event_bus.dart';
 import 'core/services/default_data.dart';
 
@@ -34,8 +35,11 @@ void callbackDispatcher() {
   });
 }
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 初始化崩潰日誌
+  await CrashHandler.init();
 
   // 初始化背景任務
   Workmanager().initialize(callbackDispatcher, isInDebugMode: kDebugMode);
@@ -127,20 +131,28 @@ class _SplashPageState extends State<SplashPage> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SettingsProvider>();
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final customPath = isDarkMode ? settings.welcomeImageDark : settings.welcomeImage;
+    final showIcon = isDarkMode ? settings.welcomeShowIconDark : settings.welcomeShowIcon;
+    final showText = isDarkMode ? settings.welcomeShowTextDark : settings.welcomeShowText;
+
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(
-            'assets/welcome_bg.png',
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(
-              color: Theme.of(context).colorScheme.primaryContainer,
-              child: const Center(
-                child: Icon(Icons.library_books, size: 100, color: Colors.blue),
-              ),
-            ),
-          ),
+          customPath.isNotEmpty && File(customPath).existsSync()
+              ? Image.file(File(customPath), fit: BoxFit.cover)
+              : Image.asset(
+                  'assets/welcome_bg.png',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    child: const Center(
+                      child: Icon(Icons.library_books, size: 100, color: Colors.blue),
+                    ),
+                  ),
+                ),
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -161,15 +173,21 @@ class _SplashPageState extends State<SplashPage> {
                   )
                 : Column(
                     children: [
-                      const Text(
-                        'Legado Reader',
-                        style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 2),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        '「 讀萬卷書，行萬里路 」',
-                        style: TextStyle(color: Colors.white70, fontSize: 16, fontStyle: FontStyle.italic),
-                      ),
+                      if (showIcon) ...[
+                        const Icon(Icons.library_books, color: Colors.white, size: 48),
+                        const SizedBox(height: 16),
+                      ],
+                      if (showText) ...[
+                        const Text(
+                          'Legado Reader',
+                          style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 2),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          '「 讀萬卷書，行萬里路 」',
+                          style: TextStyle(color: Colors.white70, fontSize: 16, fontStyle: FontStyle.italic),
+                        ),
+                      ],
                       const SizedBox(height: 40),
                       Text(_status, style: const TextStyle(color: Colors.white54, fontSize: 12)),
                       const SizedBox(height: 16),

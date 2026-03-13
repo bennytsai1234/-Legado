@@ -4,6 +4,8 @@ import 'settings_provider.dart';
 import 'backup_settings_page.dart';
 import 'reading_settings_page.dart';
 import 'theme_settings_page.dart';
+import 'welcome_settings_page.dart';
+import 'icon_settings_page.dart';
 import 'font_manager_page.dart';
 import 'other_settings_page.dart';
 import 'aloud_settings_page.dart';
@@ -31,6 +33,28 @@ class SettingsPage extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const ThemeSettingsPage()),
+                  );
+                },
+              ),
+              _buildListTile(
+                context,
+                icon: Icons.style_outlined,
+                title: '歡迎界面設定',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const WelcomeSettingsPage()),
+                  );
+                },
+              ),
+              _buildListTile(
+                context,
+                icon: Icons.grid_view_outlined,
+                title: '更換圖標',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const IconSettingsPage()),
                   );
                 },
               ),
