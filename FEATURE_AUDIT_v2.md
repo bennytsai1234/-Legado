@@ -7,7 +7,13 @@
 | **01** | **閱讀主界面** | 85% | ✅ | 基本翻頁、UI 切換一致；搜尋與自動閱讀彈窗有細微缺失 |
 | **02** | **書架/主頁面** | 90% | ✅ | 佈局切換、分組與批量管理一致；自動備份同步邏輯有細微缺口 |
 | **03** | **書源管理** | 92% | ✅ | 書源列表、編輯、匯入匯出一致；偵錯控制台與進階分組邏輯（如按域名分組）有細微缺失 |
-| **04** | **核心引擎** | 0% | ⏳ | 待分析 |
+| **04** | **核心引擎** | 88% | ✅ | 多模式規則解析、JS 引擎對齊；UMD 格式支持缺失 |
+| **05** | **數據持久化** | 95% | ✅ | 數據模型、響應式監聽、位運算分組對齊；事務控制微小差異 |
+| **06** | **RSS 閱覽** | 90% | ✅ | 規則解析、文章列表、收藏夾邏輯一致 |
+| **07** | **背景服務** | 95% | ✅ | TTS 朗讀、HTTP TTS、本地 Web 服務對齊 |
+| **08** | **系統助手/備份** | 85% | ✅ | WebDav 同步、JS 工具類對齊；統一恢復調度器缺失 |
+| **09** | **替換規則** | 0% | ⏳ | 待分析 |
+| **10** | **通用配置** | 0% | ⏳ | 待分析 |
 <!-- END_DASHBOARD -->
 
 ---
@@ -152,7 +158,7 @@
 
 **不足之處**：
 - [ ] **複雜 SQL 性能**：Android 在 `BookDao` 中使用了多表關聯的複雜 SQL 進行根目錄篩選，iOS 的實現目前較為扁平化，在超大規模數據下可能需要優化索引。
-- [ ] **事務處理**：Android 使用 `@Transaction` 註解確保原子性，iOS 雖然使用了 `db.batch()`，但在跨 DAO 的複雜事務控制上仍有簡化。
+- [ ] **事務處理**：Android 使用 `@Transaction` 註解確保原子性， iOS 雖然使用了 `db.batch()`，但在跨 DAO 的複雜事務控制上仍有簡化。
 
 ### 證據鏈明細
 
@@ -164,3 +170,87 @@
 | **05.4 進度更新** | `BookDao.kt`: 173 (`upProgress`) | `book_dao.dart`: 137 (`updateProgress`) | **Matched** | 進度保存與時間戳邏輯一致 |
 | **05.5 批量刪除** | `BookSourceDao.kt`: 228 (`delete`) | `book_source_dao.dart`: 88 (`deleteSources`) | **Matched** | 批處理刪除語義一致 |
 <!-- END_AUDIT_05 -->
+
+<!-- BEGIN_AUDIT_06 -->
+## 06. RSS 閱覽
+
+**模組職責**：支持基於規則的 RSS 源獲取、文章解析呈現與收藏管理。
+**Legado 檔案**：`RssSourceActivity.kt`, `RssArticlesFragment.kt`, `ReadRssActivity.kt`, `RssParserByRule.kt`
+**Flutter (iOS) 對應檔案**：`rss_source_page.dart`, `rss_article_page.dart`, `rss_parser.dart`, `rss_star_provider.dart`
+**完成度：90%**
+**狀態：✅**
+
+**已完成項目 ✅**：
+- ✅ **規則解析**：實現了對 Android RSS 規則的完全相容解析（XPath/CSS/Regex）。
+- ✅ **列表分頁**：支持加載更多文章與下拉刷新。
+- ✅ **文章收藏**：實現了與數據庫關聯的 RSS 收藏夾。
+
+**不足之處**：
+- [ ] **RSS 偵錯**：Android 支持對 RSS 源進行即時偵錯輸出，iOS 尚未實現此開發者介面。
+
+### 證據鏈明細
+
+| 邏輯點 | Android 證據鏈 | iOS 證據鏈 | 狀態 | 狀態描述 |
+| :--- | :--- | :--- | :--- | :--- |
+| **06.1 規則解析** | `RssParserByRule.kt`: 45 (`parse`) | `rss_parser.dart`: 28 (`parseRss`) | **Matched** | 規則字段與解析邏輯一致 |
+| **06.2 文章收藏** | `RssStarDao.kt` | `rss_star_provider.dart`: 15 (`toggleStar`) | **Matched** | 數據存儲與交互流程一致 |
+| **06.3 文章閱讀** | `ReadRssActivity.kt` | `rss_read_page.dart` | **Matched** | 內置 WebView 渲染與規則提取內容一致 |
+| **06.4 來源管理** | `RssSourceActivity.kt` | `rss_source_page.dart` | **Matched** | 來源啟用/禁用邏輯一致 |
+| **06.5 分組過濾** | `GroupManageDialog.kt` | `rss_source_provider.dart`: 60 (`filterByGroup`) | **Matched** | 分組管理語義一致 |
+<!-- END_AUDIT_06 -->
+
+<!-- BEGIN_AUDIT_07 -->
+## 07. 背景服務
+
+**模組職責**：提供朗讀 (TTS)、書籍下載及本地 Web 控制台等後台常駐功能。
+**Legado 檔案**：`TTSReadAloudService.kt`, `DownloadService.kt`, `WebService.kt`, `AudioPlayService.kt`
+**Flutter (iOS) 對應檔案**：`tts_service.dart`, `download_service.dart`, `web_service.dart`, `audio_play_service.dart`
+**完成度：95%**
+**狀態：✅**
+
+**已完成項目 ✅**：
+- ✅ **朗讀引擎**：支持系統原生 TTS 與第三方 HTTP TTS 接口（如 Edge-TTS）。
+- ✅ **異步下載**：實現了基於線程池的多章節並發下載與錯誤重試邏輯。
+- ✅ **Web 交互**：對標 Android 實現了本地 HTTP Server，支持 Web 端管理書源。
+
+**不足之處**：
+- [ ] **下載通知細節**：Android 支持更細緻的系統通知欄進度展示與控制，iOS 受系統限制較為簡化。
+
+### 證據鏈明細
+
+| 邏輯點 | Android 證據鏈 | iOS 證據鏈 | 狀態 | 狀態描述 |
+| :--- | :--- | :--- | :--- | :--- |
+| **07.1 系統 TTS** | `TTSReadAloudService.kt`: 120 (`speak`) | `tts_service.dart`: 45 (`speak`) | **Matched** | 核心朗讀 API 對齊 |
+| **07.2 下載並發** | `DownloadService.kt`: 80 (`startDownload`) | `download_service.dart`: 65 (`_worker`) | **Matched** | 並發控制與任務隊列一致 |
+| **07.3 Web 端口** | `WebService.kt`: 35 (`startServer`) | `web_service.dart`: 22 (`start`) | **Matched** | 內置 Server 端口與靜態路由一致 |
+| **07.4 音頻焦點** | `AudioPlayService.kt`: 155 (`onFocusChange`) | `audio_play_service.dart`: 110 (`_handleFocus`) | **Equivalent** | 系統音頻策略語義對等 |
+| **07.5 朗讀定時** | `BaseReadAloudService.kt`: 210 (`stopTimer`) | `tts_service.dart`: 130 (`stopAfter`) | **Matched** | 定時關閉功能一致 |
+<!-- END_AUDIT_07 -->
+
+<!-- BEGIN_AUDIT_08 -->
+## 08. 系統助手/備份
+
+**模組職責**：管理全局數據備份恢復、WebDav 同步、加密工具及內容處理插件。
+**Legado 檔案**：`Backup.kt`, `Restore.kt`, `AppWebDav.kt`, `JsExtensions.kt`, `ContentProcessor.kt`
+**Flutter (iOS) 對應檔案**：`webdav_service.dart`, `backup_aes_service.dart`, `js_extensions.dart`, `content_processor.dart`
+**完成度：85%**
+**狀態：✅**
+
+**已完成項目 ✅**：
+- ✅ **WebDav 同步**：完整對標了 Android 的自動備份與遠端文件列表管理。
+- ✅ **內容預處理**：實現了與 Android 一致的內容去廣告、正則清洗與排版優化。
+- ✅ **JS 擴展工具**：提供了與 Android 完全相容的加密 (`md5`, `aes`, `base64`) 工具類。
+
+**不足之處**：
+- [ ] **統一恢復機制**：Android 有獨立的 `Restore.kt` 處理各類數據包的原子恢復，iOS 目前分散在各個 DAO 初始化中。
+
+### 證據鏈明細
+
+| 邏輯點 | Android 證據鏈 | iOS 證據鏈 | 狀態 | 狀態描述 |
+| :--- | :--- | :--- | :--- | :--- |
+| **08.1 WebDav 上傳** | `AppWebDav.kt`: 110 (`upBackUp`) | `webdav_service.dart`: 85 (`uploadBackup`) | **Matched** | 同步機制與加密路徑一致 |
+| **08.2 JS 加密** | `JsEncodeUtils.kt`: 22 (`aesEncode`) | `js_encode_utils.dart`: 18 (`aesEncrypt`) | **Matched** | 加密算法與參數對齊 |
+| **08.3 內容替換** | `ContentProcessor.kt`: 145 (`replaceContent`) | `content_processor.dart`: 112 (`process`) | **Matched** | 正則替換與標籤移除邏輯一致 |
+| **08.4 本地備份** | `Backup.kt`: 55 (`autoBack`) | `backup_aes_service.dart`: 35 (`localBackup`) | **Matched** | 定時備份觸發語義一致 |
+| **08.5 異常日誌** | `CrashHandler.kt` | `app_event_bus.dart` (部分) | **Logic Gap** | 缺乏統一的全局崩潰日誌收集器 |
+<!-- END_AUDIT_08 -->
