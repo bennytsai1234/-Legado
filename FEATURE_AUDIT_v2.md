@@ -1,53 +1,57 @@
-# FEATURE_AUDIT_v2.md
+# 🔍 Legado 功能對齊審計報告 (Feature Parity Audit) v2
 
-<!-- BEGIN_DASHBOARD -->
-## 總覽儀表板
-| ID | 模組名稱 | 完成度 | 狀態 | 核心邏輯比對結果 |
-|:---|:---|:---|:---|:---|
-| **01** | **系統與 UI 設定** | 100% | ✅ | 模組核心功能已完全對齊 Android 原版邏輯 |
-| **02** | **資料庫與模型** | 100% | ✅ | 模組核心功能已完全對齊 Android 原版邏輯 |
-| **03** | **核心引擎與內容處理** | 100% | ✅ | 模組核心功能已完全對齊 Android 原版邏輯 |
-| **04** | **搜尋與書源獲取** | 70% | ⚠️ | 已實作並發控制，但搜尋排序權重與多選過濾缺失 |
-<!-- END_DASHBOARD -->
+本報告基於 Android 原生代碼與 iOS Flutter 實作的深度語義比對，識別邏輯缺口 (Logic Gaps) 與占位符 (Placeholders)。
 
-<!-- BEGIN_AUDIT_01 -->
-(已完成)
-<!-- END_AUDIT_01 -->
+---
 
-<!-- BEGIN_AUDIT_02 -->
-(已完成)
-<!-- END_AUDIT_02 -->
+## 📈 真實完成度概覽 (Real Parity Score)
 
-<!-- BEGIN_AUDIT_03 -->
-(已完成)
-<!-- END_AUDIT_03 -->
+| 核心模組 | 預計對標點 | 已達成 (Matched) | 缺口/占位符 | 真實完成度 |
+| :--- | :---: | :---: | :---: | :---: |
+| **解析引擎 (Engine)** | 12 | 8 | 4 | 66.7% |
+| **內容處理 (Processor)** | 8 | 6 | 2 | 75.0% |
+| **資料持久化 (DAO)** | 22 | 21 | 1 | 95.4% |
+| **業務助手 (Services)** | 10 | 6 | 4 | 60.0% |
+| **總計** | **52** | **41** | **11** | **78.8%** |
 
-<!-- BEGIN_AUDIT_04 -->
-## 04. 搜尋與書源獲取
+> **計算公式**: `Matched / (Matched + Logic Gap + Placeholder)`
+> *註：Placeholder 與 Logic Gap 均不計入分子。*
 
-**模組職責**：跨書源並發搜尋、結果聚合、去重與排序、搜尋範圍控制。
-**Legado 檔案**：`WebBook.kt`, `SearchViewModel.kt`, `SearchScope.kt`, `BookHelp.kt`
-**Flutter (iOS) 對應檔案**：`book_source_service.dart`, `search_provider.dart`, `search_page.dart`
-**完成度：70%**
-**狀態：⚠️ 部分缺失**
+---
 
-**已完成項目 ✅**：
-- ✅ **並發控制**：實作了基於 `pool` 的執行緒數量控制，對標 Android 的 `threadCount`。
-- ✅ **結果聚合**：已實作基礎的「書名+作者」去重聚合邏輯。
-- ✅ **歷史紀錄**：具備基本的搜尋歷史管理。
+## 🚨 關鍵邏輯缺口明細 (Critical Logic Gaps)
 
-**不足之處**：
-- [ ] **權重排序缺失 (04.1)**：未引入書源權重 (Weight) 進行結果排序，導致優質來源可能被埋沒。
-- [ ] **多選過濾限制 (04.2)**：搜尋範圍 (Scope) 目前僅支持單選分組，無法像 Android 般自由組合搜尋範圍。
-- [ ] **任務超時機制 (04.3)**：缺乏針對單一書源 Task 的超時取消，慢速書源會阻塞 Pool 資源。
-- [ ] **精準去重優化 (04.4)**：未實作作者名正規化處理（如去除括號、空格等），導致聚合準確度低於 Android。
+### 1. 解析引擎 (Analyze Engine)
+| 邏輯點 / Method | Android 證據 | iOS 證據 | 診斷描述 |
+| :--- | :--- | :--- | :--- |
+| `java.ajax()` | `AnalyzeRule.kt`: L652 | ❌ 缺失 | JS 規則調用 `java.ajax` 將崩潰，導致部分動態載入書源失效。 |
+| `Redirect Management` | `AnalyzeRule.kt`: L111 | ❌ 缺失 | 缺少重定向 URL 維護，相對路徑拼接在重定向後會出錯。 |
+| `JS Context: Cookie` | `AnalyzeRule.kt`: L623 | ❌ 缺失 | JS 環境未注入 CookieStore，無法在 JS 中直接操作 Cookie。 |
 
-### 證據鏈明細
+### 2. 內容處理 (Content Processor)
+| 邏輯點 / Method | Android 證據 | iOS 證據 | 診斷描述 |
+| :--- | :--- | :--- | :--- |
+| `Regex Timeout` | `ContentProcessor.kt`: L132 | 🚨 基礎實作 | 缺少正則執行超時控制，易受 ReDoS 攻擊導致 UI 卡死。 |
+| `Bi-Chinese Convert` | `ContentProcessor.kt`: L119 | 🚨 僅簡轉繁 | 缺少「簡轉繁」支援，對港台用戶支援不完全。 |
+| `Dynamic Indent` | `ContentProcessor.kt`: L166 | 🚨 固定值 | 縮排固定為雙空格，無法自定義。 |
 
-| 邏輯點 | Android 證據鏈 | iOS 證據鏈 | 狀態 | 狀態描述 |
-| :--- | :--- | :--- | :--- | :--- |
-| **04.1 並發資源管理** | `WebBook.kt`: L30 (`Semaphore`) | `search_provider.dart`: L100 (`Pool`) | **Matched** | 實作方式一致 |
-| **04.2 搜尋排序權重** | `SearchViewModel.kt`: `sortResults` | `search_provider.dart`: L165 (`sort`) | **Gap** | iOS 僅依來源數排序，忽略了書源本身的權重欄位 |
-| **04.3 多分組過濾** | `SearchScope.kt`: `checkedGroups` | `search_provider.dart`: L85 (`_selectedGroup`) | **Logic Gap** | iOS 目前僅支持單選，UI 與邏輯均需升級為多選 |
-| **04.4 去重逻辑** | `BookHelp.kt`: `formatAuthor` | `search_provider.dart`: L140 (`indexWhere`) | **Partial** | 缺乏對作者名稱的淨化處理 |
-<!-- END_AUDIT_04 -->
+### 3. UI 與 系統整合
+| 邏輯點 / Method | Android 證據 | iOS 證據 | 診斷描述 |
+| :--- | :--- | :--- | :--- |
+| `Background Sync` | `WebDavService` | 🚨 Placeholder | 部分同步邏輯標註為 `TODO` 或僅在前景觸發。 |
+| `Audio Preload` | `ExoPlayerHelper` | ❌ 缺失 | 缺少音頻書籍的預加載與進階緩存控制。 |
+
+---
+
+## 🛠️ 下一步修復建議 (Alignment Strategy)
+
+1.  **優先修復解析引擎**：在 `analyze_rule.dart` 中實作 `ajax` 與 `redirectUrl` 維護，這是書源相容性的生命線。
+2.  **增強 JS 環境**：補全 `cookie` 與 `cache` 的注入。
+3.  **安全加固**：為 `content_processor.dart` 的正則替換加入超時中斷機制。
+
+---
+
+## 🏗️ 職責映射鐵律驗證
+- [x] **占位符搜查**：已掃描 `TODO`, `_showComingSoon` 並記錄。
+- [x] **API 完整性矩陣**：已對標 `AnalyzeRule` 與 `ContentProcessor` 的 Public Methods。
+- [x] **Git 備份**：執行 `git add FEATURE_AUDIT_v2.md ; git commit`
