@@ -427,23 +427,47 @@ class ReaderProvider extends ChangeNotifier {
     for (int i = 0; i < chapters.length; i++) {
       String? c = await _chapterDao.getContent(book.bookUrl, i);
       
-      // 深度還原：支援在線搜尋 (對標 Android ReadBookViewModel.searchResultPositions)
+      // 支援在線搜尋 (對標 Android ReadBookViewModel.searchChapter)
       if (c == null || c.isEmpty) {
         if (_source == null) await _loadSource();
         if (_source != null) {
           try {
             c = await _service.getContent(_source!, book, _chapters[i]);
-            await _chapterDao.saveContent(book.bookUrl, i, c);
+            if (c != null) await _chapterDao.saveContent(book.bookUrl, i, c);
           } catch (_) { continue; }
         } else { continue; }
       }
 
-      if (c.contains(kw)) {
-        final idx = c.indexOf(kw);
-        final start = (idx - 20).clamp(0, c.length);
-        final end = (idx + kw.length + 20).clamp(0, c.length);
-        res.add({'chapterIndex': i, 'chapterTitle': chapters[i].title, 'snippet': '...${c.substring(start, end).replaceAll('\n', ' ')}...'});
+      if (c != null && c.contains(kw)) {
+        // 應用內容處理邏輯 (對標 Android ContentProcessor)
+        final enabledRules = await _replaceDao.getEnabled();
+        final processedContent = ContentProcessor.processContent(
+          book, 
+          chapters[i], 
+          c, 
+          rules: enabledRules,
+          includeTitle: false, // 搜尋時不重複包含標題
+        );
+        
+        int startIndex = 0;
+        while (true) {
+          int idx = processedContent.indexOf(kw, startIndex);
+          if (idx == -1) break;
+          
+          final start = (idx - 20).clamp(0, processedContent.length);
+          final end = (idx + kw.length + 20).clamp(0, processedContent.length);
+          res.add({
+            'chapterIndex': i,
+            'chapterTitle': chapters[i].title,
+            'snippet': '...${processedContent.substring(start, end).replaceAll('\n', ' ')}...',
+            'indexInChapter': idx,
+          });
+          
+          startIndex = idx + kw.length;
+          if (res.length > 500) break; // 防止結果過多導致內存溢出
+        }
       }
+      if (res.length > 500) break;
     }
     return res;
   }
