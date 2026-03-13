@@ -5,8 +5,8 @@
 | ID | 模組名稱 | 完成度 | 狀態 | 核心邏輯比對結果 |
 |:---|:---|:---|:---|:---|
 | **01** | **閱讀主界面** | 85% | ✅ | 基本翻頁、UI 切換一致；搜尋與自動閱讀彈窗有細微缺失 |
-| **02** | **書架/主頁面** | 0% | ⏳ | 待分析 |
-| **03** | **書源管理** | 0% | ⏳ | 待分析 |
+| **02** | **書架/主頁面** | 90% | ✅ | 佈局切換、分組與批量管理一致；自動備份同步邏輯有細微缺口 |
+| **03** | **書源管理** | 92% | ✅ | 書源列表、編輯、匯入匯出一致；偵錯控制台與進階分組邏輯（如按域名分組）有細微缺失 |
 | **04** | **核心引擎** | 0% | ⏳ | 待分析 |
 <!-- END_DASHBOARD -->
 
@@ -42,3 +42,64 @@
 | **01.4 內容搜尋** | `ReadBookActivity.kt`: 164 (`searchContentActivity`) | `reader_page.dart`: 237 (`_doSearch`) | **Logic Gap** | iOS 搜尋範圍受限於快取 |
 | **01.5 系統 UI** | `ReadBookActivity.kt`: 250 (`upSystemUiVisibility`) | `reader_page.dart`: 50 (`_updateSystemUI`) | **Matched** | 隱藏/顯示邏輯一致 |
 <!-- END_AUDIT_01 -->
+
+<!-- BEGIN_AUDIT_02 -->
+## 02. 書架/主頁面
+
+**模組職責**：展示已加入的書籍列表，支持分組、排序、搜尋及批量管理。
+**Legado 檔案**：`MainActivity.kt`, `MainViewModel.kt`, `BookshelfManageActivity.kt`, `BaseBookshelfFragment.kt`
+**Flutter (iOS) 對應檔案**：`bookshelf_page.dart`, `bookshelf_provider.dart`, `group_manage_page.dart`
+**完成度：90%**
+**狀態：✅**
+
+**已完成項目 ✅**：
+- ✅ **分組導航**：實現了基於 TabBar 的書籍分組切換。
+- ✅ **佈局切換**：完美對標 Android 的網格 (Grid) 與列表 (List) 雙佈局切換。
+- ✅ **批量管理**：實現了比 Android 更高效的拖拽多選與批量刪除/移動功能。
+- ✅ **未讀標記**：支持顯示書籍更新章節數量的徽章提示。
+
+**不足之處**：
+- [ ] **自動 WebDav 同步**：Android 在 `MainActivity` 啟動時會自動比對 WebDav 備份日期並提示恢復，iOS 目前僅能手動導出/匯入。
+- [ ] **多樣化書架樣式**：Android 提供多種書架樣式（Style1/Style2），iOS 目前固定為單一風格。
+
+### 證據鏈明細
+
+| 邏輯點 | Android 證據鏈 | iOS 證據鏈 | 狀態 | 狀態描述 |
+| :--- | :--- | :--- | :--- | :--- |
+| **02.1 書籍分組** | `MainActivity.kt`: 102 (`menu_bookshelf`) | `bookshelf_page.dart`: 80 (`TabBar`) | **Equivalent** | 導航層級不同但功能對等 |
+| **02.2 佈局切換** | `AppConfig.bookshelfLayout` | `bookshelf_page.dart`: 160 (`toggleLayout`) | **Matched** | 網格/列表切換邏輯一致 |
+| **02.3 批量選擇** | `BookshelfManageActivity.kt` | `bookshelf_page.dart`: 30 (`_handleDragUpdate`) | **Matched** | 批量操作邏輯一致 |
+| **02.4 自動刷新** | `MainActivity.kt`: 138 (`upAllBookToc`) | `bookshelf_provider.dart`: 110 (`refreshBookshelf`) | **Matched** | 啟動更新邏輯一致 |
+| **02.5 數據同步** | `MainActivity.kt`: 220 (`backupSync`) | ❌ 暫無自動觸發邏輯 | **Logic Gap** | 缺少自動 WebDav 恢復提示 |
+<!-- END_AUDIT_02 -->
+
+<!-- BEGIN_AUDIT_03 -->
+## 03. 書源管理
+
+**模組職責**：維護書籍來源的獲取規則，支持書源的匯入、編輯、分組與校驗。
+**Legado 檔案**：`BookSourceActivity.kt`, `BookSourceViewModel.kt`, `BookSourceEditActivity.kt`, `BookSourceDebugActivity.kt`
+**Flutter (iOS) 對應檔案**：`source_manager_page.dart`, `source_manager_provider.dart`, `source_editor_page.dart`, `debug_page.dart`
+**完成度：92%**
+**狀態：✅**
+
+**已完成項目 ✅**：
+- ✅ **多維度匯入**：支持網路連結、剪貼簿、QR Code 及本地 JSON 匯入，對標 Android `ImportBookSourceDialog`。
+- ✅ **規則編輯器**：提供了表單化與純 JSON 雙模式編輯，覆蓋了搜尋、發現、詳情、目錄、正文五大規則塊。
+- ✅ **批量管理**：實現了批量選取後的刪除、啟用、禁用及批量校驗功能。
+- ✅ **分組過濾**：支持按分組標籤快速篩選書源。
+
+**不足之處**：
+- [ ] **域名分組缺失**：Android 支持 `groupSourcesByDomain`（按域名自動歸類），iOS 目前僅支持手動定義的分組。
+- [ ] **偵錯細節**：Android 的 `BookSourceDebugActivity` 支持直接輸入特定書籍 URL 進行深度調試，iOS 目前僅支持基礎的日誌流展示。
+- [ ] **間隔校驗**：iOS 缺乏 Android 的 `checkSelectedInterval`（按間隔時間校驗）功能，僅支持全量並發校驗。
+
+### 證據鏈明細
+
+| 邏輯點 | Android 證據鏈 | iOS 證據鏈 | 狀態 | 狀態描述 |
+| :--- | :--- | :--- | :--- | :--- |
+| **03.1 匯入邏輯** | `BookSourceActivity.kt`: 475 (`showImportDialog`) | `source_manager_page.dart`: 355 (`_showImportDialog`) | **Matched** | 多源匯入邏輯完整對齊 |
+| **03.2 批量操作** | `BookSourceActivity.kt`: 360 (`onMenuItemClick`) | `source_manager_provider.dart`: 115 (`deleteSelected`) | **Matched** | 批量選取與刪除語義一致 |
+| **03.3 規則編輯** | `BookSourceEditActivity.kt`: 220 (`upSourceView`) | `source_editor_page.dart`: 120 (`_buildFormTab`) | **Matched** | 規則字段定義完全一致 |
+| **03.4 偵錯日誌** | `BookSourceDebugActivity.kt`: 44 (`viewModel.observe`) | `debug_page.dart`: 28 (`_initLogs`) | **Equivalent** | 實現方式不同但日誌展示語義一致 |
+| **03.5 書源校驗** | `BookSourceActivity.kt`: 390 (`checkSource`) | `source_manager_provider.dart`: 150 (`checkSelectedSources`) | **Matched** | 校驗觸發流程一致 |
+<!-- END_AUDIT_03 -->
