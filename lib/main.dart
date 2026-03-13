@@ -21,6 +21,7 @@ import 'features/about/about_page.dart';
 import 'features/book_detail/change_cover_provider.dart';
 import 'features/association/intent_handler_service.dart';
 import 'core/services/tts_service.dart';
+import 'core/services/webdav_service.dart';
 import 'core/engine/app_event_bus.dart';
 import 'core/services/default_data.dart';
 
@@ -331,9 +332,16 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('正在從 WebDav 還原資料...')));
+                final success = await WebDAVService().restoreFromFile('/legado/$remoteBackupName');
+                if (success && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('還原成功！正在重啟書架...')));
+                  context.read<BookshelfProvider>().refreshBookshelf();
+                } else if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('還原失敗，請檢查網路'), backgroundColor: Colors.red));
+                }
               },
               child: const Text('立即還原'),
             ),

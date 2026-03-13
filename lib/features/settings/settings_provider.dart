@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../core/database/app_database.dart';
 import '../../core/constant/prefer_key.dart';
+import '../../core/services/webdav_service.dart';
 
 class SettingsProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
@@ -352,6 +353,21 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<String?> checkWebDavBackupSync() async {
     if (!_webdavEnabled || !autoCheckNewBackup) return null;
-    return null; // 簡化實作
+    try {
+      final lastFile = await WebDAVService().lastBackUp();
+      if (lastFile == null) return null;
+      
+      // 解析備份檔案名稱中的時間戳 (格式: backup_12345678.zip)
+      final name = lastFile.name ?? "";
+      final tsStr = name.replaceAll('backup_', '').replaceAll('.zip', '');
+      final remoteTs = int.tryParse(tsStr) ?? 0;
+      
+      if (remoteTs > _lastBackup) {
+        return name;
+      }
+    } catch (e) {
+      debugPrint('Check WebDav sync failed: $e');
+    }
+    return null;
   }
 }

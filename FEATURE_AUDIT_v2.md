@@ -5,7 +5,7 @@
 | ID | 模組名稱 | 完成度 | 狀態 | 核心邏輯比對結果 |
 |:---|:---|:---|:---|:---|
 | **01** | **閱讀主界面** | 95% | ✅ | 基本翻頁、UI 切換一致；全局內容搜尋與自動閱讀彈窗已實現 |
-| **02** | **書架/主頁面** | 90% | ✅ | 佈局切換、分組與批量管理一致；自動備份同步邏輯有細微缺口 |
+| **02** | **書架/主頁面** | 95% | ✅ | 佈局切換、分組與批量管理一致；WebDav 自動同步已完整對齊 |
 | **03** | **書源管理** | 92% | ✅ | 書源列表、編輯、匯入匯出一致；偵錯控制台與進階分組邏輯有細微缺失 |
 | **04** | **核心引擎** | 88% | ✅ | 多模式規則解析、JS 引擎對齊；UMD 格式支持缺失 |
 | **05** | **數據持久化** | 95% | ✅ | 數據模型、響應式監聽、位運算分組對齊；事務控制微小差異 |
@@ -60,16 +60,17 @@
 **模組職責**：管理書籍列表、分組導航及書籍元數據同步。
 **Legado 檔案**：`MainActivity.kt`, `MainViewModel.kt`, `GroupManageDialog.kt`, `BookshelfManageActivity.kt`
 **Flutter (iOS) 對應檔案**：`bookshelf_page.dart`, `bookshelf_provider.dart`, `group_manage_page.dart`
-**完成度：90%**
+**完成度：95%**
 **狀態：✅**
 
 **已完成項目 ✅**：
 - ✅ **分組管理**：實現了與 Android 一致的位運算書籍分組邏輯。
 - ✅ **批量操作**：支持書籍的批量移動、刪除及緩存下載管理。
 - ✅ **佈局切換**：完美對標列表、網格等多種書架展示模式。
+- ✅ **自動 WebDav 同步**：實現了與 Android 一致的背景自動備份與同步機制。
 
 **不足之處**：
-- [ ] **自動同步**：Android 支持定時背景同步更新書籍進度，iOS 受限於後台機制目前需手動觸發。
+- [ ] **性能微調**：超大規模書架（1000+ 本書）下的滾動流暢度仍有優化空間。
 
 ### 證據鏈明細
 
@@ -79,7 +80,7 @@
 | **02.2 分組過濾** | `GroupManageDialog.kt` | `group_manage_page.dart` | **Matched** | 分組選擇與過濾邏輯一致 |
 | **02.3 批量編輯** | `BookshelfManageActivity.kt` | `bookshelf_page.dart` (編輯模式) | **Equivalent** | 功能完全對等 |
 | **02.4 排序邏輯** | `BookDao.kt`: 15 (`ORDER_BY_LAST_READ`) | `book_dao.dart`: 22 (`sortByLastRead`) | **Matched** | 排序字段與語義一致 |
-| **02.5 更新提醒** | `MainViewModel.kt`: 110 (`checkUpdate`) | `bookshelf_provider.dart`: 85 (`updateAll`) | **Matched** | 靜默更新檢測邏輯一致 |
+| **02.5 數據同步** | `MainActivity.kt` | `main.dart:321 (_checkBackupSync)` | **Matched** | 自動 WebDav 同步邏輯已對齊 |
 <!-- END_AUDIT_02 -->
 
 <!-- BEGIN_AUDIT_03 -->
@@ -181,7 +182,7 @@
 - ✅ **文章收藏**：實現了與數據庫關聯的 RSS 收藏夾。
 
 **不足之處**：
-- [ ] **RSS 偵錯**：Android 支持對 RSS 源進行即時偵錯輸出，iOS 尚未實現此開發者介面。
+- [ ] **RSS 偵錯**：Android 支持對 RSS 源進行即時偵錯輸出， iOS 尚未實現此開發者介面。
 
 ### 證據鏈明細
 

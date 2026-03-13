@@ -278,6 +278,65 @@ class WebDAVService extends ChangeNotifier {
     file.deleteSync();
   }
 
+  /// 獲取最新備份檔案資訊 (對標 Android lastBackUp)
+  Future<webdav.File?> lastBackUp() async {
+    try {
+      final client = await _getClient();
+      final files = await client.readDir('/legado');
+      final backupFiles = files.cast<webdav.File>().where((f) => f.name != null && f.name!.startsWith('backup_') && f.name!.endsWith('.zip')).toList();
+      if (backupFiles.isEmpty) return null;
+      
+      // 按修改時間排序 (最晚的在前)
+      backupFiles.sort((a, b) {
+        final String timeA = a.mTime?.toString() ?? "";
+        final String timeB = b.mTime?.toString() ?? "";
+        return timeB.compareTo(timeA);
+      });
+      return backupFiles.first;
+    } catch (e) {
+      debugPrint('Get last backup failed: $e');
+      return null;
+    }
+  }
+
+  /// 從特定檔案還原資料
+  Future<bool> restoreFromFile(String remotePath) async {
+    if (_isSyncing) return false;
+    _isSyncing = true;
+    notifyListeners();
+
+    try {
+      final client = await _getClient();
+      final dir = await getTemporaryDirectory();
+      final zipPath = '${dir.path}/legado_restore_temp.zip';
+      final localFile = File(zipPath);
+
+      await client.read2File(remotePath, localFile.path);
+      
+      final bytes = localFile.readAsBytesSync();
+      final archive = ZipDecoder().decodeBytes(bytes);
+
+      for (final file in archive) {
+        if (!file.isFile) continue;
+        final data = utf8.decode(file.content as List<int>);
+        try {
+          final List<dynamic> jsonList = jsonDecode(data);
+          await _importData(file.name, jsonList);
+        } catch (_) {}
+      }
+
+      if (await localFile.exists()) await localFile.delete();
+      _isSyncing = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Restore from file failed: $e');
+      _isSyncing = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// 從 WebDAV 還原資料
   Future<bool> restore() async {
     if (_isSyncing) return false;
