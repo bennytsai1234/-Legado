@@ -44,13 +44,13 @@
 |:---|:---|:---|:---|
 | `ACache.kt` | 磁碟緩存工具 | `lib/core/storage/app_cache.dart` | ✅ Matched |
 | `AlphanumComparator.kt` | 檔名/章節號自然排序 | `lib/core/utils/alphanum_comparator.dart` | ✅ Matched |
-| `ActivityExtensions.kt` | Activity 視窗與 UI 擴展 | - | ❌ Missing |
+| `ActivityExtensions.kt` | Activity 視窗與 UI 擴展 | `Flutter Framework` (Navigator/MediaQuery) | ✅ Absorbed |
 | `ArchiveUtils.kt` | 壓縮擋 (ZIP/7z) 處理 | `lib/core/utils/archive_utils.dart` | ✅ Matched |
-| `BitmapUtils.kt` / `ImageUtils.kt` | 圖片處理、縮放、裁剪 | - | ❌ Missing |
+| `BitmapUtils.kt` / `ImageUtils.kt` | 圖片處理、縮放、裁剪 | `flutter_image_compress` / `package:image` | ⚠️ Plugin |
 | `ChineseUtils.kt` | 繁簡轉換 | `lib/core/services/chinese_utils.dart` | ✅ Matched |
 | `ColorUtils.kt` | 顏色解析、轉換 | `lib/core/utils/color_utils.dart` | ✅ Matched |
-| `ContextExtensions.kt` | Context 相關 (螢幕、權限、路徑) | - | ❌ Missing |
-| `CookieManagerExtensions.kt` | Cookie 獲取與儲存 | - | ❌ Missing |
+| `ContextExtensions.kt` | Context 相關 (螢幕、權限、路徑) | `MediaQuery` / `path_provider` / `share_plus` | ✅ Absorbed |
+| `CookieManagerExtensions.kt` | Cookie 獲取與儲存 | `dio_cookie_manager` | ⚠️ Plugin |
 | `EncoderUtils.kt` / `MD5Utils.kt` | 編碼 (Base64/MD5) | `lib/core/utils/encoder_utils.dart` | ✅ Matched |
 | `EncodingDetect.kt` | 文件編碼自動偵測 | `lib/core/services/encoding_detect.dart` | ✅ Matched |
 | `FileDocExtensions.kt` | 虛擬文件管理 (SAF) | `lib/core/storage/file_doc.dart` | ✅ Matched |
@@ -58,12 +58,12 @@
 | `GsonExtensions.kt` / `JsonExtensions.kt` | JSON 解析封裝 | `dart:convert` (內建) | ✅ Matched |
 | `HtmlFormatter.kt` / `JsoupExtensions.kt` | HTML 內容清理與格式化 | `lib/core/utils/html_formatter.dart` & `html_utils.dart` | ✅ Matched |
 | `NetworkUtils.kt` | 代理、UA、網路狀態檢查 | `lib/core/utils/network_utils.dart` | ✅ Matched |
-| `QRCodeUtils.kt` | 二維碼生成與識別 | - | ❌ Missing |
-| `StringUtils.kt` / `StringExtensions.kt` | 字串處理、格式檢查 | `dart:core` (內建擴展) | ✅ Matched |
+| `QRCodeUtils.kt` | 二維碼生成與識別 | `qr_flutter` / `mobile_scanner` | ⚠️ Plugin |
+| `StringUtils.kt` / `StringExtensions.kt` | 字串處理、格式檢查 | `lib/core/utils/string_utils.dart` | ✅ Matched |
 | `TimeUtils.kt` | 時間格式化、時差計算 | `lib/core/utils/time_utils.dart` | ✅ Matched |
-| `ToastUtils.kt` / `Snackbars.kt` | 提示訊息 UI | - | ❌ Missing |
+| `ToastUtils.kt` / `Snackbars.kt` | 提示訊息 UI | `ScaffoldMessenger` / `oktoast` | ✅ Absorbed |
 | `UriExtensions.kt` / `UrlUtil.kt` | URL 解析、編碼、合併 | `lib/core/utils/url_util.dart` | ✅ Matched |
-| `*Extensions.kt` (其他 40+ 檔案) | Android SDK 特有的擴展方法 | - | ❌ Missing |
+| `*Extensions.kt` (其他 40+ 檔案) | Android SDK 特有的擴展方法 | `Flutter/Dart 內建` | ✅ Absorbed |
 
 ---
 

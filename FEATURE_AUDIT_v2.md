@@ -69,9 +69,13 @@
 | `StringUtils.kt` | ✅ Matched | 已移植 `chineseNumToInt` 等高級邏輯至 `string_utils.dart`。 |
 | `JsoupExtensions.kt` | ✅ Matched | 已實作 `lib/core/utils/html_utils.dart` 支持樹狀文本提取。 |
 | `GsonExtensions.kt` | ✅ Matched | **現狀**：使用 `dart:convert`。 |
+| `Context/Activity/Toast*` | ✅ Absorbed | **診斷**：此類檔案多為 Android Glue 代碼。在 Flutter 中已由 `MediaQuery`, `Theme`, `Navigator` 及各種 `plus` 插件原生覆蓋，無需 1:1 移植。 |
+| `BitmapUtils.kt` | ⚠️ Plugin | **規格**：大部分功能由 Flutter `DecorationImage` 處理。`getMeanColor` (主題取色) 留待 UI 階段實作。 |
 
 ### 🛠️ 待辦缺口 (Todo Gaps)
-- [x] GAP-UTIL-01: 建立 `lib/core/utils/url_util.dart` 並補齊 `UrlUtil.kt` 的邏輯。 ✅ Done in 2026-03-13
-- [x] GAP-UTIL-02: 建立 `lib/core/utils/file_utils.dart` 补齐 `FileUtils.kt` 的静态辅助方法（排序、格式化等）。 ✅ Done in 2026-03-13
-- [x] GAP-UTIL-03: 完善 `lib/core/services/encoding_detect.dart` 的 HTML 標籤解析。 ✅ Done in 2026-03-13
-- [ ] GAP-UTIL-04: (低優先級) 研究 iOS 端的 7z/RAR 解壓解決方案。
+- [x] GAP-UTIL-01: 建立 `lib/core/utils/url_util.dart` ✅ Done
+- [x] GAP-UTIL-02: 建立 `lib/core/utils/file_utils.dart` ✅ Done
+- [x] GAP-UTIL-03: 完善 `lib/core/services/encoding_detect.dart` ✅ Done
+- [x] GAP-UTIL-04: 建立 `lib/core/utils/string_utils.dart` (高級邏輯) ✅ Done
+- [ ] GAP-UTIL-05: (UI 階段) 實作 `lib/core/services/ui_service.dart` 封裝 Toast 與彈窗邏輯。
+- [ ] GAP-UTIL-06: (低優先級) 研究 iOS 端的 7z/RAR 解壓解決方案。
