@@ -19,6 +19,7 @@ import 'features/settings/settings_provider.dart';
 import 'features/rss/rss_source_page.dart';
 import 'features/rss/rss_source_provider.dart';
 import 'features/about/about_page.dart';
+import 'features/about/app_log_page.dart';
 import 'features/book_detail/change_cover_provider.dart';
 import 'features/association/intent_handler_service.dart';
 import 'core/services/tts_service.dart';
