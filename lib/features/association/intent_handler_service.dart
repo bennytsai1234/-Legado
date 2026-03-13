@@ -11,6 +11,8 @@ import '../source_manager/source_manager_provider.dart';
 import '../rss/rss_source_provider.dart';
 import '../replace_rule/replace_rule_provider.dart';
 import '../bookshelf/bookshelf_provider.dart';
+import '../../core/database/dao/http_tts_dao.dart';
+import '../../core/models/http_tts.dart';
 
 class IntentHandlerService {
   static final IntentHandlerService _instance = IntentHandlerService._internal();
@@ -220,13 +222,15 @@ class IntentHandlerService {
             }),
           if (type == 'httpTts' || type == 'auto')
             _buildImportButton(ctx, 'HTTP TTS', () {
-              // TODO: 實作 TtsProvider 匯入
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('TTS 匯入功能開發中')));
+              if (isFile && jsonData != null) {
+                _importTts(context, jsonData);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('目前僅支援檔案匯入 TTS')));
+              }
             }),
           if (type == 'theme' || type == 'auto')
             _buildImportButton(ctx, '主題', () {
-              // TODO: 實作 ThemeProvider 匯入
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('主題匯入功能開發中')));
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('主題匯入功能開發中，請期待後續更新')));
             }),
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -235,6 +239,25 @@ class IntentHandlerService {
         ],
       ),
     );
+  }
+
+  Future<void> _importTts(BuildContext context, String jsonStr) async {
+    try {
+      final List<dynamic> list = jsonDecode(jsonStr) is List ? jsonDecode(jsonStr) : [jsonDecode(jsonStr)];
+      final dao = HttpTtsDao();
+      for (var item in list) {
+        final tts = HttpTTS.fromJson(item as Map<String, dynamic>);
+        await dao.insertOrUpdate(tts);
+      }
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('成功匯入 ${list.length} 個 TTS 引擎')));
+      }
+    } catch (e) {
+      debugPrint("匯入 TTS 失敗: $e");
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('TTS 匯入失敗，請檢查格式'), backgroundColor: Colors.red));
+      }
+    }
   }
 
   Widget _buildImportButton(BuildContext context, String label, VoidCallback action) {
