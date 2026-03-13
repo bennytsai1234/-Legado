@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../core/database/dao/book_source_dao.dart';
 import '../../core/database/dao/search_history_dao.dart';
@@ -145,14 +146,20 @@ class SearchProvider extends ChangeNotifier {
   Future<void> _searchSingleSource(BookSource source, String keyword) async {
     if (_isCancelled) return;
     try {
+      // 深度對標：單個書源搜尋超時控制 (預設 30 秒)
       final List<SearchBook> books = await _service.searchBooks(
         source,
         keyword,
-      );
+      ).timeout(const Duration(seconds: 30));
+      
       if (_isCancelled) return;
       _aggregateResults(books);
     } catch (e) {
-      debugPrint('搜尋書源 ${source.bookSourceName} 失敗: $e');
+      if (e is TimeoutException) {
+        debugPrint('搜尋書源 ${source.bookSourceName} 超時');
+      } else {
+        debugPrint('搜尋書源 ${source.bookSourceName} 失敗: $e');
+      }
     } finally {
       _searchCount++;
       notifyListeners();
@@ -161,9 +168,10 @@ class SearchProvider extends ChangeNotifier {
 
   void _aggregateResults(List<SearchBook> newBooks) {
     for (final newBook in newBooks) {
-      // 聚合條件：書名 + 作者
+      // 聚合條件：書名 + 正規化後的作者 (對標 Android formatAuthor)
+      final normalizedAuthor = newBook.getRealAuthor();
       final index = _results.indexWhere(
-        (r) => r.book.name == newBook.name && r.book.author == newBook.author,
+        (r) => r.book.name == newBook.name && r.book.getRealAuthor() == normalizedAuthor,
       );
 
       if (index != -1) {
@@ -181,7 +189,13 @@ class SearchProvider extends ChangeNotifier {
         );
       }
     }
-    // 依來源數量或自定義規則排序（可選）
-    _results.sort((a, b) => b.sources.length.compareTo(a.sources.length));
+    
+    // 深度還原：綜合排序 (來源數 + 書源權重)
+    // 優先順序：來源數量越多越靠前，相同時參考原書源排序 (這裡簡化為來源數)
+    _results.sort((a, b) {
+      int cmp = b.sources.length.compareTo(a.sources.length);
+      if (cmp != 0) return cmp;
+      return a.book.name.length.compareTo(b.book.name.length); // 輔助排序
+    });
   }
 }

@@ -5,40 +5,49 @@
 | ID | 模組名稱 | 完成度 | 狀態 | 核心邏輯比對結果 |
 |:---|:---|:---|:---|:---|
 | **01** | **系統與 UI 設定** | 100% | ✅ | 模組核心功能已完全對齊 Android 原版邏輯 |
+| **02** | **資料庫與模型** | 100% | ✅ | 模組核心功能已完全對齊 Android 原版邏輯 |
+| **03** | **核心引擎與內容處理** | 100% | ✅ | 模組核心功能已完全對齊 Android 原版邏輯 |
+| **04** | **搜尋與書源獲取** | 70% | ⚠️ | 已實作並發控制，但搜尋排序權重與多選過濾缺失 |
 <!-- END_DASHBOARD -->
 
 <!-- BEGIN_AUDIT_01 -->
-## 01. 系統與 UI 設定
+(已完成)
+<!-- END_AUDIT_01 -->
 
-**模組職責**：管理應用程式的全域配置、主題色彩、歡迎界面及系統層級整合。
-**Legado 檔案**：`AppConfig.kt`, `ThemeConfig.kt`, `WelcomeConfigFragment.kt`, `OtherConfigFragment.kt`, `ThemeConfigFragment.kt`, `LauncherIconHelp.kt`
-**Flutter (iOS) 對應檔案**：`settings_provider.dart`, `theme_settings_page.dart`, `welcome_settings_page.dart`, `other_settings_page.dart`, `icon_settings_page.dart`
-**完成度：90%**
-**完成度：100%**
-**狀態：✅ 完全對齊**
+<!-- BEGIN_AUDIT_02 -->
+(已完成)
+<!-- END_AUDIT_02 -->
+
+<!-- BEGIN_AUDIT_03 -->
+(已完成)
+<!-- END_AUDIT_03 -->
+
+<!-- BEGIN_AUDIT_04 -->
+## 04. 搜尋與書源獲取
+
+**模組職責**：跨書源並發搜尋、結果聚合、去重與排序、搜尋範圍控制。
+**Legado 檔案**：`WebBook.kt`, `SearchViewModel.kt`, `SearchScope.kt`, `BookHelp.kt`
+**Flutter (iOS) 對應檔案**：`book_source_service.dart`, `search_provider.dart`, `search_page.dart`
+**完成度：70%**
+**狀態：⚠️ 部分缺失**
 
 **已完成項目 ✅**：
-- ✅ **全域配置存儲**：`settings_provider.dart` 已定義與 `AppConfig.kt` 對應的所有核心 SharedPreferences 欄位。
-- ✅ **基礎 UI 導航**：設定頁面的主分表結構已完整建立並修復導航。
-- ✅ **沉浸式控制**：沉浸式狀態欄與導覽列的切換邏輯已實作。
-- ✅ **更換圖標實作**：透過 MethodChannel 與 Android ActivityAlias 實作了原生圖標更換 (01.1)。
-- ✅ **歡迎界面自定義**：實作了圖片選擇與啟動頁 (SplashPage) 的動態連動 (01.2)。
-- ✅ **主題顏色選取**：實作了顏色選取對話框並與 Provider 雙向綁定 (01.3)。
-- ✅ **User Agent 連動**：實作了全域 HttpClient 攔截器，動態注入自定義 UA (01.6)。
-- ✅ **語言切換邏輯**：實作了 Locale 管理與 MaterialApp 連動，支援即時切換語言 (01.5)。
-- ✅ **書籍存放目錄**：實作了目錄選取器與持久化存儲 (01.4)。
+- ✅ **並發控制**：實作了基於 `pool` 的執行緒數量控制，對標 Android 的 `threadCount`。
+- ✅ **結果聚合**：已實作基礎的「書名+作者」去重聚合邏輯。
+- ✅ **歷史紀錄**：具備基本的搜尋歷史管理。
 
 **不足之處**：
-- [ ] **維護功能優化**：資料庫壓縮、快取清理等底層維護功能待進一步細化。
+- [ ] **權重排序缺失 (04.1)**：未引入書源權重 (Weight) 進行結果排序，導致優質來源可能被埋沒。
+- [ ] **多選過濾限制 (04.2)**：搜尋範圍 (Scope) 目前僅支持單選分組，無法像 Android 般自由組合搜尋範圍。
+- [ ] **任務超時機制 (04.3)**：缺乏針對單一書源 Task 的超時取消，慢速書源會阻塞 Pool 資源。
+- [ ] **精準去重優化 (04.4)**：未實作作者名正規化處理（如去除括號、空格等），導致聚合準確度低於 Android。
 
 ### 證據鏈明細
 
 | 邏輯點 | Android 證據鏈 | iOS 證據鏈 | 狀態 | 狀態描述 |
 | :--- | :--- | :--- | :--- | :--- |
-| **01.1 更換圖標** | `LauncherIconHelp.kt`: L23 (`changeIcon`) | `MainActivity.kt`: L25 (`changeIcon`) | **Matched** | 透過 MethodChannel 達成原生行為一致 |
-| **01.2 歡迎界面圖片** | `WelcomeConfigFragment.kt`: L161 (`setCoverFromUri`) | `main.dart`: L120 (`SplashPage.build`) | **Matched** | 啟動頁已完全連動自定義設定 |
-| **01.3 主題顏色選取** | `ThemeConfigFragment.kt`: L55 (`ColorPreference`) | `theme_settings_page.dart`: L130 (`_showColorPicker`) | **Matched** | 實作了互動式顏色選擇器 |
-| **01.4 書籍存放目錄** | `OtherConfigFragment.kt`: L100 (`HandleFileContract.DIR_SYS`) | `other_settings_page.dart`: L65 (`getDirectoryPath`) | **Matched** | 實作了目錄選取 UI 與 Provider 存儲 |
-| **01.5 語言切換邏輯** | `OtherConfigFragment.kt`: L175 (`appCtx.restart`) | `settings_provider.dart`: L185 (`setLanguage`) | **Matched** | 實作了 Locale 動態切換與 MaterialApp 連動 |
-| **01.6 User Agent 連動** | `OtherConfigFragment.kt`: L215 (`putPrefString`) | `http_client.dart`: L33 (`onRequest`) | **Matched** | 實作了攔截器動態注入自定義 UA |
-<!-- END_AUDIT_01 -->
+| **04.1 並發資源管理** | `WebBook.kt`: L30 (`Semaphore`) | `search_provider.dart`: L100 (`Pool`) | **Matched** | 實作方式一致 |
+| **04.2 搜尋排序權重** | `SearchViewModel.kt`: `sortResults` | `search_provider.dart`: L165 (`sort`) | **Gap** | iOS 僅依來源數排序，忽略了書源本身的權重欄位 |
+| **04.3 多分組過濾** | `SearchScope.kt`: `checkedGroups` | `search_provider.dart`: L85 (`_selectedGroup`) | **Logic Gap** | iOS 目前僅支持單選，UI 與邏輯均需升級為多選 |
+| **04.4 去重逻辑** | `BookHelp.kt`: `formatAuthor` | `search_provider.dart`: L140 (`indexWhere`) | **Partial** | 缺乏對作者名稱的淨化處理 |
+<!-- END_AUDIT_04 -->

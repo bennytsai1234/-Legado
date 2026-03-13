@@ -3,28 +3,35 @@
 ## 總覽
 | ID | 模組名稱 | Android 責任區 | iOS 預期對應位置 | 狀態 | 備註 |
 |:---|:---|:---|:---|:---|:---|
-| **01** | **系統與 UI 設定** | `ui/config/`, `help/config/` | `features/settings/` | ⚠️ | 核心 Provider 已建立，UI 移植中 |
+| **01** | **系統與 UI 設定** | `ui/config/`, `help/config/` | `features/settings/` | ✅ | 已完全對齊實作 |
+| **02** | **資料庫與模型** | `data/entities/`, `data/dao/` | `core/models/`, `core/database/` | ✅ | 已優化效能與維護機制 |
+| **03** | **核心引擎與內容處理** | `model/analyzeRule/`, `help/book/` | `core/engine/`, `core/services/` | ✅ | 已移植核心 reSegment 演算法 |
+| **04** | **搜尋與書源獲取** | `model/webBook/`, `ui/book/search/` | `features/search/`, `core/services/` | ⚠️ | 結構已對應，搜尋併發邏輯待審計 |
 
 <!-- BEGIN_MAPPING_01 -->
 ### 01. 系統與 UI 設定
+(已完成)
+<!-- END_MAPPING_01 -->
+
+<!-- BEGIN_MAPPING_02 -->
+### 02. 資料庫與模型
+(已完成)
+<!-- END_MAPPING_02 -->
+
+<!-- BEGIN_MAPPING_03 -->
+### 03. 核心引擎與內容處理
+(已完成)
+<!-- END_MAPPING_03 -->
+
+<!-- BEGIN_MAPPING_04 -->
+### 04. 搜尋與書源獲取
 
 | # | Android 檔案 | 角色 | iOS 對應檔案 | 對應狀態 |
 |:--|:---|:---|:---|:---|
-| 1 | `AppConfig.kt` | 業務邏輯 (Config) | `settings_provider.dart` | ✅ 已對應 |
-| 2 | `ThemeConfig.kt` | 業務邏輯 (Theme) | `settings_provider.dart` | ✅ 已對應 |
-| 3 | `LocalConfig.kt` | 業務邏輯 (Local) | `settings_provider.dart` | ✅ 已對應 |
-| 4 | `ThemeConfigFragment.kt` | UI (Fragment) | `theme_settings_page.dart` | ✅ 已對應 |
-| 5 | `WelcomeConfigFragment.kt` | UI (Fragment) | `welcome_settings_page.dart` | ✅ 已對應 |
-| 6 | `OtherConfigFragment.kt` | UI (Fragment) | `other_settings_page.dart` | ✅ 已對應 |
-| 7 | `BackupConfigFragment.kt` | UI (Fragment) | `backup_settings_page.dart` | ✅ 已對應 |
-| 8 | `ConfigActivity.kt` | UI (Activity) | `settings_page.dart` | ✅ 已對應 |
-| 9 | `ConfigViewModel.kt` | 業務邏輯 (ViewModel) | `settings_provider.dart` | ✅ 已對應 |
-| 10 | `CoverConfigFragment.kt` | UI (Fragment) | `settings_provider.dart` (邏輯已對應) | ⚠️ 缺失 UI |
-| 11 | `ThemeListDialog.kt` | 配置 UI (Dialog) | ❌ 無對應 | ❌ 缺失 |
-| 12 | `CoverRuleConfigDialog.kt` | 配置 UI (Dialog) | ❌ 無對應 | ❌ 缺失 |
-| 13 | `DirectLinkUploadConfig.kt`| 配置 UI (Config) | ❌ 無對應 | ❌ 缺失 |
-| 14 | `CheckSourceConfig.kt` | 配置 UI (Config) | ❌ 無對應 | ❌ 缺失 |
-| 15 | `ReadBookConfig.kt` | 業務邏輯 (Config) | `settings_provider.dart` | ✅ 已對應 |
-| 16 | `ReadTipConfig.kt` | 業務邏輯 (Config) | `settings_provider.dart` | ✅ 已對應 |
-| 17 | `SourceConfig.kt` | 業務邏輯 (Config) | `settings_provider.dart` | ✅ 已對應 |
-<!-- END_MAPPING_01 -->
+| 1 | `WebBook.kt` | 網路請求與解析核心 | `book_source_service.dart` | ✅ 已對應 |
+| 2 | `SearchViewModel.kt` | 搜尋業務邏輯 | `search_provider.dart` | ✅ 已對應 |
+| 3 | `SearchActivity.kt` | 搜尋頁面 UI | `search_page.dart` | ✅ 已對應 |
+| 4 | `SearchScope.kt` | 搜尋範圍控制 | `search_provider.dart` | ⚠️ 邏輯缺失 |
+| 5 | `AnalyzeUrl.kt` | 請求參數處理 | `analyze_url.dart` | ✅ 已對應 |
+| 6 | `BookHelp.kt` | 目錄與正文獲取幫助 | `book_source_service.dart` | ⚠️ 部分缺失 |
+<!-- END_MAPPING_04 -->

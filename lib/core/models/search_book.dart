@@ -19,6 +19,9 @@ class SearchBook {
   String? variable; // 暫存變數
   String? tocUrl; // 目錄 URL
 
+  // 核心業務方法
+  String getRealAuthor() => (author ?? "").replaceAll(RegExp(r'\(.*?\)|\[.*?\]|（.*?）|【.*?】'), '').trim();
+
   SearchBook({
     required this.bookUrl,
     required this.name,

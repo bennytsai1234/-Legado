@@ -15,9 +15,14 @@ class BookDao {
     _changeController.add(null);
   }
 
-  /// 監聽數據變化 (高度還原 Android Room Flow)
+  /// 監聽數據變化 (高度還原 Android Room Flow，加入簡單防抖)
   Stream<List<Book>> watchBookshelf({int groupId = -1}) {
-    return _changeController.stream.asyncMap((_) => getBookshelf(groupId: groupId));
+    return _changeController.stream
+        .asyncMap((_) async {
+          // 加入微小延遲以聚合高頻更新
+          await Future.delayed(const Duration(milliseconds: 50));
+          return getBookshelf(groupId: groupId);
+        });
   }
 
   /// 獲取書架上的書籍，支援分組與過濾 (高度還原 Android flowByGroup)

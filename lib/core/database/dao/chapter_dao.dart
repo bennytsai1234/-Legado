@@ -185,4 +185,14 @@ class ChapterDao {
       );
     });
   }
+
+  /// 清理所有不在書架上的書籍快取內容 (高度還原 Android 清理邏輯)
+  Future<void> clearAllExpiredContent() async {
+    final db = await _db;
+    // 使用子查詢刪除內容表中不屬於當前書架書籍的條目
+    await db.rawDelete('''
+      DELETE FROM $contentsTable 
+      WHERE bookUrl NOT IN (SELECT bookUrl FROM books WHERE isInBookshelf = 1)
+    ''');
+  }
 }
