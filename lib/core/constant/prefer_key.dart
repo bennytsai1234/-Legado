@@ -61,6 +61,12 @@ class PreferKey {
   static const String appCrash = "app_crash";
   static const String lastVersionCode = "last_version_code";
   static const String threadCount = "thread_count";
+
+  // 歡迎界面
+  static const String welcomeImage = "welcomeImage";
+  static const String welcomeImageDark = "welcomeImageDark";
+  static const String welcomeShowText = "welcomeShowText";
+  static const String welcomeShowIcon = "welcomeShowIcon";
   
   // 顏色與背景配置
   static const String cPrimary = "colorPrimary";

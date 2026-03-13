@@ -78,7 +78,7 @@ class IconSettingsPage extends StatelessWidget {
           child: Text(
             '註：變更圖標在部分平台上可能需要重新啟動 App 才能生效。',
             style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-            textAlign: Center,
+            textAlign: TextAlign.center,
           ),
         ),
       ),

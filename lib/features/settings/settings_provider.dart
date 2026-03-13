@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -343,7 +344,22 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setWelcomeShowIconDark(bool v) async { welcomeShowIconDark = v; await _save('welcome_show_icon_dark', v); notifyListeners(); }
 
   // --- 啟動圖標 Setter ---
-  Future<void> setLauncherIcon(String v) async { launcherIcon = v; await _save(PreferKey.launcherIcon, v); notifyListeners(); }
+  Future<void> setLauncherIcon(String v) async {
+    launcherIcon = v;
+    await _save(PreferKey.launcherIcon, v);
+    
+    // 調用原生 Android 邏輯
+    if (Platform.isAndroid) {
+      try {
+        const platform = MethodChannel('com.legado.reader/launcher_icon');
+        await platform.invokeMethod('changeIcon', {'iconName': v});
+      } catch (e) {
+        debugPrint('變更啟動圖標失敗: $e');
+      }
+    }
+    
+    notifyListeners();
+  }
 
   /// 資料庫操作
   Future<String?> backupDatabase() async {
