@@ -7,7 +7,7 @@ class RssStarDao {
 
   static String createTableQuery() {
     return '''
-      CREATE TABLE $tableName (
+      CREATE TABLE IF NOT EXISTS $tableName (
         origin TEXT NOT NULL,
         link TEXT NOT NULL,
         title TEXT NOT NULL,
