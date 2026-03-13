@@ -7,7 +7,7 @@ class RssReadRecordDao {
 
   static String createTableQuery() {
     return '''
-      CREATE TABLE $tableName (
+      CREATE TABLE IF NOT EXISTS $tableName (
         origin TEXT NOT NULL,
         link TEXT NOT NULL,
         readTime INTEGER DEFAULT 0,
