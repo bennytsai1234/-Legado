@@ -163,13 +163,62 @@
 
 ---
 
+## 📂 資料夾路徑：legado/app/src/main/java/io/legado/app/api (系統端介面)
+
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `ReaderProvider.kt` | ContentProvider (跨應用數據共享) | - | ❌ Missing |
+| `ShortCuts.kt` | 桌面快捷方式管理 | - | ❌ Missing |
+
+---
+
+## 📂 資料夾路徑：legado/app/src/main/java/io/legado/app/base (框架基類)
+
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `BaseActivity.kt` / `BaseFragment.kt` | 通用視窗與片段邏輯 | `lib/core/base/base_provider.dart` | ⚠️ Partial |
+| `BaseViewModel.kt` | ViewModel 基礎邏輯 | `lib/core/base/base_provider.dart` | ⚠️ Partial |
+
+---
+
+## 📂 資料夾路徑：legado/app/src/main/java/io/legado/app/data/dao (資料持久層)
+
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `BookDao.kt` | 書籍資料庫操作 | `lib/core/database/dao/book_dao.dart` | ✅ Matched |
+| `BookSourceDao.kt` | 書源資料庫操作 | `lib/core/database/dao/book_source_dao.dart` | ✅ Matched |
+| `BookChapterDao.kt` | 章節資料庫操作 | `lib/core/database/dao/chapter_dao.dart` | ✅ Matched |
+| `ReplaceRuleDao.kt` | 替換規則資料庫操作 | `lib/core/database/dao/replace_rule_dao.dart` | ✅ Matched |
+| `RssSourceDao.kt` | RSS 源資料庫操作 | `lib/core/database/dao/rss_source_dao.dart` | ✅ Matched |
+| `*Dao.kt` (其餘 15+) | 其他實體資料庫操作 | `lib/core/database/dao/*.dart` | ✅ Matched |
+
+---
+
+## 📂 資料夾路徑：legado/app/src/main/java/io/legado/app/receiver (廣播接收器)
+
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `MediaButtonReceiver.kt` | 耳機鍵/媒體鍵監聽 (聽書切換) | - | ❌ Missing |
+| `NetworkChangedListener.kt` | 網路狀態變化監聽 | - | ❌ Missing |
+
+---
+
+## 📂 資料夾路徑：legado/app/src/main/java/io/legado/app/web (內置服務端)
+
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `HttpServer.kt` | NanoHTTPD 伺服器核心 | `lib/core/services/web_service.dart` | ✅ Matched |
+| `WebSocketServer.kt` | 雙向通信服務 (日誌/同步) | - | ❌ Missing |
+
+---
+
 ## 📂 資料夾路徑：legado/modules (核心模組對位)
 
 | Android 模組 | 職責描述 | iOS/Flutter 對位路徑 | 狀態 |
 |:---|:---|:---|:---|
 | `modules/book` | 各類電子書格式解析 (EPUB, UMD, TXT) | `lib/core/local_book` | ✅ Matched |
 | `modules/rhino` | Rhino JS 引擎封裝與橋接 | `lib/core/engine/js` | ⚠️ Partial |
-| `modules/web` | 基於 OkHttp 的網路請求擴展 | `lib/core/services/web_service.dart` (部分) | ⚠️ Partial |
+| `modules/web` | **Web 管理介面 (Vue.js 原始碼)** | - (iOS 端並無此管理介面) | ❌ Missing |
 
 ---
 
