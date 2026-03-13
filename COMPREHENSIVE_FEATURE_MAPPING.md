@@ -74,11 +74,36 @@
 
 ---
 
+## 📂 資料夾路徑：legado/app/src/main/java/io/legado/app/help
+
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `AppWebDav.kt` | WebDAV 備份與同步服務 | `lib/core/services/webdav_service.dart` | ✅ Matched |
+| `CacheManager.kt` | 全域快取生命週期管理 | - | ❌ Missing |
+| `CrashHandler.kt` | 全域異常捕獲與日誌回傳 | - | ❌ Missing |
+| `DefaultData.kt` | 預設書源、語音、規則初始化 | `lib/core/services/default_data.dart` | ✅ Matched |
+| `JsEncodeUtils.kt` | JS 內的編碼加密工具 | `lib/core/engine/js/js_encode_utils.dart` | ✅ Matched |
+| `JsExtensions.kt` | JS 環境中的全域方法擴展 | `lib/core/engine/js/js_extensions.dart` | ✅ Matched |
+| `LauncherIconHelp.kt` | 更換應用程式圖示 | - | ❌ Missing |
+| `LifecycleHelp.kt` | Activity/Service 生命週期監聽 | - | ❌ Missing |
+| `MediaHelp.kt` | 音頻播放與多媒體控制 | - | ❌ Missing |
+| `ReplaceAnalyzer.kt` | 替換規則解析與測試 | - | ❌ Missing |
+| `TTS.kt` | 語音合成封裝 | - | ❌ Missing |
+
+### 📂 子資料夾：help/source & help/book
+| Android 檔案/路徑 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `help/source/*` | 書源解析、導入、驗證邏輯 | `lib/core/services/source_verification_service.dart` | ⚠️ Partial |
+| `help/book/*` | 章節下載、內容抓取、本地書導入 | `lib/core/services/download_service.dart` | ⚠️ Partial |
+| `help/storage/*` | SAF、外部存儲協作 | `lib/core/storage/file_doc.dart` | ✅ Matched |
+
+---
+
 ## 遞迴進度回報
 - [x] `constant`
 - [x] `exception`
 - [x] `utils`
-- [ ] `help`
+- [x] `help`
 - [ ] `model`
 - [ ] `data`
 - [ ] `service`
