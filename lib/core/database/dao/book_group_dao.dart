@@ -10,7 +10,7 @@ class BookGroupDao {
   /// 建立表格
   static String createTableQuery() {
     return '''
-      CREATE TABLE $tableName (
+      CREATE TABLE IF NOT EXISTS $tableName (
         groupId INTEGER PRIMARY KEY,
         groupName TEXT NOT NULL,
         "order" INTEGER DEFAULT 0,
