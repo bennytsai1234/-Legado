@@ -14,6 +14,7 @@ import '../settings/font_manager_page.dart';
 import '../settings/settings_page.dart';
 import '../replace_rule/replace_rule_page.dart';
 import 'click_action_config_page.dart';
+import 'auto_read_dialog.dart';
 
 import 'engine/simulation_page_view.dart';
 
@@ -252,7 +253,15 @@ class _ReaderPageState extends State<ReaderPage> {
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Padding(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           _buildMiniFab(Icons.search, () => _showSearchDialog(context, provider)),
-          _buildMiniFab(provider.isAutoPaging ? Icons.pause_circle_filled : Icons.auto_stories, () { provider.toggleAutoPage(); if (!provider.isAutoPaging) provider.toggleControls(); }),
+          _buildMiniFab(provider.isAutoPaging ? Icons.pause_circle_filled : Icons.auto_stories, () {
+            if (provider.isAutoPaging) {
+              provider.stopAutoPage();
+            } else {
+              provider.startAutoPage();
+              provider.toggleControls();
+              AutoReadDialog.show(context);
+            }
+          }),
           _buildMiniFab(Icons.find_replace, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ReplaceRulePage()))),
           _buildMiniFab(provider.themeIndex == 1 ? Icons.brightness_7 : Icons.brightness_2, () => provider.setTheme(provider.themeIndex == 1 ? 0 : 1)),
         ])),
