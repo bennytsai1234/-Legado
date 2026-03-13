@@ -24,3 +24,19 @@ class AppConst {
   static const String channelIdReadAloud = "channel_read_aloud";
   static const String channelIdWeb = "channel_web";
 }
+
+/// PlaybackStatus - 播放狀態 (對標 Android constant/Status.kt)
+enum PlaybackStatus {
+  stop,
+  play,
+  pause,
+}
+
+/// AppTheme - 主題類型 (對標 Android constant/Theme.kt)
+enum AppTheme {
+  dark,
+  light,
+  auto,
+  transparent,
+  eInk,
+}
