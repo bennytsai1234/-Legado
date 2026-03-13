@@ -134,3 +134,33 @@
 | **04.4 JS 上下文** | `RhinoScriptEngine.kt`: 183 (`getRuntimeScope`) | `js_engine.dart`: 35 (`evaluate`) | **Equivalent** | 對象注入與執行流程語義一致 |
 | **04.5 EPUB 加載** | `EpubReader.java`: 60 (`readEpub`) | `epub_parser.dart`: 14 (`load`) | **Equivalent** | 核心解析功能對等 |
 <!-- END_AUDIT_04 -->
+
+<!-- BEGIN_AUDIT_05 -->
+## 05. 數據持久化
+
+**模組職責**：管理書籍、書源、章節、閱讀進度等數據的本地存儲（SQLite）。
+**Legado 檔案**：`BookDao.kt`, `BookSourceDao.kt`, `AppDatabase.kt`, `Book.kt`, `BookSource.kt`
+**Flutter (iOS) 對應檔案**：`book_dao.dart`, `book_source_dao.dart`, `app_database.dart`, `book.dart`, `book_source.dart`
+**完成度：95%**
+**狀態：✅**
+
+**已完成項目 ✅**：
+- ✅ **模型字段對齊**：`Book` 與 `BookSource` 的數據字段完全對標 Android，確保了導入匯出的數據格式相容。
+- ✅ **響應式查詢**：iOS 通過 `StreamController` 模擬了 Android Room 的 `Flow` 機制，實現了 UI 與數據庫的實時同步。
+- ✅ **位運算分組**：完美繼承了 Android 的位運算分組 (`group`) 與類型 (`type`) 邏輯，支持一書多組與多狀態標記。
+- ✅ **進階 DAO 邏輯**：實現了 `migrateTo`（書籍遷移進度找回）及 `updateProgress` 等核心業務 DAO。
+
+**不足之處**：
+- [ ] **複雜 SQL 性能**：Android 在 `BookDao` 中使用了多表關聯的複雜 SQL 進行根目錄篩選，iOS 的實現目前較為扁平化，在超大規模數據下可能需要優化索引。
+- [ ] **事務處理**：Android 使用 `@Transaction` 註解確保原子性，iOS 雖然使用了 `db.batch()`，但在跨 DAO 的複雜事務控制上仍有簡化。
+
+### 證據鏈明細
+
+| 邏輯點 | Android 證據鏈 | iOS 證據鏈 | 狀態 | 狀態描述 |
+| :--- | :--- | :--- | :--- | :--- |
+| **05.1 模型定義** | `Book.kt`: 37 | `book.dart`: 5 | **Matched** | 字段名稱與類型完全對應 |
+| **05.2 響應式監聽** | `BookDao.kt`: 22 (`flowByGroup`) | `book_dao.dart`: 18 (`watchBookshelf`) | **Matched** | 數據流式更新機制對等 |
+| **05.3 分組位運算** | `BookDao.kt`: 73 (`flowByUserGroup`) | `book_dao.dart`: 35 (`getBookshelf`) | **Matched** | 位元過濾邏輯一致 |
+| **05.4 進度更新** | `BookDao.kt`: 173 (`upProgress`) | `book_dao.dart`: 137 (`updateProgress`) | **Matched** | 進度保存與時間戳邏輯一致 |
+| **05.5 批量刪除** | `BookSourceDao.kt`: 228 (`delete`) | `book_source_dao.dart`: 88 (`deleteSources`) | **Matched** | 批處理刪除語義一致 |
+<!-- END_AUDIT_05 -->
