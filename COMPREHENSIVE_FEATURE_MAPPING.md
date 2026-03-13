@@ -81,23 +81,64 @@
 | Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
 |:---|:---|:---|:---|
 | `AppWebDav.kt` | WebDAV 備份與同步服務 | `lib/core/services/webdav_service.dart` | ✅ Matched |
-| `CacheManager.kt` | 全域快取生命週期管理 | - | ❌ Missing |
-| `CrashHandler.kt` | 全域異常捕獲與日誌回傳 | - | ❌ Missing |
-| `DefaultData.kt` | 預設書源、語音、規則初始化 | `lib/core/services/default_data.dart` | ✅ Matched |
-| `JsEncodeUtils.kt` | JS 內的編碼加密工具 | `lib/core/engine/js/js_encode_utils.dart` | ✅ Matched |
-| `JsExtensions.kt` | JS 環境中的全域方法擴展 | `lib/core/engine/js/js_extensions.dart` | ✅ Matched |
-| `LauncherIconHelp.kt` | 更換應用程式圖示 | - | ❌ Missing |
-| `LifecycleHelp.kt` | Activity/Service 生命週期監聽 | - | ❌ Missing |
-| `MediaHelp.kt` | 音頻播放與多媒體控制 | - | ❌ Missing |
-| `ReplaceAnalyzer.kt` | 替換規則解析與測試 | - | ❌ Missing |
-| `TTS.kt` | 語音合成封裝 | - | ❌ Missing |
+| `CacheManager.kt` | 全域快取生命週期管理 (記憶體+磁碟) | `lib/core/services/cache_manager.dart` | ⚠️ Partial |
+| `ConcurrentRateLimiter.kt` | 併發頻率限制工具 | `lib/core/services/rate_limiter.dart` | ✅ Matched |
+| `CrashHandler.kt` | 全域異常捕獲與日誌記錄 | `lib/core/services/crash_handler.dart` | ⚠️ Partial |
+| `DefaultData.kt` | 預設書源、語音、規則初始化 | `lib/core/services/default_data.dart` | ⚠️ Partial |
+| `EventMessage.kt` | 事件總線訊息定義 | `lib/core/services/event_bus.dart` | ✅ Matched |
+| `JsEncodeUtils.kt` | JS 內的編碼加密工具 (AES/DES/MD5) | `lib/core/engine/js/js_encode_utils.dart` | ✅ Matched |
+| `JsExtensions.kt` | JS 環境中的全域方法擴展 (Ajax/WebView) | `lib/core/engine/js/js_extensions.dart` | ✅ Matched |
+| `LauncherIconHelp.kt` | 動態更換應用程式圖示 | - | ❌ Missing |
+| `LifecycleHelp.kt` | 生命週期監聽 | `WidgetsBindingObserver` | ✅ Absorbed |
+| `MediaHelp.kt` | 音頻播放與多媒體控制 | `lib/core/services/audio_play_service.dart` | ✅ Matched |
+| `ReplaceAnalyzer.kt` | 替換規則 JSON 解析與校驗 | `lib/core/models/replace_rule.dart` | ✅ Matched |
+| `TTS.kt` | 語音合成 (TTS) 封裝 | `lib/core/services/tts_service.dart` | ✅ Matched |
+| `RuleComplete.kt" | 規則完整性校驗 | - | ❌ Missing |
 
-### 📂 子資料夾：help/source & help/book
-| Android 檔案/路徑 | 職責描述 | iOS 對位檔案 | 狀態 |
+### 📂 子資料夾：help/config (配置管理)
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
 |:---|:---|:---|:---|
-| `help/source/*` | 書源解析、導入、驗證邏輯 | `lib/core/services/source_verification_service.dart` | ⚠️ Partial |
-| `help/book/*` | 章節下載、內容抓取、本地書導入 | `lib/core/services/download_service.dart` | ⚠️ Partial |
-| `help/storage/*` | SAF、外部存儲協作 | `lib/core/storage/file_doc.dart` | ✅ Matched |
+| `AppConfig.kt` | 全域應用程式配置管理 | `lib/core/constant/prefer_key.dart` | ✅ Matched |
+| `ReadBookConfig.kt` | 閱讀器專屬配置 (字體、間距等) | - | ❌ Missing |
+| `ThemeConfig.kt` | 主題色彩配置 | - | ❌ Missing |
+| `LocalConfig.kt" | 本地運行狀態配置 | - | ❌ Missing |
+
+### 📂 子資料夾：help/book (書籍邏輯)
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `ContentProcessor.kt` | 正文清理與排版預處理 | `lib/core/services/content_processor.dart` | ✅ Matched |
+| `ContentHelp.kt` | 內容抓取輔助工具 | `lib/core/services/content_processor.dart` | ✅ Matched |
+| `BookHelp.kt` | 書籍管理、路徑獲取、快取清理 | `lib/core/services/download_service.dart` | ⚠️ Partial |
+| `BookContent.kt" | 本地書籍內容讀取 | `lib/core/local_book/*` | ✅ Matched |
+
+### 📂 子資料夾：help/http (網路協定)
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `HttpHelper.kt` | OKHttp 封裝與請求輔助 | `lib/core/services/http_client.dart` | ✅ Matched |
+| `CookieStore.kt` | Cookie 持久化儲存 | `lib/core/services/cookie_store.dart` | ✅ Matched |
+| `BackstageWebView.kt` | 背景 WebView 解析服務 | `lib/core/services/backstage_webview.dart` | ✅ Matched |
+| `SSLHelper.kt` | 證書校驗與 HTTPS 處理 | `lib/core/services/http_client.dart` | ✅ Matched |
+| `Cronet.kt" | Google Cronet 引擎整合 | `lib/core/services/http_client.dart` | ✅ Absorbed |
+
+### 📂 子資料夾：help/source (書源輔助)
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `SourceHelp.kt` | 書源導入、排序、群組管理 | `lib/core/services/book_source_service.dart` | ✅ Matched |
+| `SourceVerificationHelp.kt` | 書源驗證與瀏覽器互動 (Captcha) | `lib/core/services/source_verification_service.dart` | ✅ Matched |
+| `BookSourceExtensions.kt" | 書源相關擴展方法 | - | ❌ Missing |
+
+### 📂 子資料夾：help/storage (備份還原)
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `BackupAES.kt` | 加密備份實作 | `lib/core/services/backup_aes_service.dart` | ✅ Matched |
+| `Restore.kt` | 備份還原邏輯 | `lib/core/services/restore_service.dart` | ✅ Matched |
+| `Backup.kt" | 基礎備份邏輯 | `lib/core/services/backup_aes_service.dart` | ⚠️ Partial |
+
+### 📂 子資料夾：help/update (自動更新)
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `AppUpdateGitHub.kt` | GitHub Releases 自動更新檢查 | - | ❌ Missing |
+| `AppUpdate.kt" | 更新介面定義 | - | ❌ Missing |
 
 ---
 
@@ -119,16 +160,57 @@
 
 ---
 
-## 📂 資料夾路徑：legado/app/src/main/java/io/legado/app/model (業務邏輯對位)
+## 📂 資料夾路徑：legado/app/src/main/java/io/legado/app/model (業務邏輯)
 
 | Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
 |:---|:---|:---|:---|
-| `ReadBook.kt` | 閱讀器核心狀態與頁面調度 | `lib/features/book/book_provider.dart` | ⚠️ Partial |
-| `CacheBook.kt` | 章節預加載與快取邏輯 | `lib/core/services/download_service.dart` | ⚠️ Partial |
-| `CheckSource.kt` | 書源效能測試與驗證 | `lib/core/services/check_source_service.dart` | ✅ Matched |
-| `Debug.kt` | 書源調試日誌與邏輯 | - | ❌ Missing |
-| `SharedJsScope.kt` | JS 執行環境共用變數管理 | `lib/core/engine/js/shared_js_scope.dart` | ✅ Matched |
-| `webBook/*` | 網路書源具體解析實作 | `lib/core/engine/book_source_engine.dart` | ⚠️ Partial |
+| `AudioPlay.kt` | 音頻播放總控 (聽書) | `lib/core/services/audio_play_service.dart` | ✅ Matched |
+| `BookCover.kt` | 書籍封面獲取與預設封面生成 | `lib/core/services/image_loader.dart` | ⚠️ Partial |
+| `CacheBook.kt` | 多執行緒書籍快取管理 | `lib/core/services/download_service.dart` | ✅ Matched |
+| `CheckSource.kt` | 書源可用性效能測試 | `lib/core/services/check_source_service.dart` | ✅ Matched |
+| `Debug.kt` | 書源解析日誌收集與調試 | `lib/features/debug/debug_page.dart` | ⚠️ Partial |
+| `Download.kt` | 背景下載任務發起 | `lib/core/services/download_service.dart` | ✅ Matched |
+| `ReadAloud.kt` | 朗讀狀態與語音調度 | `lib/core/services/tts_service.dart` | ✅ Matched |
+| `ReadBook.kt` | 閱讀器核心狀態管理 (進度、頁面、章節) | `lib/features/reader/reader_provider.dart` | ✅ Matched |
+| `ReadManga.kt` | 漫畫閱讀器核心邏輯 | `lib/features/reader/manga_reader_page.dart` | ⚠️ Partial |
+| `SharedJsScope.kt` | JS 執行環境共用變數 | `lib/core/engine/js/shared_js_scope.dart` | ✅ Matched |
+
+### 📂 子資料夾：model/analyzeRule (解析引擎)
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `AnalyzeRule.kt` | 規則解析核心總控 | `lib/core/engine/analyze_rule.dart` | ✅ Matched |
+| `AnalyzeUrl.kt` | 動態 URL 解析 (含 JS 執行) | `lib/core/engine/analyze_url.dart` | ✅ Matched |
+| `RuleAnalyzer.kt" | 規則文本提取與清理 | `lib/core/engine/rule_analyzer.dart` | ✅ Matched |
+| `AnalyzeByJSoup.kt` | CSS 選擇器解析實作 | `lib/core/engine/parsers/analyze_by_css.dart` | ✅ Matched |
+| `AnalyzeByJSonPath.kt` | JSONPath 解析實作 | `lib/core/engine/parsers/analyze_by_json_path.dart` | ✅ Matched |
+| `AnalyzeByXPath.kt` | XPath 解析實作 | `lib/core/engine/parsers/analyze_by_xpath.dart` | ✅ Matched |
+| `AnalyzeByRegex.kt` | 正規表達式解析實作 | `lib/core/engine/parsers/analyze_by_regex.dart` | ✅ Matched |
+| `QueryTTF.java` | 字體輪廓資料解析 (用於字體反爬) | `lib/core/engine/js/query_ttf.dart` | ✅ Matched |
+| `RuleDataInterface.kt` | 規則資料接口定義 | `lib/core/models/rule_data_interface.dart` | ✅ Matched |
+
+### 📂 子資料夾：model/localBook (本地解析)
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `EpubFile.kt` | EPUB 格式解析 | `lib/core/local_book/epub_parser.dart` | ✅ Matched |
+| `TextFile.kt` | TXT 格式分章解析 | `lib/core/local_book/txt_parser.dart` | ✅ Matched |
+| `UmdFile.kt` | UMD 格式解析 | `lib/core/local_book/umd_parser.dart` | ✅ Matched |
+| `MobiFile.kt` | MOBI 格式解析 | - | ❌ Missing |
+| `PdfFile.kt` | PDF 格式解析 | - | ❌ Missing |
+
+### 📂 子資料夾：model/rss (RSS 解析)
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `Rss.kt` | RSS 解析總控 | `lib/core/services/rss_parser.dart` | ✅ Matched |
+| `RssParserByRule.kt` | 自定義規則 RSS 解析 | `lib/core/services/rss_parser.dart` | ✅ Matched |
+| `RssParserDefault.kt` | 標準 RSS 協定解析 | `lib/core/services/rss_parser.dart` | ✅ Matched |
+
+### 📂 子資料夾：model/webBook (網路書源)
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `WebBook.kt` | 網路書源具體業務發起 (搜尋、目錄、詳情) | `lib/core/engine/book_source_engine.dart` | ✅ Matched |
+| `SearchModel.kt` | 多源併發搜尋模型 | `lib/core/services/book_source_service.dart` | ✅ Matched |
+| `BookInfo.kt` | 書籍詳情解析封裝 | `lib/core/models/book.dart` | ✅ Matched |
+| `BookChapterList.kt" | 章節列表解析封裝 | `lib/core/models/chapter.dart` | ✅ Matched |
 
 ---
 
@@ -151,7 +233,27 @@
 | Android 資料夾 | 職責描述 | iOS/Flutter 對位路徑 | 狀態 |
 |:---|:---|:---|:---|
 | `ui/main` | 主界面、書架、底部導航 | `lib/features/bookshelf` | ✅ Matched |
-| `ui/book` | 閱讀介面、章節列表、書籍詳情 | `lib/features/reader` & `book_detail` | ✅ Matched |
+### 📂 子資料夾：ui/book/read/page (閱讀器渲染引擎)
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `PageView.kt` | 頁面容器與手勢處理 | `lib/features/reader/engine/page_view_model.dart` | ✅ Matched |
+| `ReadView.kt` | 閱讀介面核心畫布 | `lib/features/reader/reader_page.dart` | ✅ Matched |
+| `TextPage.kt` | 單頁排版資料結構 | `lib/features/reader/engine/text_page.dart` | ✅ Matched |
+| `TextChapter.kt` | 單章排版資料結構 | `lib/features/reader/engine/chapter_provider.dart` | ✅ Matched |
+| `ChapterProvider.kt` | 分頁與排版演算法核心 | `lib/features/reader/engine/chapter_provider.dart` | ✅ Matched |
+| `SimulationPageDelegate.kt` | 仿真翻頁動畫實作 | `lib/features/reader/engine/simulation_page_anim.dart` | ✅ Matched |
+| `ScrollPageDelegate.kt` | 滾動翻頁動畫實作 | `Flutter ScrollView` | ✅ Absorbed |
+| `SlidePageDelegate.kt` | 滑動翻頁動畫實作 | `Flutter PageView` | ✅ Absorbed |
+| `TextMeasure.kt` | 文字測量與折行計算 | `TextPainter` (Flutter) | ✅ Absorbed |
+| `AutoPager.kt` | 自動翻頁邏輯 | `lib/features/reader/reader_provider.dart` | ✅ Matched |
+
+### 📂 子資料夾：ui/book/audio & ui/book/read/config
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `AudioPlayActivity.kt` | 聽書播放介面 | `lib/features/reader/audio_player_page.dart` | ✅ Matched |
+| `AutoReadDialog.kt` | 自動翻頁設定對話框 | `lib/features/reader/auto_read_dialog.dart` | ✅ Matched |
+| `ClickActionConfigDialog.kt` | 點擊區域行為設定 | `lib/features/reader/click_action_config_dialog.dart` | ✅ Matched |
+| `ReadAloudDialog.kt` | 朗讀設定對話框 (TTS) | `lib/features/settings/aloud_settings_page.dart` | ✅ Matched |
 | `ui/rss` | RSS 訂閱列表、內容展示 | `lib/features/rss` | ✅ Matched |
 | `ui/replace` | 替換規則管理界面 | `lib/features/replace_rule` | ✅ Matched |
 | `ui/welcome` | 啟動頁 (Splash Screen) | `lib/features/welcome` | ✅ Matched |
