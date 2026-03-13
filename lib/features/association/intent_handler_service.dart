@@ -28,12 +28,12 @@ class IntentHandlerService {
 
     // 1. 處理 Deep Link (legado://)
     _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
-      _handleUri(context, uri);
+      if (context.mounted) _handleUri(context, uri);
     });
 
     // 2. 處理外部分享 (File/Text)
     _sharedMediaSubscription = ReceiveSharingIntent.instance.getMediaStream().listen((value) {
-      _handleSharedMedia(context, value);
+      if (context.mounted) _handleSharedMedia(context, value);
     }, onError: (err) {
       debugPrint("getIntentDataStream error: $err");
     });
@@ -41,12 +41,12 @@ class IntentHandlerService {
     // 檢查啟動時的 Intent
     ReceiveSharingIntent.instance.getInitialMedia().then((value) {
       if (value.isNotEmpty) {
-        _handleSharedMedia(context, value);
+        if (context.mounted) _handleSharedMedia(context, value);
       }
     });
     
     _appLinks.getInitialLink().then((uri) {
-      if (uri != null) _handleUri(context, uri);
+      if (uri != null && context.mounted) _handleUri(context, uri);
     });
   }
 
