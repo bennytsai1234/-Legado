@@ -239,7 +239,7 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
         if (provider.isBatchMode) {
           provider.toggleSelect(book.bookUrl);
         } else {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => BookDetailPage(searchBook: AggregatedSearchBook(book: SearchBook(bookUrl: book.bookUrl, name: book.name, author: book.author, coverUrl: book.coverUrl, intro: book.intro, origin: book.origin, originName: book.originName, type: book.type), sources: [book.originName ?? '本地']))));
+          Navigator.push(context, MaterialPageRoute(builder: (_) => BookDetailPage(searchBook: AggregatedSearchBook(book: SearchBook(bookUrl: book.bookUrl, name: book.name, author: book.author, coverUrl: book.coverUrl, intro: book.intro, origin: book.origin, originName: book.originName, type: book.type), sources: [book.originName]))));
         }
       },
       child: Column(
@@ -342,7 +342,7 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
         if (provider.isBatchMode) {
           provider.toggleSelect(book.bookUrl);
         } else {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => BookDetailPage(searchBook: AggregatedSearchBook(book: SearchBook(bookUrl: book.bookUrl, name: book.name, author: book.author, coverUrl: book.coverUrl, intro: book.intro, origin: book.origin, originName: book.originName, type: book.type), sources: [book.originName ?? '本地']))));
+          Navigator.push(context, MaterialPageRoute(builder: (_) => BookDetailPage(searchBook: AggregatedSearchBook(book: SearchBook(bookUrl: book.bookUrl, name: book.name, author: book.author, coverUrl: book.coverUrl, intro: book.intro, origin: book.origin, originName: book.originName, type: book.type), sources: [book.originName]))));
         }
       },
       onLongPress: () => provider.toggleBatchMode(book.bookUrl),

@@ -546,7 +546,7 @@ class _ReadRecordPageState extends State<ReadRecordPage> {
                               onTap: () async {
                                 // 深度補齊：連動搜尋邏輯 (對應 Android findByName)
                                 final bookList = await _bookDao.findByName(record.bookName);
-                                if (!mounted) return;
+                                if (!context.mounted) return;
                                 if (bookList.isEmpty) {
                                   Navigator.push(context, MaterialPageRoute(builder: (_) => SearchPage(initialQuery: record.bookName)));
                                 } else {

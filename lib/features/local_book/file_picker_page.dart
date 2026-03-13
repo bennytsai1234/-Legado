@@ -116,7 +116,7 @@ class _FilePickerPageState extends State<FilePickerPage> {
             icon: const Icon(Icons.arrow_back),
             onPressed: () async {
               if (!await _onWillPop()) return;
-              if (mounted) Navigator.pop(context);
+              if (context.mounted) Navigator.pop(context);
             },
           ),
         ),

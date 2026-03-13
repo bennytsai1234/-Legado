@@ -231,7 +231,7 @@ class _BookmarkListPageState extends State<BookmarkListPage> {
                     content: contentController.text,
                   );
                   await _bookmarkDao.insert(newBookmark);
-                  if (mounted) {
+                  if (context.mounted) {
                     Navigator.pop(ctx);
                     _loadBookmarks(_searchController.text);
                   }
