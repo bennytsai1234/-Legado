@@ -15,6 +15,7 @@ import '../models/book_progress.dart';
 import '../models/replace_rule.dart';
 import '../models/rss_source.dart';
 import 'book_source_service.dart';
+import '../engine/app_event_bus.dart';
 
 /// WebService - 本地 Web 伺服器
 /// 對應 Android: service/WebService.kt 與 web/HttpServer.kt
@@ -349,9 +350,10 @@ class WebService extends ChangeNotifier {
     final file = File('${tempDir.path}/$fileName');
     await file.writeAsBytes(fileData);
 
-    // TODO: Actually import the book using BookshelfProvider or BookDao
-    // But since this is a background service, simply saving it might be enough if Legado UI expects it.
-    return "File uploaded to ${file.path}";
+    // 通知 BookshelfProvider 匯入書籍
+    AppEventBus().fire('importLocalBook', data: file.path);
+    
+    return "File uploaded to ${file.path}. Import triggered.";
   }
 
   int _indexOfBytes(List<int> data, List<int> pattern, int start) {
