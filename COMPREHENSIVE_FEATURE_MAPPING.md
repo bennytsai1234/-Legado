@@ -38,10 +38,46 @@
 
 ---
 
+## 📂 資料夾路徑：legado/app/src/main/java/io/legado/app/utils
+
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `ACache.kt` | 磁碟緩存工具 | - | ❌ Missing |
+| `ActivityExtensions.kt` | Activity 視窗與 UI 擴展 | - | ❌ Missing |
+| `ArchiveUtils.kt` | 壓縮擋 (ZIP/7z) 處理 | - | ❌ Missing |
+| `BitmapUtils.kt` / `ImageUtils.kt` | 圖片處理、縮放、裁剪 | - | ❌ Missing |
+| `ChineseUtils.kt` | 繁簡轉換 | `lib/core/services/chinese_utils.dart` | ✅ Matched |
+| `ColorUtils.kt` | 顏色解析、轉換 | - | ❌ Missing |
+| `ContextExtensions.kt` | Context 相關 (螢幕、權限、路徑) | - | ❌ Missing |
+| `CookieManagerExtensions.kt` | Cookie 獲取與儲存 | - | ❌ Missing |
+| `EncoderUtils.kt` / `MD5Utils.kt` | 編碼 (Base64/MD5) | `lib/core/engine/js/js_encode_utils.dart` | ⚠️ Partial |
+| `EncodingDetect.kt` | 文件編碼自動偵測 | `lib/core/services/encoding_detect.dart` | ✅ Matched |
+| `FileDocExtensions.kt` | 虛擬文件管理 (SAF) | `lib/core/storage/file_doc.dart` | ✅ Matched |
+| `FileUtils.kt` | 基礎檔案操作 | `lib/core/storage/file_doc.dart` | ⚠️ Partial |
+| `GsonExtensions.kt` / `JsonExtensions.kt` | JSON 解析封裝 | `dart:convert` (內建) | ✅ Matched |
+| `HtmlFormatter.kt` / `JsoupExtensions.kt` | HTML 內容清理與格式化 | `lib/core/services/content_processor.dart` | ⚠️ Partial |
+| `NetworkUtils.kt` | 代理、UA、網路狀態檢查 | - | ❌ Missing |
+| `QRCodeUtils.kt` | 二維碼生成與識別 | - | ❌ Missing |
+| `StringUtils.kt` / `StringExtensions.kt` | 字串處理、格式檢查 | `dart:core` (內建擴展) | ✅ Matched |
+| `TimeUtils.kt` | 時間格式化、時差計算 | - | ❌ Missing |
+| `ToastUtils.kt` / `Snackbars.kt` | 提示訊息 UI | - | ❌ Missing |
+| `UriExtensions.kt` / `UrlUtil.kt` | URL 解析、編碼、合併 | - | ❌ Missing |
+| `*Extensions.kt` (其他 40+ 檔案) | Android SDK 特有的擴展方法 | - | ❌ Missing |
+
+---
+
+## 📂 資料夾路徑：legado/app/src/main/java/io/legado/app/utils/compress
+
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `ZipUtils.kt` | ZIP 壓縮與解壓 | - | ❌ Missing |
+
+---
+
 ## 遞迴進度回報
 - [x] `constant`
 - [x] `exception`
-- [ ] `utils`
+- [x] `utils`
 - [ ] `help`
 - [ ] `model`
 - [ ] `data`
