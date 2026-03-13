@@ -53,6 +53,12 @@ class BookshelfProvider extends ChangeNotifier {
   BookshelfProvider() {
     _init();
     _eventSub = AppEventBus().onName(AppEventBus.upBookshelf).listen((_) => loadBooks());
+    // 監聽外部匯入請求 (如來自 WebService)
+    AppEventBus().onName('importLocalBook').listen((event) {
+      if (event.data is String) {
+        importLocalBookPath(event.data);
+      }
+    });
   }
 
   int _sortMode = 0; // 0:手動, 1:最後閱讀, 2:最晚更新, 3:書名, 4:作者
