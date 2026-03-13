@@ -1,17 +1,17 @@
 /// RuleAnalyzer - 規則字串切割引擎
 /// 對應 Android: model/analyzeRule/RuleAnalyzer.kt (15KB)
 class RuleAnalyzer {
-  final String _queue; // 被處理字串
-  int _pos = 0; // 當前處理到的位置
-  int _start = 0; // 當前處理欄位的開始
-  int _startX = 0; // 當前規則的開始
+  final String _queue;
+  int _pos = 0; 
+  int _start = 0; 
+  int _startX = 0; 
   final bool _isCode;
 
-  List<String> _rule = []; // 分割出的規則列表
-  int _step = 0; // 分隔字元的長度
-  String elementsType = ''; // 當前分割字串
+  List<String> _rule = [];
+  int _step = 0;
+  String elementsType = '';
 
-  static const int _esc = 92; // '\\'
+  static const int _esc = 92;
 
   RuleAnalyzer(String data, {bool isCode = false})
     : _queue = data,
@@ -33,6 +33,7 @@ class RuleAnalyzer {
   void reSetPos() {
     _pos = 0;
     _startX = 0;
+    _start = 0;
     _rule = [];
   }
 
@@ -73,87 +74,56 @@ class RuleAnalyzer {
     return -1;
   }
 
-  /// 拉出一個非內嵌代碼平衡組 (高度還原 Android chompCodeBalanced)
   bool _chompCodeBalanced(String open, String close) {
     int pos = _pos;
     int depth = 0;
     int otherDepth = 0;
     bool inSingleQuote = false;
     bool inDoubleQuote = false;
+    final openChar = open[0];
+    final closeChar = close[0];
 
     do {
-      if (pos >= _queue.length) {
-        break;
-      }
+      if (pos >= _queue.length) break;
       final c = _queue[pos++];
       if (c.codeUnitAt(0) != _esc) {
-        if (c == '\'' && !inDoubleQuote) {
-          inSingleQuote = !inSingleQuote;
-        } else if (c == '"' && !inSingleQuote) {
-          inDoubleQuote = !inDoubleQuote;
+        if (c == "'" && !inDoubleQuote) inSingleQuote = !inSingleQuote;
+        else if (c == '"' && !inSingleQuote) inDoubleQuote = !inDoubleQuote;
+        if (inSingleQuote || inDoubleQuote) continue;
+        if (c == '[') depth++;
+        else if (c == ']') depth--;
+        else if (depth == 0) {
+          if (c == openChar) otherDepth++;
+          else if (c == closeChar) otherDepth--;
         }
-
-        if (inSingleQuote || inDoubleQuote) {
-          continue;
-        }
-
-        if (c == '[') {
-          depth++;
-        } else if (c == ']') {
-          depth--;
-        } else if (depth == 0) {
-          if (c == open) {
-            otherDepth++;
-          } else if (c == close) {
-            otherDepth--;
-          }
-        }
-      } else {
-        pos++; // Skip escaped char
-      }
+      } else if (pos < _queue.length) pos++;
     } while (depth > 0 || otherDepth > 0);
 
-    if (depth > 0 || otherDepth > 0) {
-      return false;
-    }
+    if (depth > 0 || otherDepth > 0) return false;
     _pos = pos;
     return true;
   }
 
-  /// 拉出一個規則平衡組 (高度還原 Android chompRuleBalanced)
   bool _chompRuleBalanced(String open, String close) {
     int pos = _pos;
     int depth = 0;
     bool inSingleQuote = false;
     bool inDoubleQuote = false;
+    final openChar = open[0];
+    final closeChar = close[0];
 
     do {
-      if (pos >= _queue.length) {
-        break;
-      }
+      if (pos >= _queue.length) break;
       final c = _queue[pos++];
-      if (c == '\'' && !inDoubleQuote) {
-        inSingleQuote = !inSingleQuote;
-      } else if (c == '"' && !inSingleQuote) {
-        inDoubleQuote = !inDoubleQuote;
-      }
-
-      if (inSingleQuote || inDoubleQuote) {
-        continue;
-      } else if (c == '\\') {
-        pos++; continue;
-      }
-
-      if (c == open) {
-        depth++;
-      } else if (c == close) {
-        depth--;
-      }
+      if (c == "'" && !inDoubleQuote) inSingleQuote = !inSingleQuote;
+      else if (c == '"' && !inSingleQuote) inDoubleQuote = !inDoubleQuote;
+      if (inSingleQuote || inDoubleQuote) continue;
+      else if (c == r'\') { if (pos < _queue.length) pos++; continue; }
+      if (c == openChar) depth++;
+      else if (c == closeChar) depth--;
     } while (depth > 0);
 
-    if (depth > 0) {
-      return false;
-    }
+    if (depth > 0) return false;
     _pos = pos;
     return true;
   }
@@ -162,90 +132,95 @@ class RuleAnalyzer {
     return _isCode ? _chompCodeBalanced(open, close) : _chompRuleBalanced(open, close);
   }
 
-  /// 分割規則 (高度還原 Android splitRule)
   List<String> splitRule(List<String> split) {
-    if (split.length == 1) {
-      elementsType = split[0];
-      if (!_consumeTo(elementsType)) {
+    _rule = [];
+    _start = _pos;
+    _startX = _pos;
+    
+    // 多分隔符切分
+    while (true) {
+      if (!_consumeToAny(split)) {
         _rule.add(_queue.substring(_startX));
         return _rule;
-      } else {
-        _step = elementsType.length;
-        return _splitRuleRecursive();
-      }
-    } else if (!_consumeToAny(split)) {
-      _rule.add(_queue.substring(_startX));
-      return _rule;
-    }
-
-    final end = _pos;
-    _pos = _start;
-
-    while (true) {
-      final st = _findToAny(['[', '(']);
-      if (st == -1 || st > end) {
-        _rule = [_queue.substring(_startX, end)];
-        elementsType = _queue.substring(end, end + _step);
-        _pos = end + _step;
-        while (_consumeTo(elementsType)) {
-          _rule.add(_queue.substring(_start, _pos));
-          _pos += _step;
-        }
-        _rule.add(_queue.substring(_pos));
-        return _rule;
       }
 
-      _pos = st;
-      final next = _queue[_pos] == '[' ? ']' : ')';
-      if (!_chompBalanced(_queue[_pos], next)) return [_queue]; // Unbalanced fallback
-
-      if (end <= _pos) break;
-    }
-
-    _start = _pos;
-    return splitRule(split);
-  }
-
-  List<String> _splitRuleRecursive() {
-    while (true) {
       final end = _pos;
       _pos = _start;
 
-      while (true) {
+      bool skipMatch = false;
+      while (end > _pos) {
         final st = _findToAny(['[', '(']);
-        if (st == -1 || st > end) {
-          _rule.add(_queue.substring(_startX, end));
-          _pos = end + _step;
-          while (_consumeTo(elementsType)) {
-            _rule.add(_queue.substring(_start, _pos));
-            _pos += _step;
-          }
-          _rule.add(_queue.substring(_pos));
-          return _rule;
+        if (st == -1 || st > end) break;
+
+        _pos = st;
+        final next = _queue[_pos] == '[' ? ']' : ')';
+        if (!_chompBalanced(_queue[_pos], next)) return [_queue];
+
+        if (end <= _pos) {
+          skipMatch = true;
+          break;
         }
+      }
+
+      if (!skipMatch) {
+        _rule.add(_queue.substring(_startX, end));
+        elementsType = _queue.substring(end, end + _step);
+        _pos = end + _step;
+        _startX = _pos;
+        _start = _pos;
+        
+        // 轉向單一分隔符切分 (matching elementsType)
+        return _splitRuleSingle();
+      }
+
+      _start = _pos;
+      _pos = _start; // continue searching from after skipped bracket
+    }
+  }
+
+  List<String> _splitRuleSingle() {
+    _step = elementsType.length;
+    while (true) {
+      if (!_consumeTo(elementsType)) {
+        _rule.add(_queue.substring(_startX));
+        return _rule;
+      }
+
+      final end = _pos;
+      _pos = _start;
+
+      bool skipMatch = false;
+      while (end > _pos) {
+        final st = _findToAny(['[', '(']);
+        if (st == -1 || st > end) break;
 
         _pos = st;
         final next = _queue[_pos] == '[' ? ']' : ')';
         if (!_chompBalanced(_queue[_pos], next)) break;
-        if (end <= _pos) break;
+
+        if (end <= _pos) {
+          skipMatch = true;
+          break;
+        }
       }
 
-      _start = _pos;
-      if (!_consumeTo(elementsType)) {
-        _rule.add(_queue.substring(_startX));
-        return _rule;
+      if (!skipMatch) {
+        _rule.add(_queue.substring(_startX, end));
+        _pos = end + _step;
+        _startX = _pos;
+        _start = _pos;
+      } else {
+        _start = _pos;
+        // loop will call _consumeTo which starts from current _pos
       }
     }
   }
 
-  /// 替換內嵌規則 (高度還原 Android innerRuleRange 平衡版)
   String innerRuleRange(String startStr, String endStr, {required String? Function(String) fr}) {
     final st = StringBuffer();
     while (_consumeTo(startStr)) {
       final posPre = _pos;
       _pos += startStr.length;
-      
-      // 如果是括號類起始，使用平衡組檢測 (解決 {{js:{}}} 嵌套問題)
       bool balanced = false;
       if (startStr.contains('{')) {
         _pos = _queue.indexOf('{', posPre);
@@ -255,9 +230,8 @@ class RuleAnalyzer {
         balanced = _chompCodeBalanced('[', ']');
       } else {
         balanced = _consumeTo(endStr);
-        if (balanced) _pos += endStr.length; // 統一移動到結束符之後
+        if (balanced) _pos += endStr.length; 
       }
-
       if (balanced) {
         final content = _queue.substring(posPre + startStr.length, _pos - endStr.length);
         final frv = fr(content);
@@ -268,23 +242,17 @@ class RuleAnalyzer {
           continue;
         }
       }
-      // 不平衡或是普通字串，跳過此處繼續
       _pos = posPre + startStr.length;
     }
-
     if (_startX == 0) return _queue;
     st.write(_queue.substring(_startX));
     return st.toString();
   }
 
-  /// 替換內嵌規則 (便捷版)
   String innerRule(String startStr, {required String? Function(String) fr}) {
     String endStr = "}";
-    if (startStr.startsWith('{{')) {
-      endStr = "}}";
-    } else if (startStr.startsWith('[')) {
-      endStr = "]";
-    }
+    if (startStr.startsWith('{{')) endStr = "}}";
+    else if (startStr.startsWith('[')) endStr = "]";
     return innerRuleRange(startStr, endStr, fr: fr);
   }
 }

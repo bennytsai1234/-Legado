@@ -41,7 +41,7 @@ class AnalyzeByJsonPath {
     rule = _preProcessRule(rule);
     if (rule.isEmpty) return null;
 
-    final ruleAnalyzer = RuleAnalyzer(rule, isCode: false);
+    final ruleAnalyzer = RuleAnalyzer(rule, isCode: true);
     final rules = ruleAnalyzer.splitRule(['&&', '||']);
 
     if (rules.length == 1) {
@@ -88,12 +88,11 @@ class AnalyzeByJsonPath {
     rule = _preProcessRule(rule);
     if (rule.isEmpty) return [];
 
-    final ruleAnalyzer = RuleAnalyzer(rule, isCode: false);
+    final ruleAnalyzer = RuleAnalyzer(rule, isCode: true);
     final rules = ruleAnalyzer.splitRule(['&&', '||', '%%']);
 
     if (rules.length == 1) {
       ruleAnalyzer.reSetPos();
-      final resultList = <dynamic>[];
       final ruleStr = ruleAnalyzer.innerRule(r'{$.', fr: (it) => getString(it.startsWith('\$') ? it : '\$.$it'));
       
       if (ruleStr == rule) {
