@@ -7,7 +7,7 @@ class RssSourceDao {
 
   static String createTableQuery() {
     return '''
-      CREATE TABLE $tableName (
+      CREATE TABLE IF NOT EXISTS $tableName (
         sourceUrl TEXT PRIMARY KEY,
         sourceName TEXT NOT NULL,
         sourceIcon TEXT,
