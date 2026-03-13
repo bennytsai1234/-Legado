@@ -89,13 +89,16 @@ class DefaultData {
       final rules = list.map((e) => TxtTocRule.fromJson(e)).toList();
       await TxtTocRuleDao().insertOrUpdateAll(rules);
     } catch (e) {
+      debugPrint("Error loading default TOC rules: $e. Falling back to hardcoded rules.");
       // 如果 Asset 缺失，回退到基礎硬編碼規則 (對標 Android 應急邏輯)
       final defaultRules = [
         TxtTocRule(id: 0, name: "標準章節", rule: r"第[一二三四五六七八九十百千萬零\d]+[章回節卷集幕計].*", enable: true),
         TxtTocRule(id: 0, name: "數字章節", rule: r"^\s*\d+.*", enable: true),
       ];
-      for (final rule in defaultRules) {
-        await TxtTocRuleDao().insertOrUpdate(rule);
+      try {
+        await TxtTocRuleDao().insertOrUpdateAll(defaultRules);
+      } catch (dbError) {
+        debugPrint("Failed to insert hardcoded TOC rules: $dbError");
       }
     }
   }
