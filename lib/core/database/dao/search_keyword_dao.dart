@@ -7,7 +7,7 @@ class SearchKeywordDao {
 
   static String createTableQuery() {
     return '''
-      CREATE TABLE $tableName (
+      CREATE TABLE IF NOT EXISTS $tableName (
         word TEXT PRIMARY KEY,
         usage INTEGER DEFAULT 0,
         lastUseTime INTEGER DEFAULT 0,
