@@ -10,6 +10,12 @@ class BookType {
   static const int local = 0x100; // 256: 本地
   static const int archive = 0x200; // 512: 壓縮包
   static const int notShelf = 0x400; // 1024: 未加入書架
+
+  // 所有可以從書源轉換的書籍類型 (text | image | audio | webFile)
+  static const int allBookType = text | image | audio | webFile;
+
+  // 所有本地書籍類型的聯集
+  static const int allBookTypeLocal = text | image | audio | webFile | local;
   
   // AI_PORT: GAP-CONST-03 derived from [BookType.kt]
   static const String localTag = "loc_book";
@@ -24,8 +30,21 @@ class BookSourceType {
   static const int file = 3; // 只提供下載服務的網站
 }
 
+/// PlaybackStatus - 播放狀態 (對標 Android constant/Status.kt)
+class PlaybackStatus {
+  PlaybackStatus._();
+  static const int stop = 0;
+  static const int play = 1;
+  static const int pause = 3;
+}
+
 /// SourceType - 源大類 (對標 Android constant/SourceType.kt)
 class SourceType {
   static const int book = 0;
   static const int rss = 1;
+}
+
+/// AppConst - 應用程式常數
+class AppConst {
+  static const String imagePathKey = "imagePath";
 }

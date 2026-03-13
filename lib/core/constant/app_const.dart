@@ -7,6 +7,7 @@ class AppConst {
   static const String uaName = "User-Agent";
   static const int maxThread = 9;
   static const int defaultWebDavId = -1;
+  static const String imagePathKey = "imagePath";
 
   static const List<String> charsets = [
     "UTF-8",

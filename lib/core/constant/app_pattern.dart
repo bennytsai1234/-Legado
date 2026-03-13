@@ -7,7 +7,9 @@ class AppPattern {
   static final RegExp expPattern = RegExp(r'\{\{([\w\W]*?)\}\}');
 
   // 匹配格式化後的圖片格式
-  static final RegExp imgPattern = RegExp(r"<img[^>]*src=['" '"' r"]([^'" '"' r"]*(?:['" '"' r"][^>]+\})?)['" '"' r"][^>]*>");
+  static final RegExp imgPattern = RegExp(
+    r'<img[^>]*src=["' "'" r']([^"' "'" r']*(?:["' "'" r'][^>]+\})?)["' "'" r'][^>]*>',
+  );
 
   // dataURL 圖片類型
   static final RegExp dataUriRegex = RegExp(r'^data:.*?;base64,(.*)');
