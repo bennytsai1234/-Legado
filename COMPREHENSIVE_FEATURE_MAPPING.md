@@ -13,6 +13,11 @@
 | **08** | **系統助手/備份** | `help/` | `core/services/` | ✅ | 備份恢復、WebDav、JS 擴展 |
 | **09** | **替換規則** | `ui/replace/` | `features/replace_rule/` | ✅ | 正則替換規則管理 |
 | **10** | **通用配置** | `ui/config/` | `features/settings/` | ✅ | 主題、備份、其他配置 |
+| **11** | **底層基類** | `base/` | `core/base/` | ✅ | Activity, VM 基類與適配器 |
+| **12** | **常量與異常** | `constant/`, `exception/` | `core/constant/` | ✅ | 全域變量、正則模式、自定義異常 |
+| **13** | **工具函數庫** | `utils/` | `core/services/` | ✅ | 加密、壓縮、文件、編碼工具 |
+| **14** | **廣播與關聯** | `receiver/`, `ui/association/` | `features/association/` | ✅ | 分享關聯、媒體控制、網路監聽 |
+| **15** | **自定義 UI 元件** | `ui/widget/` | `shared/widgets/` | ✅ | 自定義 View、動畫、圖片處理 |
 
 ---
 
@@ -77,6 +82,7 @@
 | 3 | `AppDatabase.kt` | 資料庫核心 | `database/app_database.dart` | ✅ 已對應 |
 | 4 | `Book.kt` | 數據模型 (Entity) | `models/book.dart` | ✅ 已對應 |
 | 5 | `BookSource.kt` | 數據模型 (Entity) | `models/book_source.dart` | ✅ 已對應 |
+| 6 | `DatabaseMigrations.kt`| 資料庫遷移 | `database/app_database.dart` | ✅ 已對應 |
 <!-- END_MAPPING_05 -->
 
 <!-- BEGIN_MAPPING_06 -->
@@ -120,7 +126,7 @@
 |:--|:---|:---|:---|:---|
 | 1 | `ReplaceRuleActivity.kt` | UI (Activity) | `replace_rule/replace_rule_page.dart` | ✅ 已對應 |
 | 2 | `ReplaceEditActivity.kt` | UI (Activity) | `replace_rule/replace_rule_edit_page.dart` | ✅ 已對應 |
-| 3 | `ReplaceRuleViewModel.kt` | 業務邏輯 (ViewModel) | `replace_rule/replace_rule_provider.dart` | ✅ 已對應 |
+| 3 | `ReplaceRuleViewModel.kt" | 業務邏輯 (ViewModel) | `replace_rule/replace_rule_provider.dart` | ✅ 已對應 |
 <!-- END_MAPPING_09 -->
 
 <!-- BEGIN_MAPPING_10 -->
@@ -130,6 +136,62 @@
 |:--|:---|:---|:---|:---|
 | 1 | `ConfigActivity.kt` | UI (Activity) | `settings/settings_page.dart` | ✅ 已對應 |
 | 2 | `ThemeConfigFragment.kt` | UI (Fragment) | `settings/theme_settings_page.dart` | ✅ 已對應 |
-| 3 | `BackupConfigFragment.kt` | UI (Fragment) | `settings/backup_settings_page.dart` | ✅ 已對應 |
-| 4 | `OtherConfigFragment.kt` | UI (Fragment) | `settings/other_settings_page.dart` | ✅ 已對應 |
+| 3 | `BackupConfigFragment.kt` | UI (Fragment) | `settings/backup_settings_page.dart" | ✅ 已對應 |
+| 4 | `OtherConfigFragment.kt` | UI (Fragment) | `settings/other_settings_page.dart" | ✅ 已對應 |
 <!-- END_MAPPING_10 -->
+
+<!-- BEGIN_MAPPING_11 -->
+### 11. 底層基類 (Base Classes)
+
+| # | Android 檔案 | 角色 | iOS 對應檔案 | 對應狀態 |
+|:--|:---|:---|:---|:---|
+| 1 | `BaseActivity.kt` | 基類 (Activity) | `shared/widgets/base_scaffold.dart` | ⚠️ 功能對應 |
+| 2 | `BaseViewModel.kt` | 基類 (ViewModel) | `core/base/base_provider.dart` | ✅ 已對應 |
+| 3 | `RecyclerAdapter.kt` | 基類 (Adapter) | ❌ 無對應 (Flutter ListView) | ➖ 不需對應 |
+| 4 | `BaseService.kt` | 基類 (Service) | ❌ 無對應 | ➖ 不需對應 |
+<!-- END_MAPPING_11 -->
+
+<!-- BEGIN_MAPPING_12 -->
+### 12. 常量與異常 (Constants & Exceptions)
+
+| # | Android 檔案 | 角色 | iOS 對應檔案 | 對應狀態 |
+|:--|:---|:---|:---|:---|
+| 1 | `AppConst.kt` | 常量 | `core/constant/prefer_key.dart` | ✅ 已對應 |
+| 2 | `AppPattern.kt` | 常量 (Regex) | `core/constant/app_pattern.dart` | ✅ 已對應 |
+| 3 | `PreferKey.kt` | 常量 (Prefs) | `core/constant/prefer_key.dart` | ✅ 已對應 |
+| 4 | `RegexTimeoutException.kt` | 異常 | ❌ 無對應 | ❌ 缺失 |
+<!-- END_MAPPING_12 -->
+
+<!-- BEGIN_MAPPING_13 -->
+### 13. 工具函數庫 (Utils)
+
+| # | Android 檔案 | 角色 | iOS 對應檔案 | 對應狀態 |
+|:--|:---|:---|:---|:---|
+| 1 | `QRCodeUtils.kt` | 工具 (QR) | `features/source_manager/qr_scan_page.dart` | ✅ 已對應 |
+| 2 | `FileUtils.kt` | 工具 (文件) | `core/storage/file_doc.dart` | ✅ 已對應 |
+| 3 | `EncodingDetect.kt` | 工具 (編碼) | `core/services/encoding_detect.dart` | ✅ 已對應 |
+| 4 | `MD5Utils.kt` | 工具 (加密) | `core/services/backup_aes_service.dart` | ✅ 已對應 |
+| 5 | `ZipUtils.kt` | 工具 (壓縮) | ❌ 無對應 (依賴插件) | ⚠️ 依賴插件 |
+<!-- END_MAPPING_13 -->
+
+<!-- BEGIN_MAPPING_14 -->
+### 14. 廣播與關聯 (Receivers & Association)
+
+| # | Android 檔案 | 角色 | iOS 對應檔案 | 對應狀態 |
+|:--|:---|:---|:---|:---|
+| 1 | `MediaButtonReceiver.kt` | 媒體按鈕 | `core/services/audio_play_service.dart` | ✅ 已對應 |
+| 2 | `FileAssociationActivity.kt` | 文件關聯 | `features/association/intent_handler_service.dart` | ✅ 已對應 |
+| 3 | `ImportBookSourceDialog.kt` | 導入 (Dialog) | `features/source_manager/source_manager_page.dart` | ✅ 已對應 |
+| 4 | `OnLineImportActivity.kt` | 導入 (網路) | `shared/widgets/browser_page.dart` | ✅ 已對應 |
+<!-- END_MAPPING_14 -->
+
+<!-- BEGIN_MAPPING_15 -->
+### 15. 自定義 UI 元件 (Widgets)
+
+| # | Android 檔案 | 角色 | iOS 對應檔案 | 對應狀態 |
+|:--|:---|:---|:---|:---|
+| 1 | `CoverImageView.kt` | UI (封面) | `shared/widgets/` (通用元件) | ⚠️ 部分合併 |
+| 2 | `FastScroller.kt` | UI (快速滾動) | ❌ 無對應 | ❌ 缺失 |
+| 3 | `SmoothCheckBox.kt` | UI (核取框) | ❌ 無對應 | ➖ 使用原生 |
+| 4 | `BatteryView.kt` | UI (電池) | `features/reader/reader_page.dart` (內建) | ✅ 已對應 |
+<!-- END_MAPPING_15 -->
