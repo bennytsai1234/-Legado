@@ -7,7 +7,7 @@ class KeyboardAssistDao {
 
   static String createTableQuery() {
     return '''
-      CREATE TABLE $tableName (
+      CREATE TABLE IF NOT EXISTS $tableName (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL,
         serialNo INTEGER DEFAULT 0
