@@ -103,3 +103,34 @@
 | **03.4 偵錯日誌** | `BookSourceDebugActivity.kt`: 44 (`viewModel.observe`) | `debug_page.dart`: 28 (`_initLogs`) | **Equivalent** | 實現方式不同但日誌展示語義一致 |
 | **03.5 書源校驗** | `BookSourceActivity.kt`: 390 (`checkSource`) | `source_manager_provider.dart`: 150 (`checkSelectedSources`) | **Matched** | 校驗觸發流程一致 |
 <!-- END_AUDIT_03 -->
+
+<!-- BEGIN_AUDIT_04 -->
+## 04. 核心引擎
+
+**模組職責**：處理各類書籍格式解析（EPUB/UMD/TXT）及基於規則與 JS 的內容提取。
+**Legado 檔案**：`EpubReader.java`, `RhinoScriptEngine.kt`, `AnalyzeRule.kt`, `JsExtensions.kt`
+**Flutter (iOS) 對應檔案**：`epub_parser.dart`, `js_engine.dart`, `analyze_rule.dart`, `js_extensions.dart`
+**完成度：88%**
+**狀態：✅**
+
+**已完成項目 ✅**：
+- ✅ **規則解析體系**：iOS 完美對標了 Android 的多模式解析（XPath, CSS, JsonPath, Regex），且支持同樣的 `##` 正則替換語法。
+- ✅ **動態參數處理**：實現了與 Android 一致的 `@get`, `@put`, `{{js}}` 宏替換邏輯。
+- ✅ **JS 運行環境**：通過 `flutter_js` 提供了獨立的 JS 執行上下文，並注入了 `java` (this), `source`, `book` 等關鍵對象。
+- ✅ **EPUB 解析**：支持目錄提取、元數據讀取及 HTML 內容流加載。
+
+**不足之處**：
+- [ ] **UMD 格式缺失**：Android 擁有獨立的 `UmdReader` 模組，iOS 端目前尚未實現對 UMD 格式的支持。
+- [ ] **JS 引擎差異**：Android 使用 Mozilla Rhino，支持一些特定的 Java 互操作特性；iOS 基於系統原生 JS 引擎，部分極端複雜的 Legacy JS 書源可能存在兼容性微差。
+- [ ] **預加載策略**：Android 的 `EpubReader` 支持更細粒度的 Lazy Loading 配置，iOS 的 `epubx` 封裝相對較厚。
+
+### 證據鏈明細
+
+| 邏輯點 | Android 證據鏈 | iOS 證據鏈 | 狀態 | 狀態描述 |
+| :--- | :--- | :--- | :--- | :--- |
+| **04.1 規則分發** | `AnalyzeRule.kt`: 152 (`getString`) | `analyze_rule.dart`: 137 (`getString`) | **Matched** | 多模式切換邏輯完全一致 |
+| **04.2 宏替換** | `AnalyzeRule.kt`: 574 (`SourceRule` init) | `analyze_rule.dart`: 333 (`SourceRule` init) | **Matched** | `@get/@put/{{}}` 語法解析對齊 |
+| **04.3 正則替換** | `AnalyzeRule.kt`: 374 (`replaceRegex`) | `analyze_rule.dart`: 283 (`_replaceRegex`) | **Matched** | `##` 分隔符與分組捕獲邏輯一致 |
+| **04.4 JS 上下文** | `RhinoScriptEngine.kt`: 183 (`getRuntimeScope`) | `js_engine.dart`: 35 (`evaluate`) | **Equivalent** | 對象注入與執行流程語義一致 |
+| **04.5 EPUB 加載** | `EpubReader.java`: 60 (`readEpub`) | `epub_parser.dart`: 14 (`load`) | **Equivalent** | 核心解析功能對等 |
+<!-- END_AUDIT_04 -->
