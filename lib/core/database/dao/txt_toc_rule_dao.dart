@@ -7,7 +7,7 @@ class TxtTocRuleDao {
 
   static String createTableQuery() {
     return '''
-      CREATE TABLE $tableName (
+      CREATE TABLE IF NOT EXISTS $tableName (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         rule TEXT NOT NULL,
