@@ -6,6 +6,7 @@
 | **01** | **閱讀主界面** | `ui/book/read/` | `features/reader/` | ✅ | 包含閱讀器、配置、導航 |
 | **02** | **書架/主頁面** | `ui/main/` | `features/bookshelf/` | ✅ | 書架、分組管理 |
 | **03** | **書源管理** | `ui/book/source/` | `features/source_manager/` | ✅ | 書源列表、編輯、調試 |
+| **04** | **核心引擎** | `modules/book/`, `modules/rhino/` | `core/engine/`, `core/local_book/` | ✅ | 解析引擎、JS 運行環境 |
 
 ---
 
@@ -42,8 +43,21 @@
 
 | # | Android 檔案 | 角色 | iOS 對應檔案 | 對應狀態 |
 |:--|:---|:---|:---|:---|
-| 1 | `BookSourceActivity.kt` | UI (Activity) | `source_manager_page.dart` | ✅ 已對應 |
-| 2 | `BookSourceViewModel.kt` | 業務邏輯 (ViewModel) | `source_manager_provider.dart` | ✅ 已對應 |
-| 3 | `BookSourceEditActivity.kt` | UI (Activity) | `source_editor_page.dart` | ✅ 已對應 |
-| 4 | `BookSourceDebugActivity.kt` | UI (Activity) | `debug_page.dart` (部分) | ⚠️ 部分對應 |
+| 1 | `BookSourceActivity.kt" | UI (Activity) | `source_manager_page.dart` | ✅ 已對應 |
+| 2 | `BookSourceViewModel.kt" | 業務邏輯 (ViewModel) | `source_manager_provider.dart` | ✅ 已對應 |
+| 3 | `BookSourceEditActivity.kt" | UI (Activity) | `source_editor_page.dart` | ✅ 已對應 |
+| 4 | `BookSourceDebugActivity.kt" | UI (Activity) | `debug_page.dart` (部分) | ⚠️ 部分對應 |
 <!-- END_MAPPING_03 -->
+
+<!-- BEGIN_MAPPING_04 -->
+### 04. 核心引擎 (Core Engines)
+
+| # | Android 檔案 | 角色 | iOS 對應檔案 | 對應狀態 |
+|:--|:---|:---|:---|:---|
+| 1 | `EpubReader.java` | 邏輯 (EPUB 解析) | `epub_parser.dart` | ✅ 已對應 |
+| 2 | `UmdReader.java` | 邏輯 (UMD 解析) | ❌ 無對應 | ❌ 缺失 |
+| 3 | `RhinoScriptEngine.kt` | 引擎 (JS Runtime) | `js_engine.dart` | ✅ 已對應 |
+| 4 | `JsAdapter.kt` | 轉接層 (JS Binding) | `js_extensions.dart` | ✅ 已對應 |
+| 5 | `AnalyzRule.kt` | 邏輯 (Rule Parser) | `analyze_rule.dart` | ✅ 已對應 |
+<!-- END_MAPPING_04 -->
+
