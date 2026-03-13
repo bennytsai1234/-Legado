@@ -342,7 +342,7 @@ class _ChangeChapterSourceSheetState extends State<ChangeChapterSourceSheet> {
           
           if (tempBook.type != widget.book.type) {
             // 深度還原：處理不同類型（如文本轉有聲）的遷移跳轉
-            final migratedBook = widget.book.migrateTo(tempBook);
+            final migratedBook = widget.book.migrateTo(tempBook, chapters);
             migratedBook.isInBookshelf = widget.book.isInBookshelf;
             _showMigrationDialog(context, migratedBook);
           } else {

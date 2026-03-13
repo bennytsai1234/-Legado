@@ -1,3 +1,4 @@
+import 'package:characters/characters.dart';
 import '../models/chapter.dart';
 import '../models/book.dart';
 import '../models/replace_rule.dart';
