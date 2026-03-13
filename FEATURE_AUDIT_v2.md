@@ -14,7 +14,7 @@
 | **08** | **系統助手/備份** | 95% | ✅ | WebDav 同步、JS 工具類對齊；統一恢復機制已完善 |
 | **09** | **替換規則** | 95% | ✅ | 正則替換、範圍控制與分組管理完全對齊 |
 | **10** | **通用配置** | 92% | ✅ | 主題、備份、朗讀設定一致；字體權重微調功能缺失 |
-| **11** | **底層基類** | 80% | ✅ | ViewModel/Provider 基類對齊；缺乏統一 UI 狀態 Scaffold 基類 |
+| **11** | **底層基類** | 95% | ✅ | ViewModel/Provider 基類對齊；已實現統一 UI 狀態 BaseScaffold |
 | **12** | **常量與異常** | 95% | ✅ | 全局鍵值、正則模式對齊；特定 Java 異常類型簡化 |
 | **13** | **工具函數庫** | 90% | ✅ | 編碼檢測、加密、文件工具一致；依賴部分原生插件 |
 | **14** | **廣播與關聯** | 95% | ✅ | 媒體控制、分享接收、網路監聽邏輯高度對齊 |
@@ -225,7 +225,7 @@
 | 邏輯點 | Android 證據鏈 | iOS 證據鏈 | 狀態 | 狀態描述 |
 | :--- | :--- | :--- | :--- | :--- |
 | **07.1 系統 TTS** | `TTSReadAloudService.kt`: 120 (`speak`) | `tts_service.dart`: 45 (`speak`) | **Matched** | 核心朗讀 API 對齊 |
-| **07.2 下載並發** | `DownloadService.kt`: 80 (`startDownload`) | `download_service.dart`: 65 (`_worker`) | **Matched** | 並發控制與任務隊列一致 |
+| **07.2 下下載並發** | `DownloadService.kt`: 80 (`startDownload`) | `download_service.dart`: 65 (`_worker`) | **Matched** | 並發控制與任務隊列一致 |
 | **07.3 Web 端口** | `WebService.kt`: 35 (`startServer`) | `web_service.dart`: 22 (`start`) | **Matched** | 內置 Server 端口與靜態路由一致 |
 | **07.4 音頻焦點** | `AudioPlayService.kt`: 155 (`onFocusChange`) | `audio_play_service.dart`: 110 (`_handleFocus`) | **Equivalent** | 系統音頻策略語義對等 |
 | **07.5 朗讀定時** | `BaseReadAloudService.kt`: 210 (`stopTimer`) | `tts_service.dart`: 130 (`stopAfter`) | **Matched** | 定時關閉功能一致 |
@@ -276,7 +276,7 @@
 - ✅ **分組管理**：實現了規則的分組歸類與開關控制。
 
 **不足之處**：
-- [ ] **性能監控**：Android 在規則列表中支持顯示每個規則的替換耗時，iOS 尚未實現時。
+- [ ] **性能監控**：Android 在規則列表中支持顯示每個規則的替換耗時，iOS 尚未實現。
 
 ### 證據鏈明細
 
@@ -317,20 +317,22 @@
 | **10.5 隱私保護** | `LocalConfig.privacyPolicyOk` | `settings_provider.dart`: 35 (`isAgreed`) | **Matched** | 協議確認邏輯對齊 |
 <!-- END_AUDIT_10 -->
 
+<!-- BEGIN_AUDIT_11 -->
 ## 11. 底層基類
 
 **模組職責**：提供 UI 與 數據處理的底層框架類，減少重複代碼。
 **Legado 檔案**：`BaseActivity.kt`, `BaseViewModel.kt`, `RecyclerAdapter.kt`
 **Flutter (iOS) 對應檔案**：`base_provider.dart`
-**完成度：80%**
+**完成度：95%**
 **狀態：✅**
 
 **已完成項目 ✅**：
 - ✅ **Provider 狀態管理**：實現了統一的 `BaseProvider` 用於處理加載狀態與通用異常提示。
 - ✅ **數據監聽架構**：iOS 端模擬了 Android `observe` 機制，實現了 UI 對數據變更的自動響應。
+- ✅ **UI 基類封裝**：實現了 `BaseScaffold` 處理沉浸式、多語言、主題切換及統一的 Loading/Error 狀態展示。
 
 **不足之處**：
-- [ ] **UI 基類缺失**：Android 有封裝完整的 `BaseActivity` 處理沉浸式、多語言、主題重建，iOS 端代碼目前較為分散。
+- [ ] **性能監控基類**：尚未建立統一的 UI 渲染性能監控基類。
 
 ### 證據鏈明細
 
@@ -341,6 +343,7 @@
 | **11.3 列表適配** | `RecyclerAdapter.kt` | ❌ 無對應 (Flutter 內建) | **Equivalent** | Flutter 不需要手動實現適配器模式 |
 | **11.4 請求取消** | `BaseViewModel.kt`: 35 (`onCleared`) | `base_provider.dart`: 25 (`dispose`) | **Matched** | 資源釋放邏輯一致 |
 | **11.5 錯誤捕獲** | `BaseViewModel.kt`: 50 (`onError`) | `base_provider.dart`: 40 (`setError`) | **Matched** | 通用錯誤處理邏輯對齊 |
+| **11.6 UI 狀態基類** | `BaseActivity.kt` | `base_scaffold.dart` | **Matched** | `BaseScaffold` 支持 Loading、Error 與系統欄適配 |
 <!-- END_AUDIT_11 -->
 
 <!-- BEGIN_AUDIT_12 -->
