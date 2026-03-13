@@ -433,12 +433,12 @@ class ReaderProvider extends ChangeNotifier {
         if (_source != null) {
           try {
             c = await _service.getContent(_source!, book, _chapters[i]);
-            if (c != null) await _chapterDao.saveContent(book.bookUrl, i, c);
+            await _chapterDao.saveContent(book.bookUrl, i, c);
           } catch (_) { continue; }
         } else { continue; }
       }
 
-      if (c != null && c.contains(kw)) {
+      if (c.contains(kw)) {
         // 應用內容處理邏輯 (對標 Android ContentProcessor)
         final enabledRules = await _replaceDao.getEnabled();
         final processedContent = ContentProcessor.processContent(
