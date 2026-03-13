@@ -47,3 +47,28 @@
 ### 🛠️ 待辦缺口 (Todo Gaps)
 - [x] GAP-EXCP-01: 建立 `lib/core/exception/app_exception.dart` 並實作上述所有例外類別。 ✅ Done in 2026-03-13
 - [x] GAP-EXCP-02: 在解析引擎 (`AnalyzeRule`) 中準備例外類別對位。 ✅ Verified 100% on 2026-03-13
+
+---
+
+# 🔍 審計報告：legado/app/src/main/java/io/legado/app/utils (基礎工具類)
+
+### 📄 檔案對比清單
+| 檔案名稱 | 狀態 | 診斷詳情 |
+|:---|:---|:---|
+| `ACache.kt` | ✅ Matched | 已移植至 `lib/core/storage/app_cache.dart`。 |
+| `UrlUtil.kt` | ✅ Matched | 已移植至 `lib/core/utils/url_util.dart`。 |
+| `UriExtensions.kt` | ✅ Matched | iOS 端改用 `FileDoc` 與 `path_provider` 體系。 |
+| `FileUtils.kt` | ✅ Matched | 已補齊靜態輔助方法至 `lib/core/utils/file_utils.dart`。 |
+| `ArchiveUtils.kt` / `ZipUtils.kt` | ✅ Matched | 透過 `archive` 插件支援 ZIP，已建立 `archive_utils.dart`。 |
+| `EncodingDetect.kt` | ✅ Matched | 已補齊 HTML Head 解析邏輯。 |
+| `ChineseUtils.kt` | ✅ Matched | **現狀**：已實作基礎簡繁轉換。 |
+| `LogUtils.kt` | ✅ Matched | **現狀**：已對位至 `app_log_service.dart`。 |
+| `TimeUtils.kt` | ✅ Matched | 已移植至 `lib/core/utils/time_utils.dart`。 |
+| `StringUtils.kt` | ✅ Matched | **現狀**：對標 Dart `String` 內建方法與擴展樣式。 |
+| `GsonExtensions.kt` | ✅ Matched | **現狀**：使用 `dart:convert`。 |
+
+### 🛠️ 待辦缺口 (Todo Gaps)
+- [x] GAP-UTIL-01: 建立 `lib/core/utils/url_util.dart` 並補齊 `UrlUtil.kt` 的邏輯。 ✅ Done in 2026-03-13
+- [x] GAP-UTIL-02: 建立 `lib/core/utils/file_utils.dart` 补齐 `FileUtils.kt` 的静态辅助方法（排序、格式化等）。 ✅ Done in 2026-03-13
+- [x] GAP-UTIL-03: 完善 `lib/core/services/encoding_detect.dart` 的 HTML 標籤解析。 ✅ Done in 2026-03-13
+- [ ] GAP-UTIL-04: (低優先級) 研究 iOS 端的 7z/RAR 解壓解決方案。
