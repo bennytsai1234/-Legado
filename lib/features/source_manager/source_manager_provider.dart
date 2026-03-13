@@ -244,41 +244,44 @@ class SourceManagerProvider extends ChangeNotifier {
   Future<int> importFromText(String text) async {
     try {
       final dynamic decoded = jsonDecode(text);
-      List<BookSource> newSources = [];
+      return await importFromData(decoded);
+    } catch (e) {
+      debugPrint('從文本匯入書源失敗: $e');
+    }
+    return 0;
+  }
 
-      if (decoded is List) {
-        newSources = decoded.map((item) => BookSource.fromJson(item as Map<String, dynamic>)).toList();
-      } else if (decoded is Map) {
-        newSources = [BookSource.fromJson(decoded as Map<String, dynamic>)];
+  /// 從解析後的資料匯入 (List 或 Map)
+  Future<int> importFromData(dynamic data) async {
+    try {
+      if (data == null) return 0;
+      List<dynamic> list = data is List ? data : [data];
+      List<BookSource> newSources = [];
+      
+      for (var item in list) {
+        if (item is Map<String, dynamic>) {
+          final source = BookSource.fromJson(item);
+          source.lastUpdateTime = DateTime.now().millisecondsSinceEpoch;
+          newSources.add(source);
+        }
       }
 
       if (newSources.isNotEmpty) {
-        for (var element in newSources) {
-          element.lastUpdateTime = DateTime.now().millisecondsSinceEpoch;
-        }
         await _dao.insertOrUpdateAll(newSources);
         await loadSources();
         return newSources.length;
       }
     } catch (e) {
-      debugPrint('匯入書源失敗: $e');
+      debugPrint('匯入書源資料失敗: $e');
     }
     return 0;
   }
 
-  /// 從 URL 匯入
+  /// 從 JSON 匯入
   Future<int> importFromJson(String jsonStr) async {
     try {
       final data = jsonDecode(jsonStr);
-      List<dynamic> list = data is List ? data : [data];
-      int count = 0;
-      for (var item in list) {
-        final source = BookSource.fromJson(item);
-        await _dao.insertOrUpdate(source);
-        count++;
-      }
-      await loadSources();
-      return count;
+      return await importFromData(data);
     } catch (e) {
       debugPrint('從 JSON 匯入書源失敗: $e');
       return 0;
@@ -294,8 +297,9 @@ class SourceManagerProvider extends ChangeNotifier {
       try {
         final response = await dio.get(u);
         if (response.data != null) {
-          final String jsonStr = response.data is String ? response.data : jsonEncode(response.data);
-          totalCount += await importFromJson(jsonStr);
+          // Dio 會根據 Content-Type 自動解析 JSON 為 Map 或 List
+          // 如果已經是解析好的物件，直接使用 importFromData
+          totalCount += await importFromData(response.data);
         }
       } catch (e) {
         debugPrint('從 URL 匯入書源失敗 ($u): $e');
