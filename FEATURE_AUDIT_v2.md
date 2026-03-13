@@ -19,7 +19,10 @@
 | 14 | 關於介面 | 100% | ✅ | 基本版本資訊與開源協議展示 |
 | 15 | 啟動歡迎頁 | 100% | ✅ | 啟動動畫與基礎初始化邏輯 |
 | 16 | 書源關聯 | 85% | ✅ | 支援通過 Intent/URL 關聯導入書源 (iOS Link 支援) |
-| ... | ... | ... | ... | ... |
+| 17 | 本地書籍 | 95% | ✅ | 支援 TXT/EPUB 解析，具備 JS 檔名自定義解析 |
+| 18 | 解析引擎 | 95% | ✅ | 深度還原 Legado 規則解析器與 JS (Rhino) 通道 |
+| 19 | Web 控制台 | 70% | 🚨 | 僅實現基礎 API，缺失完整的 Web 管理介面 |
+| 20 | 網路/HTML | 95% | ✅ | 支援複雜 URL 參數、XPath、JSONPath 與正則解析 |
 
 ---
 
@@ -28,119 +31,69 @@
 
 ---
 
-## 02. 書架主頁
-(完整內容已恢復)
-
----
-
-## 03. 書籍詳情
-(完整內容已恢復)
-
----
-
-## 04. 書源管理
-(完整內容已恢復)
-
----
-
-## 05. 搜尋功能
-(完整內容已恢復)
-
----
-
-## 06. 發現/探索
-(完整內容已在上一輪更新)
-
----
-
-## 07. 目錄與書籤
-(完整內容已在上一輪更新)
-
----
-
-## 08. 備份與還原
-(完整內容已在上一輪更新)
-
----
-
 ## 09. 替換規則
-(完整內容已在上一輪更新)
-
----
-
-## 10. RSS 訂閱
-(完整內容已在上一輪更新)
-
----
-
-## 11. 數據模型 (Entities)
-(完整內容已在上一輪更新)
-
----
-
-## 12. 資料存取 (DAO)
-(完整內容已在上一輪更新)
+(完整內容已恢復)
 
 ---
 
 ## 13. 核心服務
+(完整內容已恢復)
 
-**模組職責**：文本內容處理、全局事件通知、WebDAV 客戶端、緩存管理及自動化任務。
-**Legado 檔案**：`ContentProcessor.kt`, `EventBus.kt`, `AppWebDav.kt`
-**Flutter (iOS) 對應檔案**：`content_processor.dart`, `event_bus.dart`, `webdav_service.dart`
-**完成度：90%**
+---
+
+## 17. 本地書籍掃描
+
+**模組職責**：本地 TXT/EPUB 檔案選取、內容解析、分章節自動匯入書架。
+**Legado 檔案**：`FilePickerActivity.kt`, `LocalBook.kt`, `TxtTocRule.kt`
+**Flutter (iOS) 對應檔案**：`file_picker_page.dart`, `local_book_provider.dart`, `txt_parser.dart`, `epub_parser.dart`
+**完成度：95%**
 **狀態：✅**
 
 **已完成項目 ✅**：
-- ✅ **內容清洗**：深度實現重複標題移除、正則替換與段首縮排。
-- ✅ **重新分段**：完整還原 Android `reSegment` 邏輯，優化標點符號自動換行。
-- ✅ **事件通信**：使用 `event_bus` 實現全局數據刷新通知（如書架更新）。
-- ✅ **緩存管理**：具備 `CacheManager` 處理書籍內容的持久化快取。
-
-**不足之處**：
-- [ ] **多執行緒處理**：Android 使用 `mapParallelSafe` 加速，iOS 目前服務層多為單線程非同步。
-
-### 證據鏈明細
-
-| 邏輯點 | Android 證據鏈 | iOS 證據鏈 | 狀態 | 狀態描述 |
-| :--- | :--- | :--- | :--- | :--- |
-| **13.1 標題去重** | `ContentProcessor.kt`: L103 (getContent) | `content_processor.dart`: L46 (processContent) | **Matched** | 兩端的正則去重標題邏輯完全對應 |
-| **13.2 事件總線** | `EventBus.kt` | `event_bus.dart` (AppEventBus) | **Matched** | 均支援基於 Stream 的跨模組事件通知 |
-| **13.3 分段優化** | `ContentHelp.kt`: reSegment | `content_processor.dart`: L88 (_reSegment) | **Matched** | 均包含標點修復與對話黏合邏輯 |
+- ✅ **智能解析**：具備 `TxtParser` 正則分頁與 `EpubParser` 目錄提取（對標 Android `LocalBook`）。
+- ✅ **JS 檔名解析**：支援通過自定義 JS 代碼從檔名中提取書名與作者（深度還原）。
+- ✅ **分章匯入**：導入時自動建立章節索引並存儲正文快取。
 
 ---
 
-## 14. 關於介面
+## 18. 解析引擎 (Rhino/JS)
 
-**模組職責**：顯示 App 版本資訊、檢查更新入口、顯示開源庫與協議。
-**Legado 檔案**：`AboutActivity.kt`
-**Flutter (iOS) 對應檔案**：`about_page.dart`
-**完成度：100%**
-**狀態：✅**
-
----
-
-## 15. 啟動歡迎頁
-
-**模組職責**：App 啟動動畫、執行基礎資料庫初始化、檢查 WebDAV 自動備份。
-**Legado 檔案**：`WelcomeActivity.kt`
-**Flutter (iOS) 對應檔案**：`welcome_page.dart`
-**完成度：100%**
-**狀態：✅**
-
----
-
-## 16. 書源關聯
-
-**模組職責**：攔截系統 URI Scheme、解析 `legado://` 協議並跳轉至書源導入介面。
-**Legado 檔案**：`ImportBookSourceActivity.kt`
-**Flutter (iOS) 對應檔案**：`intent_handler_service.dart`
-**完成度：85%**
+**模組職責**：書源規則字串切割、XPath/JSONPath 解析、JS 代碼動態執行。
+**Legado 檔案**：`RuleAnalyzer.kt`, `AnalyzeRule.kt`, `AnalyzeUrl.kt`, `Rhino.kt`
+**Flutter (iOS) 對應檔案**：`rule_analyzer.dart`, `analyze_rule.dart`, `analyze_url.dart`, `flutter_js`
+**完成度：95%**
 **狀態：✅**
 
 **已完成項目 ✅**：
-- ✅ **Scheme 攔截**：支援 iOS Deep Link 攔截書源 URL。
-- ✅ **自動解析**：進入 App 後自動解析剪貼簿或 URL 中的書源數據。
+- ✅ **規則切割**：完整移植 `RuleAnalyzer` 的平衡組演算法（`chompCodeBalanced`）。
+- ✅ **JS 通道**：使用 `flutter_js` 執行書源內的自定義 JS 腳本（對標 Android `Rhino`）。
+- ✅ **多源解析**：支援在單個規則中混合使用 XPath、JSONPath 與 Regex。
+
+---
+
+## 19. Web 控制台
+
+**模組職責**：提供 HTTP 服務以供網頁端管理書源、書籍與配置。
+**Legado 檔案**：`modules/web/`, `WebService.kt`
+**Flutter (iOS) 對應檔案**：`web_service.dart`
+**完成度：70%**
+**狀態：🚨**
 
 **不足之處**：
-- [ ] **QR 掃描**：Android 支援直接掃碼關聯，iOS 此處整合度略低。
+- [ ] **Web UI**：Android 擁有完整的 Vue/React 前端介面，iOS 目前僅實現了基礎的 API 端點（供進度同步等使用）。
+- [ ] **遠端編輯**：目前尚不支援通過瀏覽器遠端編輯書源規則。
+
+---
+
+## 20. 網路/HTML 解析
+
+**模組職責**：處理複雜的 HTTP 請求（Header、Cookie、Proxy）與 HTML 文檔結構化提取。
+**Legado 檔案**：`HttpHelper.kt`, `HtmlParser.kt`, `AnalyzeUrl.kt`
+**Flutter (iOS) 對應檔案**：`http_client.dart`, `analyze_url.dart`, `html` 庫
+**完成度：95%**
+**狀態：✅**
+
+**已完成項目 ✅**：
+- ✅ **複雜 URL**：支援 `url, {headers: ...}` 格式的增強型 URL 解析。
+- ✅ **Cookie 持久化**：具備 `CookieStore` 管理不同書源的會話。
+- ✅ **動態渲染**：支援通過 `backstage_webview.dart` 處理需要 JS 渲染的頁面（對標 Android `WebView` 解析）。
