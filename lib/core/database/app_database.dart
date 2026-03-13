@@ -29,10 +29,14 @@ class AppDatabase {
   static final _lock = Lock();
 
   static Future<Database> get database async {
-    if (_database != null) return _database!;
+    final db = _database;
+    if (db != null && db.isOpen) return db;
+    
     return await _lock.synchronized(() async {
-      if (_database != null) return _database!;
+      if (_database != null && _database!.isOpen) return _database!;
+      debugPrint('Database: Starting initialization...');
       _database = await _initDatabase();
+      debugPrint('Database: Initialization completed.');
       return _database!;
     });
   }
@@ -43,13 +47,25 @@ class AppDatabase {
     return openDatabase(
       path,
       version: _dbVersion,
-      onCreate: _onCreate,
-      onUpgrade: _onUpgrade,
+      onCreate: (db, version) async {
+        debugPrint('Database: onCreate started (version: $version)');
+        await _onCreate(db, version);
+        debugPrint('Database: onCreate finished');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        debugPrint('Database: onUpgrade started ($oldVersion -> $newVersion)');
+        await _onUpgrade(db, oldVersion, newVersion);
+        debugPrint('Database: onUpgrade finished');
+      },
+      onOpen: (db) {
+        debugPrint('Database: onOpen - Database is now open');
+      }
     );
   }
 
   static Future<void> _onCreate(Database db, int version) async {
     // Core tables
+    debugPrint('Database: Creating core tables...');
     await db.execute('''
       CREATE TABLE IF NOT EXISTS book_sources (
         bookSourceUrl TEXT PRIMARY KEY,
@@ -204,6 +220,7 @@ class AppDatabase {
     ''');
 
     // DAO Tables
+    debugPrint('Database: Creating DAO tables...');
     await db.execute(BookmarkDao.createTableQuery());
     await db.execute(CacheDao.createTableQuery());
     await db.execute(ReadRecordDao.createTableQuery());
