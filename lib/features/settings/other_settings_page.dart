@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
 import 'settings_provider.dart';
 
 class OtherSettingsPage extends StatelessWidget {
@@ -66,8 +67,13 @@ class OtherSettingsPage extends StatelessWidget {
               ),
               ListTile(
                 title: const Text('書籍存放目錄'),
-                subtitle: const Text('設定本地匯出或下載書籍的預設目錄'),
-                onTap: () => _showComingSoon(context),
+                subtitle: Text(settings.bookStorageDir.isEmpty ? '預設 (文件目錄)' : settings.bookStorageDir),
+                onTap: () async {
+                  String? result = await FilePicker.platform.getDirectoryPath();
+                  if (result != null) {
+                    settings.setBookStorageDir(result);
+                  }
+                },
               ),
               ListTile(
                 title: const Text('編輯書源最大行數'),

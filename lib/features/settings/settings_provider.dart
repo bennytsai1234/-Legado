@@ -113,6 +113,7 @@ class SettingsProvider extends ChangeNotifier {
   bool recordHeapDump = false;
   int threadCount = 8;
   String userAgent = '';
+  String bookStorageDir = '';
 
   // --- 朗讀設定 ---
   bool ignoreAudioFocusAloud = false;
@@ -233,6 +234,7 @@ class SettingsProvider extends ChangeNotifier {
     recordHeapDump = prefs.getBool('record_heap_dump') ?? false;
     threadCount = prefs.getInt('thread_count') ?? 8;
     userAgent = prefs.getString(PreferKey.userAgent) ?? '';
+    bookStorageDir = prefs.getString('book_storage_dir') ?? '';
 
     notifyListeners();
   }
@@ -336,6 +338,7 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setRecordHeapDump(bool v) async { recordHeapDump = v; await _save('record_heap_dump', v); notifyListeners(); }
   Future<void> setThreadCount(int v) async { threadCount = v; await _save('thread_count', v); notifyListeners(); }
   Future<void> setUserAgent(String v) async { userAgent = v; await _save(PreferKey.userAgent, v); notifyListeners(); }
+  Future<void> setBookStorageDir(String v) async { bookStorageDir = v; await _save('book_storage_dir', v); notifyListeners(); }
 
   Future<void> setDayPrimaryColor(Color c) async { dayPrimaryColor = c; notifyListeners(); }
   Future<void> setDayAccentColor(Color c) async { dayAccentColor = c; notifyListeners(); }
