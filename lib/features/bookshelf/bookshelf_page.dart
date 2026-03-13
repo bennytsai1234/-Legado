@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'bookshelf_provider.dart';
 import '../search/search_page.dart';
 import '../book_detail/book_detail_page.dart';
@@ -10,6 +9,7 @@ import '../local_book/local_book_provider.dart';
 import 'group_manage_page.dart';
 import '../../core/models/book.dart';
 import '../../core/models/search_book.dart';
+import '../../core/widgets/book_cover_widget.dart';
 
 class BookshelfPage extends StatefulWidget {
   const BookshelfPage({super.key});
@@ -255,14 +255,13 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
                       color: Colors.grey.withValues(alpha: 0.1),
                       boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2))],
                     ),
-                    child: book.coverUrl != null && book.coverUrl!.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: book.coverUrl!,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            errorWidget: (context, url, error) => _buildCoverPlaceholder(book),
-                          )
-                        : _buildCoverPlaceholder(book),
+                    child: BookCoverWidget(
+                      coverUrl: book.coverUrl,
+                      bookName: book.name,
+                      author: book.author,
+                      width: double.infinity,
+                      height: double.infinity,
+                    ),
                   ),
                 ),
                 if (provider.isBatchMode)
@@ -312,14 +311,13 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
 
     return ListTile(
       key: _itemKeys[book.bookUrl],
-      leading: ClipRRect(
+      leading: BookCoverWidget(
+        coverUrl: book.coverUrl,
+        bookName: book.name,
+        author: book.author,
+        width: 50,
+        height: 70,
         borderRadius: BorderRadius.circular(3),
-        child: SizedBox(
-          width: 50, height: 70,
-          child: book.coverUrl != null && book.coverUrl!.isNotEmpty
-              ? CachedNetworkImage(imageUrl: book.coverUrl!, fit: BoxFit.cover, errorWidget: (context, url, error) => _buildCoverPlaceholder(book))
-              : _buildCoverPlaceholder(book),
-        ),
       ),
       title: Text(book.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold)),
       subtitle: Column(
@@ -346,13 +344,6 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
         }
       },
       onLongPress: () => provider.toggleBatchMode(book.bookUrl),
-    );
-  }
-
-  Widget _buildCoverPlaceholder(Book book) {
-    return Container(
-      color: Colors.blueGrey.shade100,
-      child: Center(child: Text(book.name.isNotEmpty ? book.name[0] : '書', style: const TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold))),
     );
   }
 

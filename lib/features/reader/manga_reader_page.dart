@@ -20,7 +20,7 @@ class MangaReaderPage extends StatefulWidget {
   State<MangaReaderPage> createState() => _MangaReaderPageState();
 }
 
-class _MangaReaderPageState extends State<MangaReaderPage> with WidgetsBindingObserver {
+class _MangaReaderPageState extends State<MangaReaderPage> {
   late int _currentChapterIndex;
   List<String> _imageUrls = [];
   bool _isLoading = true;
@@ -32,12 +32,14 @@ class _MangaReaderPageState extends State<MangaReaderPage> with WidgetsBindingOb
   
   // 閱讀模式：0: 垂直, 1: 水平, 2: WebToon
   int _readingMode = 0; 
+  bool _isReverseDirection = false; // 方向反轉 (主要用於水平模式)
   Timer? _autoScrollTimer;
   bool _isAutoScrolling = false;
   final double _autoScrollSpeed = 2.0;
 
   final PageController _pageController = PageController();
   final ScrollController _scrollController = ScrollController();
+  final TransformationController _transformationController = TransformationController();
   final BookSourceService _service = BookSourceService();
   final BookSourceDao _sourceDao = BookSourceDao();
   final ChapterDao _chapterDao = ChapterDao();
@@ -102,6 +104,7 @@ class _MangaReaderPageState extends State<MangaReaderPage> with WidgetsBindingOb
     _autoScrollTimer?.cancel();
     _scrollController.dispose();
     _pageController.dispose();
+    _transformationController.dispose();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
@@ -132,11 +135,22 @@ class _MangaReaderPageState extends State<MangaReaderPage> with WidgetsBindingOb
   void _handleTap(TapUpDetails details, double width) {
     final x = details.globalPosition.dx;
     if (x < width / 3) {
-      _prevPage();
+      _isReverseDirection && _readingMode == 1 ? _nextPage() : _prevPage();
     } else if (x > width * 2 / 3) {
-      _nextPage();
+      _isReverseDirection && _readingMode == 1 ? _prevPage() : _nextPage();
     } else {
       _toggleControls();
+    }
+  }
+
+  void _handleDoubleTap(TapDownDetails details) {
+    if (_transformationController.value != Matrix4.identity()) {
+      _transformationController.value = Matrix4.identity();
+    } else {
+      final position = details.localPosition;
+      _transformationController.value = Matrix4.identity()
+        ..translate(-position.dx * 1, -position.dy * 1)
+        ..scale(2.0);
     }
   }
 
@@ -201,13 +215,16 @@ class _MangaReaderPageState extends State<MangaReaderPage> with WidgetsBindingOb
             children: [
               GestureDetector(
                 onTapUp: (details) => _handleTap(details, constraints.maxWidth),
+                onDoubleTapDown: _handleDoubleTap,
                 child: _isLoading 
                   ? const Center(child: CircularProgressIndicator(color: Colors.white))
                   : InteractiveViewer(
+                      transformationController: _transformationController,
                       minScale: 1.0, maxScale: 5.0,
                       child: _readingMode == 1 
                         ? PageView.builder(
                             controller: _pageController,
+                            reverse: _isReverseDirection,
                             itemCount: _imageUrls.length,
                             onPageChanged: (idx) => setState(() => _currentPage = idx),
                             itemBuilder: (ctx, idx) => _buildMangaImage(idx),
@@ -287,6 +304,12 @@ class _MangaReaderPageState extends State<MangaReaderPage> with WidgetsBindingOb
                 ],
                 onChanged: (v) => setState(() => _readingMode = v!),
               ),
+              if (_readingMode == 1)
+                IconButton(
+                  icon: Icon(_isReverseDirection ? Icons.swap_horiz : Icons.trending_flat, color: Colors.white),
+                  tooltip: '切換翻頁方向',
+                  onPressed: () => setState(() => _isReverseDirection = !_isReverseDirection),
+                ),
               const Spacer(),
               const Icon(Icons.brightness_6, color: Colors.white70, size: 18),
               SizedBox(width: 80, child: Slider(value: _brightness, min: 0.1, max: 1.0, onChanged: (v) => setState(() => _brightness = v))),
