@@ -69,6 +69,20 @@
 | `StringUtils.kt` | ✅ Matched | 已移植 `chineseNumToInt` 等高級邏輯至 `string_utils.dart`。 |
 | `JsoupExtensions.kt` | ✅ Matched | 已實作 `lib/core/utils/html_utils.dart` 支持樹狀文本提取。 |
 | `GsonExtensions.kt` | ✅ Matched | **現狀**：使用 `dart:convert`。 |
+
+---
+
+## 📂 資料夾路徑：legado/app/src/main/java/io/legado/app/utils/compress
+
+| Android 檔案 | 狀態 | 診斷詳情 |
+|:---|:---|:---|
+| `ZipUtils.kt` | ✅ Matched | **現狀**：已在 `archive_utils.dart` 中補齊 GZIP、位元組壓縮、多檔案壓縮等邏輯。 |
+| `LibArchiveUtils.kt` | ⚠️ Partial | **診斷**：Android 端使用 `libarchive` C 庫。iOS/Flutter 目前優先實作 ZIP 解析。 |
+
+### 🛠️ 待辦缺口 (Todo Gaps)
+- [x] GAP-COMP-01: 在 `archive_utils.dart` 中補齊 GZIP 壓縮與解壓邏輯。 ✅ Done
+- [x] GAP-COMP-02: 實作 `zipFiles` 多檔案壓縮功能，用於備份導出。 ✅ Done
+- [x] GAP-COMP-03: 實作 `getByteArrayContent` 以支持從壓縮包直接讀取特定檔案位元組。 ✅ Done
 | `Context/Activity/Toast*` | ✅ Absorbed | **診斷**：此類檔案多為 Android Glue 代碼。在 Flutter 中已由 `MediaQuery`, `Theme`, `Navigator` 及各種 `plus` 插件原生覆蓋，無需 1:1 移植。 |
 | `BitmapUtils.kt` | ⚠️ Plugin | **規格**：大部分功能由 Flutter `DecorationImage` 處理。`getMeanColor` (主題取色) 留待 UI 階段實作。 |
 

@@ -75,9 +75,88 @@ class ArchiveUtils {
     return names;
   }
 
+  /// GZIP 壓縮
+  static List<int> gzip(List<int> data) {
+    return GZipEncoder().encode(data)!;
+  }
+
+  /// GZIP 解壓
+  static List<int> unGzip(List<int> data) {
+    return GZipDecoder().decodeBytes(data);
+  }
+
+  /// 將位元組陣列包裝成單個檔案的 ZIP
+  static List<int> zipByteArray(List<int> data, String fileName) {
+    final archive = Archive();
+    archive.addFile(ArchiveFile(fileName, data.length, data));
+    return ZipEncoder().encode(archive)!;
+  }
+
+  /// 將多個位元組陣列包裝成 ZIP
+  static List<int> byteArraysToZip(Map<String, List<int>> files) {
+    final archive = Archive();
+    files.forEach((name, data) {
+      archive.addFile(ArchiveFile(name, data.length, data));
+    });
+    return ZipEncoder().encode(archive)!;
+  }
+
+  /// 壓縮多個檔案/資料夾為 ZIP
+  static Future<bool> zipFiles(List<String> srcPaths, String zipPath) async {
+    try {
+      final archive = Archive();
+      for (final path in srcPaths) {
+        final file = File(path);
+        if (file.existsSync()) {
+          final bytes = await file.readAsBytes();
+          archive.addFile(ArchiveFile(p.basename(path), bytes.length, bytes));
+        } else if (Directory(path).existsSync()) {
+          final dir = Directory(path);
+          await for (final entity in dir.list(recursive: true)) {
+            if (entity is File) {
+              final bytes = await entity.readAsBytes();
+              final relativePath = p.relative(entity.path, from: dir.parent.path);
+              archive.addFile(ArchiveFile(relativePath, bytes.length, bytes));
+            }
+          }
+        }
+      }
+      final zipData = ZipEncoder().encode(archive);
+      if (zipData == null) return false;
+      await File(zipPath).writeAsBytes(zipData);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// 從壓縮檔中提取特定檔案的位元組
+  static Future<List<int>?> getByteArrayContent(File archiveFile, String internalPath) async {
+    try {
+      final bytes = await archiveFile.readAsBytes();
+      final archive = ZipDecoder().decodeBytes(bytes);
+      for (final file in archive) {
+        if (file.isFile && file.name == internalPath) {
+          return file.content as List<int>;
+        }
+      }
+    } catch (e) {
+      return null;
+    }
+    return null;
+  }
+
+  /// 獲取 ZIP 註釋
+  static Future<List<String>> getZipComments(File archiveFile) async {
+    // Dart archive 包對 ZipEntry comment 的支持可能有限，通常是 ArchiveFile 級別
+    final bytes = await archiveFile.readAsBytes();
+    final archive = ZipDecoder().decodeBytes(bytes);
+    return archive.files.map((f) => f.comment ?? "").toList();
+  }
+
   /// 判斷是否為支援的壓縮檔
   static bool isArchive(String name) {
     final lower = name.toLowerCase();
-    return lower.endsWith('.zip') || lower.endsWith('.7z') || lower.endsWith('.rar');
+    return lower.endsWith('.zip') || lower.endsWith('.7z') || lower.endsWith('.rar') || lower.endsWith('.gz');
   }
 }

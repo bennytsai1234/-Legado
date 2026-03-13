@@ -72,6 +72,7 @@
 | Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
 |:---|:---|:---|:---|
 | `ZipUtils.kt` | ZIP 壓縮與解壓 | `lib/core/utils/archive_utils.dart` | ✅ Matched |
+| `LibArchiveUtils.kt` | 高級壓縮格式 (7z/RAR) | `lib/core/utils/archive_utils.dart` | ⚠️ Partial |
 
 ---
 
