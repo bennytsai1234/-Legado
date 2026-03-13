@@ -41,15 +41,16 @@ class AnalyzeByJsonPath {
     rule = _preProcessRule(rule);
     if (rule.isEmpty) return null;
 
-    final ruleAnalyzer = RuleAnalyzer(rule, isCode: true);
+    final ruleAnalyzer = RuleAnalyzer(rule, isCode: false);
     final rules = ruleAnalyzer.splitRule(['&&', '||']);
 
     if (rules.length == 1) {
       ruleAnalyzer.reSetPos();
       // 替換所有 {$.rule...}
-      String result = ruleAnalyzer.innerRule(r'{$.', fr: (it) => getString(it));
+      String result = ruleAnalyzer.innerRule(r'{$.', fr: (it) => getString(it.startsWith('\$') ? it : '\$.$it'));
 
-      if (result.isEmpty) {
+      // 如果替換後結果與原規則相同，說明沒有嵌套規則，或者是純 JsonPath 規則
+      if (result == rule) {
         try {
           final path = JsonPath(rule);
           final matches = path.read(_jsonData);
@@ -62,6 +63,7 @@ class AnalyzeByJsonPath {
             return values.map((v) => v.toString()).join('\n');
           }
         } catch (e) {
+          // 如果解析失敗且包含 {$.，則可能真的是沒匹配到
           return null;
         }
       }
@@ -86,22 +88,25 @@ class AnalyzeByJsonPath {
     rule = _preProcessRule(rule);
     if (rule.isEmpty) return [];
 
-    final ruleAnalyzer = RuleAnalyzer(rule, isCode: true);
+    final ruleAnalyzer = RuleAnalyzer(rule, isCode: false);
     final rules = ruleAnalyzer.splitRule(['&&', '||', '%%']);
 
     if (rules.length == 1) {
-      try {
-        final path = JsonPath(rules[0]);
-        final matches = path.read(_jsonData);
-        final result = matches.map((m) => m.value).toList();
-        // If it's a list of lists, flatten it if it matches Legado's behavior
-        // Android returns ctx.read<ArrayList<Any>>(rules[0])
-        if (result.length == 1 && result[0] is List) {
-          return result[0] as List;
+      ruleAnalyzer.reSetPos();
+      final resultList = <dynamic>[];
+      final ruleStr = ruleAnalyzer.innerRule(r'{$.', fr: (it) => getString(it.startsWith('\$') ? it : '\$.$it'));
+      
+      if (ruleStr == rule) {
+        try {
+          final path = JsonPath(rule);
+          final matches = path.read(_jsonData);
+          return matches.map((m) => m.value).toList();
+        } catch (e) {
+          return [];
         }
-        return result;
-      } catch (e) {
-        return [];
+      } else {
+        // 如果有嵌套替換，結果通常是個字串
+        return [ruleStr];
       }
     } else {
       final results = <List<dynamic>>[];

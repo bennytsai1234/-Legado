@@ -99,27 +99,36 @@ class AnalyzeRule {
         final rule = sourceRule.rule;
         _log("  ◇ 模式: ${sourceRule.mode.name}, 規則: $rule");
 
+        dynamic tempResult;
         switch (sourceRule.mode) {
           case Mode.regex:
             final elements = AnalyzeByRegex.getElement(
               result.toString(),
               rule.split('&&').where((s) => s.isNotEmpty).toList(),
             );
-            result = elements?.join('');
+            tempResult = elements?.join('');
             break;
           case Mode.json:
-            result = _getAnalyzeByJSonPath(result).getObject(rule);
+            tempResult = _getAnalyzeByJSonPath(result).getObject(rule);
             break;
           case Mode.xpath:
             final elements = _getAnalyzeByXPath(result).getElements(rule);
-            result = elements.isNotEmpty ? elements.first : null;
+            tempResult = elements.isNotEmpty ? elements.first : null;
             break;
           case Mode.js:
-            result = evalJS(rule, result);
+            tempResult = evalJS(rule, result);
             break;
           default:
             final elements = _getAnalyzeByJSoup(result).getElements(rule);
-            result = elements.isNotEmpty ? elements.first : null;
+            tempResult = elements.isNotEmpty ? elements.first : null;
+        }
+
+        // 如果是動態規則且解析結果為空，回退到規則本身作為字面值
+        if (sourceRule.isDynamic &&
+            (tempResult == null || tempResult.toString().isEmpty)) {
+          result = rule;
+        } else {
+          result = tempResult;
         }
 
         if (result != null && sourceRule.replaceRegex.isNotEmpty) {
@@ -154,24 +163,34 @@ class AnalyzeRule {
         final rule = sourceRule.rule;
         _log("  ◇ 模式: ${sourceRule.mode.name}, 規則: $rule");
 
+        dynamic tempResult;
         switch (sourceRule.mode) {
           case Mode.regex:
-            result = AnalyzeByRegex.getElements(
+            tempResult = AnalyzeByRegex.getElements(
               result.toString(),
               rule.split('&&').where((s) => s.isNotEmpty).toList(),
             );
             break;
           case Mode.json:
-            result = _getAnalyzeByJSonPath(result).getElements(rule);
+            tempResult = _getAnalyzeByJSonPath(result).getElements(rule);
             break;
           case Mode.xpath:
-            result = _getAnalyzeByXPath(result).getElements(rule);
+            tempResult = _getAnalyzeByXPath(result).getElements(rule);
             break;
           case Mode.js:
-            result = evalJS(rule, result);
+            tempResult = evalJS(rule, result);
             break;
           default:
-            result = _getAnalyzeByJSoup(result).getElements(rule);
+            tempResult = _getAnalyzeByJSoup(result).getElements(rule);
+        }
+
+        if (sourceRule.isDynamic &&
+            (tempResult == null ||
+                (tempResult is List && tempResult.isEmpty) ||
+                (tempResult is String && tempResult.isEmpty))) {
+          result = rule;
+        } else {
+          result = tempResult;
         }
 
         if (result != null && sourceRule.replaceRegex.isNotEmpty) {
@@ -212,27 +231,35 @@ class AnalyzeRule {
         final rule = sourceRule.rule;
         _log("  ◇ 模式: ${sourceRule.mode.name}, 規則: $rule");
 
+        dynamic tempResult;
         if (rule.isNotEmpty || sourceRule.replaceRegex.isEmpty) {
           switch (sourceRule.mode) {
             case Mode.js:
-              result = evalJS(rule, result);
+              tempResult = evalJS(rule, result);
               break;
             case Mode.json:
-              result = _getAnalyzeByJSonPath(result).getString(rule);
+              tempResult = _getAnalyzeByJSonPath(result).getString(rule);
               break;
             case Mode.xpath:
-              result = _getAnalyzeByXPath(result).getString(rule);
+              tempResult = _getAnalyzeByXPath(result).getString(rule);
               break;
             case Mode.regex:
               if (sourceRule.replaceRegex.isEmpty) {
-                result = rule;
+                tempResult = rule;
               } else {
-                result = AnalyzeByRegex.getString(result.toString(), rule);
+                tempResult = AnalyzeByRegex.getString(result.toString(), rule);
               }
               break;
             default:
-              result = _getAnalyzeByJSoup(result).getString(rule);
+              tempResult = _getAnalyzeByJSoup(result).getString(rule);
           }
+        }
+
+        if (sourceRule.isDynamic &&
+            (tempResult == null || tempResult.toString().isEmpty)) {
+          result = rule;
+        } else {
+          result = tempResult;
         }
 
         if (result != null && sourceRule.replaceRegex.isNotEmpty) {
@@ -472,10 +499,12 @@ class SourceRule {
   String replacement = "";
   bool replaceFirst = false;
   Map<String, String> putMap = {};
+  bool isDynamic = false;
 
   List<String> ruleParam = [];
   List<int> ruleType = [];
 
+  static const int jsonPartRuleType = -3;
   static const int getRuleType = -2;
   static const int jsRuleType = -1;
   static const int defaultRuleType = 0;
@@ -510,13 +539,17 @@ class SourceRule {
     }
     rule = vRuleStr;
 
-    // 3. 拆分 @get, {{ }} (高度還原 Android init 核心)
+    // 3. 拆分 @get, {{ }}, {$. } (高度還原 Android init 核心)
     final evalPattern = RegExp(
-      r'@get:\{[^}]+?\}|\{\{[\w\W]*?\}\}',
+      r'@get:\{[^}]+?\}|\{\{[\w\W]*?\}\}|\{\$\..*?\}',
       caseSensitive: false,
     );
     int start = 0;
     final evalMatches = evalPattern.allMatches(rule);
+
+    if (evalMatches.isNotEmpty) {
+      isDynamic = true;
+    }
 
     for (final match in evalMatches) {
       if (match.start > start) {
@@ -529,6 +562,9 @@ class SourceRule {
       } else if (tmp.startsWith('{{')) {
         ruleType.add(jsRuleType);
         ruleParam.add(tmp.substring(2, tmp.length - 2));
+      } else if (tmp.startsWith('{\$')) {
+        ruleType.add(jsonPartRuleType);
+        ruleParam.add(tmp.substring(1, tmp.length - 1));
       }
       start = match.end;
     }
@@ -542,8 +578,11 @@ class SourceRule {
     final regexPattern = RegExp(r'\$\d{1,2}');
     final matches = regexPattern.allMatches(ruleStr);
 
-    if (matches.isNotEmpty && mode != Mode.js) {
-      mode = Mode.regex;
+    if (matches.isNotEmpty) {
+      isDynamic = true;
+      if (mode != Mode.js) {
+        mode = Mode.regex;
+      }
     }
 
     for (final match in matches) {
@@ -581,6 +620,11 @@ class SourceRule {
         } else if (type == jsRuleType) {
           infoVal.write(
             analyzer.evalJS(ruleParam[i], result)?.toString() ?? "",
+          );
+        } else if (type == jsonPartRuleType) {
+          infoVal.write(
+            analyzer._getAnalyzeByJSonPath(result).getString(ruleParam[i]) ??
+                "",
           );
         } else if (type == getRuleType) {
           infoVal.write(analyzer.get(ruleParam[i]));

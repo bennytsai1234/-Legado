@@ -248,24 +248,22 @@ class RuleAnalyzer {
       // 如果是括號類起始，使用平衡組檢測 (解決 {{js:{}}} 嵌套問題)
       bool balanced = false;
       if (startStr.contains('{')) {
+        _pos = _queue.indexOf('{', posPre);
         balanced = _chompCodeBalanced('{', '}');
       } else if (startStr.contains('[')) {
+        _pos = _queue.indexOf('[', posPre);
         balanced = _chompCodeBalanced('[', ']');
       } else {
         balanced = _consumeTo(endStr);
+        if (balanced) _pos += endStr.length; // 統一移動到結束符之後
       }
 
       if (balanced) {
-        final content = _queue.substring(posPre + startStr.length, _pos - (startStr.contains('{') ? 1 : 0));
+        final content = _queue.substring(posPre + startStr.length, _pos - endStr.length);
         final frv = fr(content);
         if (frv != null) {
           st.write(_queue.substring(_startX, posPre));
           st.write(frv);
-          if (startStr.contains('{')) {
-            // _pos 已經在 } 之後
-          } else {
-            _pos += endStr.length;
-          }
           _startX = _pos;
           continue;
         }
@@ -281,6 +279,12 @@ class RuleAnalyzer {
 
   /// 替換內嵌規則 (便捷版)
   String innerRule(String startStr, {required String? Function(String) fr}) {
-    return innerRuleRange(startStr, "}", fr: fr);
+    String endStr = "}";
+    if (startStr.startsWith('{{')) {
+      endStr = "}}";
+    } else if (startStr.startsWith('[')) {
+      endStr = "]";
+    }
+    return innerRuleRange(startStr, endStr, fr: fr);
   }
 }

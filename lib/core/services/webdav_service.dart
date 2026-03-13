@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webdav_client/webdav_client.dart' as webdav;
@@ -150,6 +151,52 @@ class WebDAVService extends ChangeNotifier {
   /// 從 WebDAV 還原資料
   Future<bool> restore() async {
     return restoreFromFile('/legado/legado_backup.zip');
+  }
+
+  /// 上傳本地書籍檔案 (對標 Android WebService / uploadLocal)
+  Future<void> uploadLocalBook(Book book, File file) async {
+    try {
+      final client = await _getClient();
+      await client.mkdir('/legado/books');
+      final fileName = p.basename(file.path);
+      await client.writeFromFile(file.path, '/legado/books/$fileName');
+    } catch (e) {
+      debugPrint('Upload book failed: $e');
+    }
+  }
+
+  /// 下載同步書籍檔案
+  Future<File?> downloadLocalBook(Book book) async {
+    try {
+      final client = await _getClient();
+      final fileName = p.basename(book.bookUrl);
+      final dir = await getApplicationDocumentsDirectory();
+      final localPath = '${dir.path}/$fileName';
+      final localFile = File(localPath);
+      
+      await client.read2File('/legado/books/$fileName', localFile.path);
+      return localFile;
+    } catch (e) {
+      debugPrint('Download book failed: $e');
+      return null;
+    }
+  }
+
+  /// 通用檔案上傳 (用於匯出書籍等)
+  Future<void> uploadFile(String localPath, String remoteName) async {
+    try {
+      final client = await _getClient();
+      await client.mkdir('/legado/export');
+      await client.writeFromFile(localPath, '/legado/export/$remoteName');
+    } catch (e) {
+      debugPrint('Upload file failed: $e');
+    }
+  }
+
+  /// 同步所有書籍進度
+  Future<void> syncAllBookProgress() async {
+    // 佔位實作，未來可擴充為批量上傳
+    debugPrint('Syncing all book progress...');
   }
 
   /// 上傳書籍進度 (對應 Android WebService / syncProgress)
