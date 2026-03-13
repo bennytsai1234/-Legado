@@ -57,14 +57,17 @@
 |:---|:---|:---|
 | `ACache.kt` | ✅ Matched | 已移植至 `lib/core/storage/app_cache.dart`。 |
 | `UrlUtil.kt` | ✅ Matched | 已移植至 `lib/core/utils/url_util.dart`。 |
+| `AlphanumComparator.kt` | ✅ Matched | 已移植至 `lib/core/utils/alphanum_comparator.dart`。 |
 | `UriExtensions.kt` | ✅ Matched | iOS 端改用 `FileDoc` 與 `path_provider` 體系。 |
 | `FileUtils.kt` | ✅ Matched | 已補齊靜態輔助方法至 `lib/core/utils/file_utils.dart`。 |
 | `ArchiveUtils.kt` / `ZipUtils.kt` | ✅ Matched | 透過 `archive` 插件支援 ZIP，已建立 `archive_utils.dart`。 |
 | `EncodingDetect.kt` | ✅ Matched | 已補齊 HTML Head 解析邏輯。 |
 | `ChineseUtils.kt` | ✅ Matched | **現狀**：已實作基礎簡繁轉換。 |
 | `LogUtils.kt` | ✅ Matched | **現狀**：已對位至 `app_log_service.dart`。 |
+| `ColorUtils.kt` | ✅ Matched | 已移植至 `lib/core/utils/color_utils.dart` 並修復棄用警告。 |
 | `TimeUtils.kt` | ✅ Matched | 已移植至 `lib/core/utils/time_utils.dart`。 |
-| `StringUtils.kt` | ✅ Matched | **現狀**：對標 Dart `String` 內建方法與擴展樣式。 |
+| `StringUtils.kt` | ✅ Matched | 已移植 `chineseNumToInt` 等高級邏輯至 `string_utils.dart`。 |
+| `JsoupExtensions.kt` | ✅ Matched | 已實作 `lib/core/utils/html_utils.dart` 支持樹狀文本提取。 |
 | `GsonExtensions.kt` | ✅ Matched | **現狀**：使用 `dart:convert`。 |
 
 ### 🛠️ 待辦缺口 (Todo Gaps)

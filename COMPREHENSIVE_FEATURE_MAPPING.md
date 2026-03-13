@@ -43,11 +43,12 @@
 | Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
 |:---|:---|:---|:---|
 | `ACache.kt` | 磁碟緩存工具 | `lib/core/storage/app_cache.dart` | ✅ Matched |
+| `AlphanumComparator.kt` | 檔名/章節號自然排序 | `lib/core/utils/alphanum_comparator.dart` | ✅ Matched |
 | `ActivityExtensions.kt` | Activity 視窗與 UI 擴展 | - | ❌ Missing |
 | `ArchiveUtils.kt` | 壓縮擋 (ZIP/7z) 處理 | `lib/core/utils/archive_utils.dart` | ✅ Matched |
 | `BitmapUtils.kt` / `ImageUtils.kt` | 圖片處理、縮放、裁剪 | - | ❌ Missing |
 | `ChineseUtils.kt` | 繁簡轉換 | `lib/core/services/chinese_utils.dart` | ✅ Matched |
-| `ColorUtils.kt` | 顏色解析、轉換 | - | ❌ Missing |
+| `ColorUtils.kt` | 顏色解析、轉換 | `lib/core/utils/color_utils.dart` | ✅ Matched |
 | `ContextExtensions.kt` | Context 相關 (螢幕、權限、路徑) | - | ❌ Missing |
 | `CookieManagerExtensions.kt` | Cookie 獲取與儲存 | - | ❌ Missing |
 | `EncoderUtils.kt` / `MD5Utils.kt` | 編碼 (Base64/MD5) | `lib/core/utils/encoder_utils.dart` | ✅ Matched |
@@ -55,7 +56,7 @@
 | `FileDocExtensions.kt` | 虛擬文件管理 (SAF) | `lib/core/storage/file_doc.dart` | ✅ Matched |
 | `FileUtils.kt` | 基礎檔案操作 | `lib/core/utils/file_utils.dart` | ✅ Matched |
 | `GsonExtensions.kt` / `JsonExtensions.kt` | JSON 解析封裝 | `dart:convert` (內建) | ✅ Matched |
-| `HtmlFormatter.kt` / `JsoupExtensions.kt` | HTML 內容清理與格式化 | `lib/core/utils/html_formatter.dart` | ✅ Matched |
+| `HtmlFormatter.kt` / `JsoupExtensions.kt` | HTML 內容清理與格式化 | `lib/core/utils/html_formatter.dart` & `html_utils.dart` | ✅ Matched |
 | `NetworkUtils.kt` | 代理、UA、網路狀態檢查 | `lib/core/utils/network_utils.dart` | ✅ Matched |
 | `QRCodeUtils.kt` | 二維碼生成與識別 | - | ❌ Missing |
 | `StringUtils.kt` / `StringExtensions.kt` | 字串處理、格式檢查 | `dart:core` (內建擴展) | ✅ Matched |
@@ -70,7 +71,7 @@
 
 | Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
 |:---|:---|:---|:---|
-| `ZipUtils.kt` | ZIP 壓縮與解壓 | - | ❌ Missing |
+| `ZipUtils.kt` | ZIP 壓縮與解壓 | `lib/core/utils/archive_utils.dart` | ✅ Matched |
 
 ---
 
