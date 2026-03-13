@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'app_log_service.dart';
 
 /// EncodingDetect - 簡易編碼偵測工具
 /// 針對中文書源優化，支援 UTF-8 (含 BOM) 與 GBK 識別
@@ -20,7 +21,9 @@ class EncodingDetect {
       if (contentTypeMatch != null) {
         return contentTypeMatch.group(1) ?? "UTF-8";
       }
-    } catch (_) {}
+    } catch (e, s) {
+      AppLog.put('Unexpected Error', error: e, stackTrace: s);
+    }
 
     return getEncode(bytes);
   }

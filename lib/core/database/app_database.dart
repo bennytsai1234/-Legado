@@ -7,6 +7,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:synchronized/synchronized.dart';
 
+import '../services/app_log_service.dart';
 import 'dao/bookmark_dao.dart';
 import 'dao/cache_dao.dart';
 import 'dao/read_record_dao.dart';
@@ -270,35 +271,35 @@ class AppDatabase {
             await db.execute('ALTER TABLE books ADD COLUMN tocHtml TEXT');
             break;
           case 4:
-            try { await db.execute('ALTER TABLE chapters ADD COLUMN startFragmentId TEXT'); } catch (_) {}
-            try { await db.execute('ALTER TABLE chapters ADD COLUMN endFragmentId TEXT'); } catch (_) {}
+            try { await db.execute('ALTER TABLE chapters ADD COLUMN startFragmentId TEXT'); } catch (e, stack) { AppLog.put('Database Migration Error', error: e, stackTrace: stack); }
+            try { await db.execute('ALTER TABLE chapters ADD COLUMN endFragmentId TEXT'); } catch (e, stack) { AppLog.put('Database Migration Error', error: e, stackTrace: stack); }
             break;
           case 5:
             await db.execute('DROP TABLE IF EXISTS http_tts');
             await db.execute(HttpTtsDao.createTableQuery());
             break;
           case 6:
-            try { await db.execute('ALTER TABLE books ADD COLUMN customTag TEXT'); } catch (_) {}
-            try { await db.execute('ALTER TABLE books ADD COLUMN customCoverUrl TEXT'); } catch (_) {}
-            try { await db.execute('ALTER TABLE books ADD COLUMN customIntro TEXT'); } catch (_) {}
-            try { await db.execute('ALTER TABLE books ADD COLUMN charset TEXT'); } catch (_) {}
-            try { await db.execute('ALTER TABLE books ADD COLUMN syncTime INTEGER DEFAULT 0'); } catch (_) {}
+            try { await db.execute('ALTER TABLE books ADD COLUMN customTag TEXT'); } catch (e, stack) { AppLog.put('Database Migration Error', error: e, stackTrace: stack); }
+            try { await db.execute('ALTER TABLE books ADD COLUMN customCoverUrl TEXT'); } catch (e, stack) { AppLog.put('Database Migration Error', error: e, stackTrace: stack); }
+            try { await db.execute('ALTER TABLE books ADD COLUMN customIntro TEXT'); } catch (e, stack) { AppLog.put('Database Migration Error', error: e, stackTrace: stack); }
+            try { await db.execute('ALTER TABLE books ADD COLUMN charset TEXT'); } catch (e, stack) { AppLog.put('Database Migration Error', error: e, stackTrace: stack); }
+            try { await db.execute('ALTER TABLE books ADD COLUMN syncTime INTEGER DEFAULT 0'); } catch (e, stack) { AppLog.put('Database Migration Error', error: e, stackTrace: stack); }
             break;
           case 7:
-            try { await db.execute('ALTER TABLE chapters ADD COLUMN baseUrl TEXT DEFAULT ""'); } catch (_) {}
-            try { await db.execute('ALTER TABLE chapters ADD COLUMN wordCount TEXT'); } catch (_) {}
-            try { await db.execute('ALTER TABLE chapters ADD COLUMN start INTEGER'); } catch (_) {}
-            try { await db.execute('ALTER TABLE chapters ADD COLUMN "end" INTEGER'); } catch (_) {}
+            try { await db.execute('ALTER TABLE chapters ADD COLUMN baseUrl TEXT DEFAULT ""'); } catch (e, stack) { AppLog.put('Database Migration Error', error: e, stackTrace: stack); }
+            try { await db.execute('ALTER TABLE chapters ADD COLUMN wordCount TEXT'); } catch (e, stack) { AppLog.put('Database Migration Error', error: e, stackTrace: stack); }
+            try { await db.execute('ALTER TABLE chapters ADD COLUMN start INTEGER'); } catch (e, stack) { AppLog.put('Database Migration Error', error: e, stackTrace: stack); }
+            try { await db.execute('ALTER TABLE chapters ADD COLUMN "end" INTEGER'); } catch (e, stack) { AppLog.put('Database Migration Error', error: e, stackTrace: stack); }
             break;
           case 8:
-            try { await db.execute('ALTER TABLE book_sources ADD COLUMN coverDecodeJs TEXT'); } catch (_) {}
-            try { await db.execute('ALTER TABLE book_sources ADD COLUMN exploreScreen TEXT'); } catch (_) {}
-            try { await db.execute('ALTER TABLE book_sources ADD COLUMN ruleReview TEXT'); } catch (_) {}
+            try { await db.execute('ALTER TABLE book_sources ADD COLUMN coverDecodeJs TEXT'); } catch (e, stack) { AppLog.put('Database Migration Error', error: e, stackTrace: stack); }
+            try { await db.execute('ALTER TABLE book_sources ADD COLUMN exploreScreen TEXT'); } catch (e, stack) { AppLog.put('Database Migration Error', error: e, stackTrace: stack); }
+            try { await db.execute('ALTER TABLE book_sources ADD COLUMN ruleReview TEXT'); } catch (e, stack) { AppLog.put('Database Migration Error', error: e, stackTrace: stack); }
             break;
           case 9:
-            try { await db.execute('ALTER TABLE replace_rules ADD COLUMN scopeTitle INTEGER DEFAULT 0'); } catch (_) {}
-            try { await db.execute('ALTER TABLE replace_rules ADD COLUMN excludeScope TEXT'); } catch (_) {}
-            try { await db.execute('ALTER TABLE replace_rules ADD COLUMN timeoutMillisecond INTEGER DEFAULT 3000'); } catch (_) {}
+            try { await db.execute('ALTER TABLE replace_rules ADD COLUMN scopeTitle INTEGER DEFAULT 0'); } catch (e, stack) { AppLog.put('Database Migration Error', error: e, stackTrace: stack); }
+            try { await db.execute('ALTER TABLE replace_rules ADD COLUMN excludeScope TEXT'); } catch (e, stack) { AppLog.put('Database Migration Error', error: e, stackTrace: stack); }
+            try { await db.execute('ALTER TABLE replace_rules ADD COLUMN timeoutMillisecond INTEGER DEFAULT 3000'); } catch (e, stack) { AppLog.put('Database Migration Error', error: e, stackTrace: stack); }
             break;
           case 10:
             await db.execute('DROP TABLE IF EXISTS download_tasks');
@@ -318,11 +319,12 @@ class AppDatabase {
             ''');
             break;
           case 11:
-            try { await db.execute('ALTER TABLE bookmarks ADD COLUMN bookText TEXT'); } catch (_) {}
+            try { await db.execute('ALTER TABLE bookmarks ADD COLUMN bookText TEXT'); } catch (e, stack) { AppLog.put('Database Migration Error', error: e, stackTrace: stack); }
             break;
         }
         debugPrint('Database: Migration to version $i successful');
-      } catch (e) {
+      } catch (e, stack) {
+        AppLog.put('Database Migration Error', error: e, stackTrace: stack);
         debugPrint('Database: Migration to version $i failed: $e');
       }
     }

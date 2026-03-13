@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import '../services/app_log_service.dart';
 
 /// AppCache - 磁碟快取工具 (對標 Android utils/ACache.kt)
 /// 支援 String, JSON, Bytes 與過期時間管理
@@ -62,7 +63,9 @@ class AppCache {
       } else {
         await file.delete();
       }
-    } catch (_) {}
+    } catch (e, s) {
+      AppLog.put('Unexpected Error', error: e, stackTrace: s);
+    }
     return null;
   }
 
@@ -95,7 +98,9 @@ class AppCache {
       } else {
         await file.delete();
       }
-    } catch (_) {}
+    } catch (e, s) {
+      AppLog.put('Unexpected Error', error: e, stackTrace: s);
+    }
     return null;
   }
 
@@ -126,7 +131,9 @@ class AppCache {
           return true;
         }
       }
-    } catch (_) {}
+    } catch (e, s) {
+      AppLog.put('Unexpected Error', error: e, stackTrace: s);
+    }
     return false;
   }
 

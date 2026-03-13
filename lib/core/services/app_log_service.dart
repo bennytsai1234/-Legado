@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 /// AppLog - 全域日誌記錄器 (對標 Android constant/AppLog.kt)
@@ -7,6 +8,9 @@ class AppLog {
 
   static final _logs = Queue<LogEntry>();
   static const int _maxLogs = 100;
+
+  static final _toastController = StreamController<String>.broadcast();
+  static Stream<String> get toastStream => _toastController.stream;
 
   static List<LogEntry> get logs => _logs.toList();
 
@@ -31,8 +35,9 @@ class AppLog {
       if (stackTrace != null) print(stackTrace);
     }
 
-    // TODO: Implement toast injection if needed, 
-    // technically requires a global context or a specific service.
+    if (toast) {
+      _toastController.add(message);
+    }
   }
 
   static void clear() {

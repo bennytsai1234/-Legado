@@ -6,6 +6,7 @@ import 'analyze_rule.dart';
 import '../models/base_source.dart';
 import '../services/http_client.dart';
 import '../services/cookie_store.dart';
+import '../services/app_log_service.dart';
 import '../services/backstage_webview.dart';
 import '../services/rate_limiter.dart';
 import 'package:fast_gbk/fast_gbk.dart';
@@ -44,6 +45,7 @@ class AnalyzeUrl {
   int webViewDelayTime = 0;
   String? encodedQuery;
   String? encodedForm;
+  Response? _lastResponse;
 
   AnalyzeUrl(
     this.mUrl, {
@@ -313,7 +315,9 @@ class AnalyzeUrl {
           final data = url.substring(commaIndex + 1);
           return base64Decode(data);
         }
-      } catch (_) {}
+      } catch (e, s) {
+        AppLog.put('Unexpected Error', error: e, stackTrace: s);
+      }
       return null;
     }
 
@@ -351,6 +355,7 @@ class AnalyzeUrl {
             cancelToken: cancelToken,
           );
         }
+        _lastResponse = response;
 
         if (response.realUri.toString() != requestUrl) {
           setRedirectUrl(response.realUri.toString());
@@ -382,10 +387,29 @@ class AnalyzeUrl {
     if (bytes == null) return '';
 
     try {
-      // 1. Determine charset
+      // 1. Check Content-Type and Determine charset
       String effectiveCharset = charset ?? "UTF-8";
-      if (charset == null) {
-        // ... (We skip content-type check for now, simplified)
+      String? contentType = _lastResponse?.headers.value('content-type');
+      
+      if (contentType != null) {
+        contentType = contentType.toLowerCase();
+        // If it's an image or other non-text type, throw exception
+        if (contentType.contains('image/') || 
+            contentType.contains('video/') || 
+            contentType.contains('audio/') ||
+            contentType.contains('application/octet-stream') ||
+            contentType.contains('application/zip') ||
+            contentType.contains('application/pdf')) {
+          throw Exception('Unsupported Content-Type for text analysis: $contentType');
+        }
+        
+        // Try to extract charset from content-type if not already specified
+        if (charset == null) {
+          final charsetMatch = RegExp(r'charset=([\w-]+)').firstMatch(contentType);
+          if (charsetMatch != null) {
+            effectiveCharset = charsetMatch.group(1)!;
+          }
+        }
       }
 
       // 2. Decode based on charset

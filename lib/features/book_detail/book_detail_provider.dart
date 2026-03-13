@@ -11,6 +11,7 @@ import '../../core/services/webdav_service.dart';
 import '../../core/engine/app_event_bus.dart';
 import '../../core/local_book/txt_parser.dart';
 import '../../core/local_book/epub_parser.dart';
+import '../../core/services/app_log_service.dart';
 import 'dart:io';
 import 'package:path/path.dart' as p;
 
@@ -163,7 +164,9 @@ class BookDetailProvider extends ChangeNotifier {
       try {
         final content = await _service.getContent(_currentSource!, _book, _chapters[i]);
         await _chapterDao.saveContent(_book.bookUrl, i, content);
-      } catch (_) {}
+      } catch (e, s) {
+        AppLog.put('Unexpected Error', error: e, stackTrace: s);
+      }
     }
   }
 }

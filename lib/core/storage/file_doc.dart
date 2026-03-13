@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:path/path.dart' as p;
 import '../services/encoding_detect.dart';
+import '../services/app_log_service.dart';
 import 'package:fast_gbk/fast_gbk.dart';
 
 /// FileDoc - 虛擬文件系統封裝 (對標 Android utils/FileDocExtensions.kt)
@@ -75,7 +76,9 @@ class FileDoc {
           result.add(doc);
         }
       }
-    } catch (_) {}
+    } catch (e, s) {
+      AppLog.put('Unexpected Error', error: e, stackTrace: s);
+    }
     return result;
   }
 
