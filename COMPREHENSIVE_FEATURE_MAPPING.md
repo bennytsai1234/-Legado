@@ -27,14 +27,14 @@
 
 | Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
 |:---|:---|:---|:---|
-| `ConcurrentException.kt` | 併發衝突異常 | - | ❌ Missing |
-| `ContentEmptyException.kt` | 內容為空異常 | - | ❌ Missing |
-| `EmptyFileException.kt` | 檔案為空異常 | - | ❌ Missing |
-| `InvalidBooksDirException.kt` | 書籍目錄無效異常 | - | ❌ Missing |
-| `NoBooksDirException.kt` | 書籍目錄不存在異常 | - | ❌ Missing |
-| `NoStackTraceException.kt` | 無堆疊軌跡異常基類 | - | ❌ Missing |
-| `RegexTimeoutException.kt` | 正則匹配超時異常 | - | ❌ Missing |
-| `TocEmptyException.kt` | 目錄為空異常 | - | ❌ Missing |
+| `ConcurrentException.kt` | 併發衝突異常 | `lib/core/exception/app_exception.dart` | ✅ Matched |
+| `ContentEmptyException.kt` | 內容為空異常 | `lib/core/exception/app_exception.dart` | ✅ Matched |
+| `EmptyFileException.kt` | 檔案為空異常 | `lib/core/exception/app_exception.dart` | ✅ Matched |
+| `InvalidBooksDirException.kt` | 書籍目錄無效異常 | `lib/core/exception/app_exception.dart` | ✅ Matched |
+| `NoBooksDirException.kt` | 書籍目錄不存在異常 | `lib/core/exception/app_exception.dart` | ✅ Matched |
+| `NoStackTraceException.kt` | 無堆疊軌跡異常基類 | `lib/core/exception/app_exception.dart` | ✅ Matched |
+| `RegexTimeoutException.kt` | 正則匹配超時異常 | `lib/core/exception/app_exception.dart` | ✅ Matched |
+| `TocEmptyException.kt` | 目錄為空異常 | `lib/core/exception/app_exception.dart` | ✅ Matched |
 
 ---
 

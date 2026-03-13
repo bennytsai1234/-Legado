@@ -27,3 +27,23 @@
 - [x] GAP-CONST-07: 在 `app_const.dart` 補齊 `PlaybackStatus` 與 `AppTheme` 列舉。 ✅ Done in 2026-03-13
 - [x] GAP-CONST-08: 執行二次深度審計，補齊 `PreferKey` (190+ 鍵名) 與 `BookType` 遮罩。 ✅ Verified 100% on 2026-03-13
 - [x] GAP-CONST-09: 執行第三次極致審計 (Pass 3: Final Assurance)，清理冗餘類定義並補齊日期格式與版本變體邏輯。 ✅ Verified 100% on 2026-03-13
+
+---
+
+# 🔍 審計報告：legado/app/src/main/java/io/legado/app/exception
+
+### 📄 檔案對比清單
+| 檔案名稱 | 狀態 | 診斷詳情 |
+|:---|:---|:---|
+| `NoStackTraceException.kt` | ✅ Matched | 已建立 `lib/core/exception/app_exception.dart`。 |
+| `ConcurrentException.kt` | ✅ Matched | 已移植。 |
+| `ContentEmptyException.kt` | ✅ Matched | 已移植。 |
+| `TocEmptyException.kt` | ✅ Matched | 已移植。 |
+| `RegexTimeoutException.kt` | ✅ Matched | 已移植。 |
+| `EmptyFileException.kt` | ✅ Matched | 已移植。 |
+| `NoBooksDirException.kt` | ✅ Matched | 已移植。 |
+| `InvalidBooksDirException.kt` | ✅ Matched | 已移植。 |
+
+### 🛠️ 待辦缺口 (Todo Gaps)
+- [x] GAP-EXCP-01: 建立 `lib/core/exception/app_exception.dart` 並實作上述所有例外類別。 ✅ Done in 2026-03-13
+- [x] GAP-EXCP-02: 在解析引擎 (`AnalyzeRule`) 中準備例外類別對位。 ✅ Verified 100% on 2026-03-13
