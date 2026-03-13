@@ -130,6 +130,20 @@
 
 ---
 
+## 📂 資料夾路徑：legado/app/src/main/java/io/legado/app/service
+
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `AudioPlayService.kt` | 音頻播放背景服務 (聽書) | - | ❌ Missing |
+| `CacheBookService.kt` | 章節離線快取服務 | `lib/core/services/download_service.dart` | ✅ Matched |
+| `CheckSourceService.kt` | 書源可用性定期檢查服務 | `lib/core/services/check_source_service.dart` | ✅ Matched |
+| `DownloadService.kt` | 檔案/書籍下載管理 | `lib/core/services/download_service.dart` | ✅ Matched |
+| `ExportBookService.kt` | 書籍匯出 (EPUB/TXT) 服務 | `lib/core/services/export_book_service.dart` | ✅ Matched |
+| `WebService.kt` | 本地 HTTP 伺服器 (用於管理書源/書架) | `lib/core/services/web_service.dart` | ✅ Matched |
+| `ReadAloudService.kt` | 朗讀服務 (TTS) | - | ❌ Missing |
+
+---
+
 ## 遞迴進度回報
 - [x] `constant`
 - [x] `exception`
@@ -137,5 +151,5 @@
 - [x] `help`
 - [x] `model`
 - [x] `data` (entities)
-- [ ] `service`
+- [x] `service`
 - [ ] `ui`
