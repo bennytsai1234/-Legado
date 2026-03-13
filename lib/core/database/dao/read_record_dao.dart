@@ -29,7 +29,7 @@ class ReadRecordDao {
   /// 建立表格
   static String createTableQuery() {
     return '''
-      CREATE TABLE $tableName (
+      CREATE TABLE IF NOT EXISTS $tableName (
         bookName TEXT NOT NULL,
         deviceId TEXT NOT NULL,
         readTime INTEGER NOT NULL,
