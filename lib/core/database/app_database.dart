@@ -51,7 +51,7 @@ class AppDatabase {
   static Future<void> _onCreate(Database db, int version) async {
     // Core tables
     await db.execute('''
-      CREATE TABLE book_sources (
+      CREATE TABLE IF NOT EXISTS book_sources (
         bookSourceUrl TEXT PRIMARY KEY,
         bookSourceName TEXT NOT NULL,
         bookSourceType INTEGER DEFAULT 0,
@@ -86,7 +86,7 @@ class AppDatabase {
     ''');
 
     await db.execute('''
-      CREATE TABLE books (
+      CREATE TABLE IF NOT EXISTS books (
         bookUrl TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         author TEXT,
@@ -125,7 +125,7 @@ class AppDatabase {
     ''');
 
     await db.execute('''
-      CREATE TABLE chapters (
+      CREATE TABLE IF NOT EXISTS chapters (
         url TEXT NOT NULL,
         title TEXT NOT NULL,
         bookUrl TEXT NOT NULL,
@@ -147,7 +147,7 @@ class AppDatabase {
     ''');
 
     await db.execute('''
-      CREATE TABLE chapter_contents (
+      CREATE TABLE IF NOT EXISTS chapter_contents (
         bookUrl TEXT NOT NULL,
         chapterIndex INTEGER NOT NULL,
         content TEXT,
@@ -156,7 +156,7 @@ class AppDatabase {
     ''');
 
     await db.execute('''
-      CREATE TABLE replace_rules (
+      CREATE TABLE IF NOT EXISTS replace_rules (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         "group" TEXT,
@@ -174,7 +174,7 @@ class AppDatabase {
     ''');
 
     await db.execute('''
-      CREATE TABLE download_tasks (
+      CREATE TABLE IF NOT EXISTS download_tasks (
         bookUrl TEXT PRIMARY KEY,
         bookName TEXT,
         startChapterIndex INTEGER,
@@ -189,7 +189,7 @@ class AppDatabase {
     ''');
 
     await db.execute('''
-      CREATE TABLE search_history (
+      CREATE TABLE IF NOT EXISTS search_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         keyword TEXT NOT NULL UNIQUE,
         searchTime INTEGER NOT NULL
@@ -197,7 +197,7 @@ class AppDatabase {
     ''');
 
     await db.execute('''
-      CREATE TABLE cookies (
+      CREATE TABLE IF NOT EXISTS cookies (
         url TEXT PRIMARY KEY,
         cookie TEXT NOT NULL
       )
@@ -276,7 +276,7 @@ class AppDatabase {
             // Ensure download_tasks table exists
             await db.execute('DROP TABLE IF EXISTS download_tasks');
             await db.execute('''
-              CREATE TABLE download_tasks (
+              CREATE TABLE IF NOT EXISTS download_tasks (
                 bookUrl TEXT PRIMARY KEY,
                 bookName TEXT,
                 startChapterIndex INTEGER,
