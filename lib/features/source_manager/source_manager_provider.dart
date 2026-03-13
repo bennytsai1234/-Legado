@@ -17,13 +17,14 @@ class SourceManagerProvider extends ChangeNotifier {
   List<String> _groups = [];
   String _selectedGroup = '全部';
   int _sortMode = 0; // 0:手動, 1:權重, 2:響應速度, 3:更新時間, 4:名稱
+  bool _groupByDomain = false;
   bool _isLoading = false;
 
   bool _isBatchMode = false;
   Set<String> _selectedUrls = {};
 
   List<BookSource> get sources {
-    List<BookSource> list = _sources;
+    List<BookSource> list = List.from(_sources);
     if (_selectedGroup != '全部') {
       list = list.where((s) => s.bookSourceGroup?.contains(_selectedGroup) ?? false).toList();
     }
@@ -36,6 +37,7 @@ class SourceManagerProvider extends ChangeNotifier {
   bool get isBatchMode => _isBatchMode;
   Set<String> get selectedUrls => _selectedUrls;
   int get sortMode => _sortMode;
+  bool get groupByDomain => _groupByDomain;
   
   CheckSourceService get checkService => _checkService;
 
@@ -53,6 +55,7 @@ class SourceManagerProvider extends ChangeNotifier {
   Future<void> _init() async {
     final prefs = await SharedPreferences.getInstance();
     _sortMode = prefs.getInt('source_sort_mode') ?? 0;
+    _groupByDomain = prefs.getBool('source_group_by_domain') ?? false;
     await loadSources();
   }
 
@@ -64,7 +67,28 @@ class SourceManagerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> toggleGroupByDomain() async {
+    _groupByDomain = !_groupByDomain;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('source_group_by_domain', _groupByDomain);
+    _applySort();
+    notifyListeners();
+  }
+
   void _applySort() {
+    if (_groupByDomain) {
+      _sources.sort((a, b) {
+        final hostA = Uri.tryParse(a.bookSourceUrl)?.host ?? "";
+        final hostB = Uri.tryParse(b.bookSourceUrl)?.host ?? "";
+        int res = hostA.compareTo(hostB);
+        if (res == 0) {
+          res = b.lastUpdateTime.compareTo(a.lastUpdateTime);
+        }
+        return res;
+      });
+      return;
+    }
+
     switch (_sortMode) {
       case 1: // 權重
         _sources.sort((a, b) => b.weight.compareTo(a.weight));
@@ -128,6 +152,28 @@ class SourceManagerProvider extends ChangeNotifier {
       _selectedUrls.remove(url);
     } else {
       _selectedUrls.add(url);
+    }
+    notifyListeners();
+  }
+
+  void selectInterval() {
+    if (_selectedUrls.isEmpty) return;
+    
+    final currentVisibleSources = sources;
+    int minIdx = -1;
+    int maxIdx = -1;
+    
+    for (int i = 0; i < currentVisibleSources.length; i++) {
+      if (_selectedUrls.contains(currentVisibleSources[i].bookSourceUrl)) {
+        if (minIdx == -1) minIdx = i;
+        maxIdx = i;
+      }
+    }
+    
+    if (minIdx != -1 && maxIdx != -1) {
+      for (int i = minIdx; i <= maxIdx; i++) {
+        _selectedUrls.add(currentVisibleSources[i].bookSourceUrl);
+      }
     }
     notifyListeners();
   }

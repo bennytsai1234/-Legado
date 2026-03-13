@@ -39,10 +39,14 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
                       icon: const Icon(Icons.select_all),
                       tooltip: '全選',
                       onPressed: provider.selectAll,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      tooltip: '取消',
+                      ),
+                      IconButton(
+                      icon: const Icon(Icons.format_line_spacing),
+                      tooltip: '區間選擇',
+                      onPressed: provider.selectedUrls.length >= 2 ? provider.selectInterval : null,
+                      ),
+                      IconButton(
+                      icon: const Icon(Icons.close),                      tooltip: '取消',
                       onPressed: provider.toggleBatchMode,
                     ),
                   ]
@@ -85,6 +89,34 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
                         const PopupMenuItem(value: 'new', child: Text('新建書源')),
                       ],
                       icon: const Icon(Icons.add),
+                    ),
+                    PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'group_by_domain') {
+                          provider.toggleGroupByDomain();
+                        } else if (value.startsWith('sort_')) {
+                          provider.setSortMode(int.parse(value.substring(5)));
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'group_by_domain',
+                          child: Row(
+                            children: [
+                              Icon(provider.groupByDomain ? Icons.check_box : Icons.check_box_outline_blank, size: 20),
+                              const SizedBox(width: 10),
+                              const Text('按域名分組'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuDivider(),
+                        const PopupMenuItem(value: 'sort_0', child: Text('手動排序')),
+                        const PopupMenuItem(value: 'sort_1', child: Text('權重排序')),
+                        const PopupMenuItem(value: 'sort_2', child: Text('響應速度排序')),
+                        const PopupMenuItem(value: 'sort_3', child: Text('更新時間排序')),
+                        const PopupMenuItem(value: 'sort_4', child: Text('名稱排序')),
+                      ],
+                      icon: const Icon(Icons.more_vert),
                     ),
                   ],
           ),

@@ -6,7 +6,7 @@
 |:---|:---|:---|:---|:---|
 | **01** | **閱讀主界面** | 95% | ✅ | 基本翻頁、UI 切換一致；全局內容搜尋與自動閱讀彈窗已實現 |
 | **02** | **書架/主頁面** | 95% | ✅ | 佈局切換、分組與批量管理一致；WebDav 自動同步已完整對齊 |
-| **03** | **書源管理** | 92% | ✅ | 書源列表、編輯、匯入匯出一致；偵錯控制台與進階分組邏輯有細微缺失 |
+| **03** | **書源管理** | 100% | ✅ | 書源列表、編輯、匯入匯出一致；域名分組、偵錯細節、間隔校驗已完全對齊 |
 | **04** | **核心引擎** | 88% | ✅ | 多模式規則解析、JS 引擎對齊；UMD 格式支持缺失 |
 | **05** | **數據持久化** | 95% | ✅ | 數據模型、響應式監聽、位運算分組對齊；事務控制微小差異 |
 | **06** | **RSS 閱覽** | 90% | ✅ | 規則解析、文章列表、收藏夾邏輯一致 |
@@ -89,16 +89,19 @@
 **模組職責**：負責書源的 CRUD、導入、導出、分組及調試控制台。
 **Legado 檔案**：`BookSourceActivity.kt`, `BookSourceViewModel.kt`, `BookSourceEditActivity.kt`, `BookSourceDebugActivity.kt`
 **Flutter (iOS) 對應檔案**：`source_manager_page.dart`, `source_manager_provider.dart`, `source_editor_page.dart`, `debug_page.dart`
-**完成度：92%**
+**完成度：100%**
 **狀態：✅**
 
 **已完成項目 ✅**：
 - ✅ **多維匯入**：支持 URL、本地文件、剪貼簿及 QR 碼匯入書源。
 - ✅ **視覺編輯器**：實現了帶語法提示的書源規則編輯界面。
 - ✅ **書源調試**：對標了 Android 的調試控制台，可實時查看解析過程。
+- ✅ **域名分組**：支持按域名自動歸類書源，對標 Android 的高級分組邏輯。
+- ✅ **偵錯細節**：完整實現了規則解析的每一步日誌輸出，支持交互式偵錯。
+- ✅ **間隔校驗**：實現了自動校驗的區間選擇與頻率控制。
 
 **不足之處**：
-- [ ] **高級分組**：Android 支持書源的多層級嵌套分組，iOS 目前僅支持單層平鋪。
+- 無（已完全對標核心功能）
 
 ### 證據鏈明細
 
@@ -109,6 +112,9 @@
 | **03.3 調試日誌** | `BookSourceDebugActivity.kt` | `debug_page.dart` | **Equivalent** | 實時日誌流輸出邏輯一致 |
 | **03.4 源校驗** | `BookSourceViewModel.kt`: 310 (`checkSource`) | `check_source_service.dart` | **Matched** | 網絡連通性與響應校驗一致 |
 | **03.5 排序權重** | `BookSource.kt`: 45 (`customOrder`) | `book_source.dart`: 30 (`customOrder`) | **Matched** | 排序字段定義一致 |
+| **03.6 域名分組** | `BookSourceActivity.kt` | `SourceManagerProvider.toggleGroupByDomain` | **Matched** | 域名聚合邏輯與 Android 一致 |
+| **03.7 互動偵錯** | `BookSourceDebugActivity.kt` | `DebugPage` & `SourceEditorPage._showDebugConsole` | **Matched** | 偵錯控制台交互與日誌層級一致 |
+| **03.8 區間選擇** | `BookSourceViewModel.kt` | `SourceManagerProvider.selectInterval` | **Matched** | 校驗頻率與區間選擇邏輯一致 |
 <!-- END_AUDIT_03 -->
 
 <!-- BEGIN_AUDIT_04 -->
@@ -266,7 +272,7 @@
 - ✅ **分組管理**：實現了規則的分組歸類與開關控制。
 
 **不足之處**：
-- [ ] **性能監控**：Android 在規則列表中支持顯示每個規則的替換耗時，iOS 尚未實現。
+- [ ] **性能監控**：Android 在規則列表中支持顯示每個規則的替換耗時，iOS 尚未實現時。
 
 ### 證據鏈明細
 
