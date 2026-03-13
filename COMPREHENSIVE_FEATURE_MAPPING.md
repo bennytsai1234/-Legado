@@ -7,6 +7,12 @@
 | **02** | **書架/主頁面** | `ui/main/` | `features/bookshelf/` | ✅ | 書架、分組管理 |
 | **03** | **書源管理** | `ui/book/source/` | `features/source_manager/` | ✅ | 書源列表、編輯、調試 |
 | **04** | **核心引擎** | `modules/book/`, `modules/rhino/` | `core/engine/`, `core/local_book/` | ✅ | 解析引擎、JS 運行環境 |
+| **05** | **數據持久化** | `data/` | `core/database/`, `core/models/` | ✅ | 資料庫 DAO、Entities |
+| **06** | **RSS 閱覽** | `ui/rss/` | `features/rss/` | ✅ | RSS 源管理、文章列表 |
+| **07** | **背景服務** | `service/` | `core/services/` | ✅ | TTS 朗讀、下載、Web 服務 |
+| **08** | **系統助手/備份** | `help/` | `core/services/` | ✅ | 備份恢復、WebDav、JS 擴展 |
+| **09** | **替換規則** | `ui/replace/` | `features/replace_rule/` | ✅ | 正則替換規則管理 |
+| **10** | **通用配置** | `ui/config/` | `features/settings/` | ✅ | 主題、備份、其他配置 |
 
 ---
 
@@ -43,10 +49,10 @@
 
 | # | Android 檔案 | 角色 | iOS 對應檔案 | 對應狀態 |
 |:--|:---|:---|:---|:---|
-| 1 | `BookSourceActivity.kt" | UI (Activity) | `source_manager_page.dart` | ✅ 已對應 |
-| 2 | `BookSourceViewModel.kt" | 業務邏輯 (ViewModel) | `source_manager_provider.dart` | ✅ 已對應 |
-| 3 | `BookSourceEditActivity.kt" | UI (Activity) | `source_editor_page.dart` | ✅ 已對應 |
-| 4 | `BookSourceDebugActivity.kt" | UI (Activity) | `debug_page.dart` (部分) | ⚠️ 部分對應 |
+| 1 | `BookSourceActivity.kt` | UI (Activity) | `source_manager_page.dart` | ✅ 已對應 |
+| 2 | `BookSourceViewModel.kt` | 業務邏輯 (ViewModel) | `source_manager_provider.dart` | ✅ 已對應 |
+| 3 | `BookSourceEditActivity.kt` | UI (Activity) | `source_editor_page.dart` | ✅ 已對應 |
+| 4 | `BookSourceDebugActivity.kt` | UI (Activity) | `debug_page.dart` (部分) | ⚠️ 部分對應 |
 <!-- END_MAPPING_03 -->
 
 <!-- BEGIN_MAPPING_04 -->
@@ -61,3 +67,69 @@
 | 5 | `AnalyzRule.kt` | 邏輯 (Rule Parser) | `analyze_rule.dart` | ✅ 已對應 |
 <!-- END_MAPPING_04 -->
 
+<!-- BEGIN_MAPPING_05 -->
+### 05. 數據持久化
+
+| # | Android 檔案 | 角色 | iOS 對應檔案 | 對應狀態 |
+|:--|:---|:---|:---|:---|
+| 1 | `BookDao.kt` | 資料存取 (DAO) | `database/dao/book_dao.dart` | ✅ 已對應 |
+| 2 | `BookSourceDao.kt` | 資料存取 (DAO) | `database/dao/book_source_dao.dart` | ✅ 已對應 |
+| 3 | `AppDatabase.kt` | 資料庫核心 | `database/app_database.dart` | ✅ 已對應 |
+| 4 | `Book.kt` | 數據模型 (Entity) | `models/book.dart` | ✅ 已對應 |
+| 5 | `BookSource.kt` | 數據模型 (Entity) | `models/book_source.dart` | ✅ 已對應 |
+<!-- END_MAPPING_05 -->
+
+<!-- BEGIN_MAPPING_06 -->
+### 06. RSS 閱覽
+
+| # | Android 檔案 | 角色 | iOS 對應檔案 | 對應狀態 |
+|:--|:---|:---|:---|:---|
+| 1 | `RssSourceActivity.kt` | UI (Activity) | `rss/rss_source_page.dart` | ✅ 已對應 |
+| 2 | `RssArticlesFragment.kt` | UI (Fragment) | `rss/rss_article_page.dart` | ✅ 已對應 |
+| 3 | `ReadRssActivity.kt` | UI (Activity) | `rss/rss_read_page.dart` | ✅ 已對應 |
+| 4 | `RssSourceViewModel.kt` | 業務邏輯 (ViewModel) | `rss/rss_source_provider.dart` | ✅ 已對應 |
+<!-- END_MAPPING_06 -->
+
+<!-- BEGIN_MAPPING_07 -->
+### 07. 背景服務
+
+| # | Android 檔案 | 角色 | iOS 對應檔案 | 對應狀態 |
+|:--|:---|:---|:---|:---|
+| 1 | `AudioPlayService.kt` | 服務 (Audio) | `services/audio_play_service.dart` | ✅ 已對應 |
+| 2 | `DownloadService.kt` | 服務 (Download) | `services/download_service.dart` | ✅ 已對應 |
+| 3 | `TTSReadAloudService.kt` | 服務 (TTS) | `services/tts_service.dart` | ✅ 已對應 |
+| 4 | `WebService.kt` | 服務 (Web Server) | `services/web_service.dart` | ✅ 已對應 |
+<!-- END_MAPPING_07 -->
+
+<!-- BEGIN_MAPPING_08 -->
+### 08. 系統助手/備份
+
+| # | Android 檔案 | 角色 | iOS 對應檔案 | 對應狀態 |
+|:--|:---|:---|:---|:---|
+| 1 | `Backup.kt` | 邏輯 (備份) | `services/backup_aes_service.dart` (部分) | ⚠️ 部分對應 |
+| 2 | `Restore.kt` | 邏輯 (恢復) | ❌ 無對應 | ❌ 缺失 |
+| 3 | `AppWebDav.kt` | 邏輯 (WebDav) | `services/webdav_service.dart` | ✅ 已對應 |
+| 4 | `JsExtensions.kt` | 邏輯 (JS 擴展) | `engine/js/js_extensions.dart` | ✅ 已對應 |
+| 5 | `ContentProcessor.kt` | 邏輯 (內容處理) | `services/content_processor.dart` | ✅ 已對應 |
+<!-- END_MAPPING_08 -->
+
+<!-- BEGIN_MAPPING_09 -->
+### 09. 替換規則
+
+| # | Android 檔案 | 角色 | iOS 對應檔案 | 對應狀態 |
+|:--|:---|:---|:---|:---|
+| 1 | `ReplaceRuleActivity.kt` | UI (Activity) | `replace_rule/replace_rule_page.dart` | ✅ 已對應 |
+| 2 | `ReplaceEditActivity.kt` | UI (Activity) | `replace_rule/replace_rule_edit_page.dart` | ✅ 已對應 |
+| 3 | `ReplaceRuleViewModel.kt` | 業務邏輯 (ViewModel) | `replace_rule/replace_rule_provider.dart` | ✅ 已對應 |
+<!-- END_MAPPING_09 -->
+
+<!-- BEGIN_MAPPING_10 -->
+### 10. 通用配置
+
+| # | Android 檔案 | 角色 | iOS 對應檔案 | 對應狀態 |
+|:--|:---|:---|:---|:---|
+| 1 | `ConfigActivity.kt` | UI (Activity) | `settings/settings_page.dart` | ✅ 已對應 |
+| 2 | `ThemeConfigFragment.kt` | UI (Fragment) | `settings/theme_settings_page.dart` | ✅ 已對應 |
+| 3 | `BackupConfigFragment.kt` | UI (Fragment) | `settings/backup_settings_page.dart` | ✅ 已對應 |
+| 4 | `OtherConfigFragment.kt` | UI (Fragment) | `settings/other_settings_page.dart` | ✅ 已對應 |
+<!-- END_MAPPING_10 -->
