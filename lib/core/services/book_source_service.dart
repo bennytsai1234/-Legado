@@ -143,7 +143,7 @@ class BookSourceService {
         
         // 深度還原：偵測 WebFile (對標 Android WebBook.getBookInfo)
         if (book.kind?.contains("WebFile") ?? false || _isFilePath(book.tocUrl)) {
-          book.type |= BookType.file;
+          book.type |= BookType.webFile;
         }
       }
       return book;
@@ -158,7 +158,7 @@ class BookSourceService {
   /// 獲取章節目錄 (支援翻頁)
   Future<List<BookChapter>> getChapterList(BookSource source, Book book, {CancelToken? cancelToken}) async {
     // 深度還原：如果是 WebFile，則進行全檔案下載並交給本地解析器
-    if ((book.type & BookType.file) != 0) {
+    if ((book.type & BookType.webFile) != 0) {
       return await _handleWebFile(source, book, cancelToken: cancelToken);
     }
 

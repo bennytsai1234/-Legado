@@ -564,8 +564,11 @@ class SourceRule {
       for (int i = 0; i < ruleParam.length; i++) {
         final type = ruleType[i];
         if (type > defaultRuleType) {
-          if (result is List && result.length > type) infoVal.write(result[type]?.toString() ?? "");
-          else infoVal.write(ruleParam[i]);
+          if (result is List && result.length > type) {
+            infoVal.write(result[type]?.toString() ?? "");
+          } else {
+            infoVal.write(ruleParam[i]);
+          }
         } else if (type == jsRuleType) {
           infoVal.write(analyzer.evalJS(ruleParam[i], result)?.toString() ?? "");
         } else if (type == jsonPartRuleType) {
