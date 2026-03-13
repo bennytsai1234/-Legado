@@ -3,11 +3,6 @@ import '../../../core/models/chapter.dart';
 import 'text_page.dart';
 
 class ChapterProvider {
-  static const double paddingTop = 40.0;
-  static const double paddingBottom = 40.0;
-  static const double paddingLeft = 16.0;
-  static const double paddingRight = 16.0;
-
   static List<TextPage> paginate({
     required String content,
     required BookChapter chapter,
@@ -16,11 +11,13 @@ class ChapterProvider {
     required Size viewSize,
     required TextStyle titleStyle,
     required TextStyle contentStyle,
-    double paragraphSpacing = 16.0,
+    double paragraphSpacing = 1.0,
+    double padding = 16.0,
   }) {
     final List<TextPage> pages = [];
-    final double visibleWidth = viewSize.width - paddingLeft - paddingRight;
-    final double visibleHeight = viewSize.height - paddingTop - paddingBottom;
+    final double visibleWidth = viewSize.width - (padding * 2);
+    // 預留上下各 40.0 的邊距空間
+    final double visibleHeight = viewSize.height - 80.0;
 
     if (visibleWidth <= 0 || visibleHeight <= 0) {
       return [
@@ -35,8 +32,9 @@ class ChapterProvider {
       ];
     }
 
-    // 深度還原：大檔案預處理分割邏輯 (對標 Android TextFile.analyze)
-    // 若單章超過 50,000 字，為了排版效能，我們在這裡進行物理切塊
+    final double effectiveParaSpacing = (contentStyle.fontSize ?? 18.0) * paragraphSpacing;
+
+    // 大檔案預處理分割
     const int splitThreshold = 50000;
     if (content.length > splitThreshold) {
       final List<TextPage> allSubPages = [];
@@ -47,7 +45,6 @@ class ChapterProvider {
         if (end > content.length) {
           end = content.length;
         } else {
-          // 確保在換行符處分割，保持語義完整
           final nextNewline = content.indexOf('\n', end);
           if (nextNewline != -1 && nextNewline < end + 5000) {
             end = nextNewline;
@@ -64,12 +61,12 @@ class ChapterProvider {
           titleStyle: titleStyle,
           contentStyle: contentStyle,
           paragraphSpacing: paragraphSpacing,
+          padding: padding,
         );
         allSubPages.addAll(subPages);
         start = end;
         subChapterIdx++;
       }
-      // 重新修正頁碼與頁數
       return allSubPages.asMap().entries.map((e) => e.value.copyWith(
         index: e.key,
         pageSize: allSubPages.length,
@@ -94,17 +91,14 @@ class ChapterProvider {
       paragraphNum++;
 
       if (paraText.trim().isEmpty) {
-        currentHeight += paragraphSpacing;
+        currentHeight += effectiveParaSpacing;
         chapterPosition += paraText.length + 1;
         continue;
       }
 
-      // 1. 處理圖片標籤
       if (imgRegex.hasMatch(paraText)) {
         final match = imgRegex.firstMatch(paraText)!;
         final url = match.group(1)!;
-        
-        // 圖片排版邏輯：預設佔據 200 高度，寬度撐滿
         final double imgHeight = 200.0;
         
         if (currentHeight + imgHeight > visibleHeight && currentLines.isNotEmpty) {
@@ -123,7 +117,7 @@ class ChapterProvider {
           image: TextImage(url: url, width: visibleWidth, height: imgHeight),
         ));
         
-        currentHeight += imgHeight + paragraphSpacing;
+        currentHeight += imgHeight + effectiveParaSpacing;
         chapterPosition += paraText.length + 1;
         continue;
       }
@@ -139,7 +133,6 @@ class ChapterProvider {
         double currentLineWidth = 0;
         double currentLineHeight = 0;
 
-        // Binary search for the maximum substring that fits in visibleWidth
         while (low <= high) {
           int mid = low + (high - low) ~/ 2;
           textPainter.text = TextSpan(
@@ -158,7 +151,6 @@ class ChapterProvider {
           }
         }
 
-        // Failsafe: if a single character is wider than view (rare), advance by 1
         if (bestEnd == charStartIndex) {
           bestEnd = charStartIndex + 1;
           textPainter.text = TextSpan(
@@ -205,7 +197,7 @@ class ChapterProvider {
         charStartIndex = bestEnd;
       }
 
-      currentHeight += paragraphSpacing;
+      currentHeight += effectiveParaSpacing;
       chapterPosition += paraText.length + 1;
     }
 

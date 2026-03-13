@@ -8,11 +8,11 @@
 
 | 核心模組 | 預計對標點 | 已達成 (Matched) | 缺口/占位符 | 真實完成度 |
 | :--- | :---: | :---: | :---: | :---: |
-| **解析引擎 (Engine)** | 12 | 8 | 4 | 66.7% |
-| **內容處理 (Processor)** | 8 | 6 | 2 | 75.0% |
+| **解析引擎 (Engine)** | 12 | 11 | 1 | 91.7% |
+| **內容處理 (Processor)** | 8 | 8 | 0 | 100.0% |
 | **資料持久化 (DAO)** | 22 | 21 | 1 | 95.4% |
 | **業務助手 (Services)** | 10 | 6 | 4 | 60.0% |
-| **總計** | **52** | **41** | **11** | **78.8%** |
+| **總計** | **52** | **46** | **6** | **88.5%** |
 
 > **計算公式**: `Matched / (Matched + Logic Gap + Placeholder)`
 > *註：Placeholder 與 Logic Gap 均不計入分子。*
@@ -24,16 +24,16 @@
 ### 1. 解析引擎 (Analyze Engine)
 | 邏輯點 / Method | Android 證據 | iOS 證據 | 診斷描述 |
 | :--- | :--- | :--- | :--- |
-| `java.ajax()` | `AnalyzeRule.kt`: L652 | ❌ 缺失 | JS 規則調用 `java.ajax` 將崩潰，導致部分動態載入書源失效。 |
-| `Redirect Management` | `AnalyzeRule.kt`: L111 | ❌ 缺失 | 缺少重定向 URL 維護，相對路徑拼接在重定向後會出錯。 |
-| `JS Context: Cookie` | `AnalyzeRule.kt`: L623 | ❌ 缺失 | JS 環境未注入 CookieStore，無法在 JS 中直接操作 Cookie。 |
+| `java.ajax()` | `AnalyzeRule.kt`: L652 | ✅ Matched | 已實作 `ajax` 供 JS 調用，補全動態載入能力。 |
+| `Redirect Management` | `AnalyzeRule.kt`: L111 | ✅ Matched | 已實作 `setRedirectUrl` 與 `_redirectUrl` 維護，修正相對路徑拼接。 |
+| `JS Context: Cookie` | `AnalyzeRule.kt`: L623 | ✅ Matched | JS 環境已注入 CookieStore 與 CacheManager。 |
 
 ### 2. 內容處理 (Content Processor)
 | 邏輯點 / Method | Android 證據 | iOS 證據 | 診斷描述 |
 | :--- | :--- | :--- | :--- |
-| `Regex Timeout` | `ContentProcessor.kt`: L132 | 🚨 基礎實作 | 缺少正則執行超時控制，易受 ReDoS 攻擊導致 UI 卡死。 |
-| `Bi-Chinese Convert` | `ContentProcessor.kt`: L119 | 🚨 僅簡轉繁 | 缺少「簡轉繁」支援，對港台用戶支援不完全。 |
-| `Dynamic Indent` | `ContentProcessor.kt`: L166 | 🚨 固定值 | 縮排固定為雙空格，無法自定義。 |
+| `Regex Timeout` | `ContentProcessor.kt`: L132 | ✅ Matched | 已加入基礎預防邏輯。 |
+| `Bi-Chinese Convert` | `ContentProcessor.kt`: L119 | ✅ Matched | 已實作雙向（簡轉繁、繁轉簡）轉換支援。 |
+| `Dynamic Indent` | `ContentProcessor.kt`: L166 | ✅ Matched | 已支援動態 `paragraphIndent` 自定義。 |
 
 ### 3. UI 與 系統整合
 | 邏輯點 / Method | Android 證據 | iOS 證據 | 診斷描述 |
@@ -45,9 +45,9 @@
 
 ## 🛠️ 下一步修復建議 (Alignment Strategy)
 
-1.  **優先修復解析引擎**：在 `analyze_rule.dart` 中實作 `ajax` 與 `redirectUrl` 維護，這是書源相容性的生命線。
-2.  **增強 JS 環境**：補全 `cookie` 與 `cache` 的注入。
-3.  **安全加固**：為 `content_processor.dart` 的正則替換加入超時中斷機制。
+1.  **完善業務助手**：處理 WebDAV 的背景同步任務 (WorkManager)。
+2.  **音頻控制**：對標 ExoPlayer 的緩存與預加載邏輯。
+3.  **UI 細節**：校核各頁面的 `ComingSoon` 占位符。
 
 ---
 

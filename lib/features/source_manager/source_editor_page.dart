@@ -18,9 +18,7 @@ class _SourceEditorPageState extends State<SourceEditorPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late BookSource _editingSource;
-  final _formKey = GlobalKey<FormState>();
 
-  // Controllers for basic info
   late TextEditingController _nameController;
   late TextEditingController _urlController;
   late TextEditingController _groupController;
@@ -29,21 +27,17 @@ class _SourceEditorPageState extends State<SourceEditorPage>
   late TextEditingController _headerController;
   late TextEditingController _exploreUrlController;
   late TextEditingController _searchUrlController;
-
-  // JSON controller
   late TextEditingController _jsonController;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _editingSource =
-        widget.source != null
-            ? BookSource.fromJson(widget.source!.toJson())
-            : BookSource(bookSourceUrl: '', bookSourceName: '');
+    _editingSource = widget.source != null
+        ? BookSource.fromJson(widget.source!.toJson())
+        : BookSource(bookSourceUrl: '', bookSourceName: '');
 
     _initControllers();
-    _updateJsonFromForm();
   }
 
   void _initControllers() {
@@ -73,12 +67,6 @@ class _SourceEditorPageState extends State<SourceEditorPage>
     super.dispose();
   }
 
-  void _updateJsonFromForm() {
-    _syncSourceFromForm();
-    const encoder = JsonEncoder.withIndent('  ');
-    _jsonController.text = encoder.convert(_editingSource.toJson());
-  }
-
   void _syncSourceFromForm() {
     _editingSource.bookSourceName = _nameController.text;
     _editingSource.bookSourceUrl = _urlController.text;
@@ -90,40 +78,31 @@ class _SourceEditorPageState extends State<SourceEditorPage>
     _editingSource.searchUrl = _searchUrlController.text;
   }
 
+  void _updateJsonFromForm() {
+    _syncSourceFromForm();
+    _jsonController.text = const JsonEncoder.withIndent('  ').convert(_editingSource.toJson());
+  }
+
   bool _updateFormFromJson() {
     try {
       final json = jsonDecode(_jsonController.text);
       setState(() {
         _editingSource = BookSource.fromJson(json);
-        _nameController.text = _editingSource.bookSourceName;
-        _urlController.text = _editingSource.bookSourceUrl;
-        _groupController.text = _editingSource.bookSourceGroup ?? '';
-        _commentController.text = _editingSource.bookSourceComment ?? '';
-        _loginUrlController.text = _editingSource.loginUrl ?? '';
-        _headerController.text = _editingSource.header ?? '';
-        _exploreUrlController.text = _editingSource.exploreUrl ?? '';
-        _searchUrlController.text = _editingSource.searchUrl ?? '';
+        _initControllers(); // Refresh all text controllers
       });
       return true;
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('JSON 格式錯誤: $e')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('JSON 格式錯誤: $e')));
       return false;
     }
   }
 
   Future<void> _save() async {
-    if (_tabController.index == 1) {
-      if (!_updateFormFromJson()) return;
-    } else {
-      _syncSourceFromForm();
-    }
+    if (_tabController.index == 1) { if (!_updateFormFromJson()) return; }
+    else { _syncSourceFromForm(); }
 
     if (_editingSource.bookSourceUrl.isEmpty || _editingSource.bookSourceName.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('書源名稱和 URL 不能為空')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('名稱和 URL 不能為空')));
       return;
     }
 
@@ -140,21 +119,12 @@ class _SourceEditorPageState extends State<SourceEditorPage>
       appBar: AppBar(
         title: Text(widget.source == null ? '新建書源' : '編輯書源'),
         actions: [
-          IconButton(icon: const Icon(Icons.bug_report), tooltip: '偵錯控制台', onPressed: _showDebugConsole),
+          IconButton(icon: const Icon(Icons.bug_report), onPressed: _showDebugConsole),
           IconButton(icon: const Icon(Icons.save), onPressed: _save),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [Tab(text: '表單'), Tab(text: 'JSON')],
-          onTap: (index) {
-            if (index == 1) _updateJsonFromForm();
-          },
-        ),
+        bottom: TabBar(controller: _tabController, tabs: const [Tab(text: '表單'), Tab(text: 'JSON')], onTap: (i) { if (i == 1) _updateJsonFromForm(); }),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [_buildFormTab(), _buildJsonTab()],
-      ),
+      body: TabBarView(controller: _tabController, children: [_buildFormTab(), _buildJsonTab()]),
     );
   }
 
@@ -162,135 +132,86 @@ class _SourceEditorPageState extends State<SourceEditorPage>
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            _buildSection('基本資訊', [
-              _buildTextField('名稱', _nameController),
-              _buildTextField('URL (唯一識別)', _urlController),
-              _buildTextField('分組', _groupController),
-              _buildTextField('說明', _commentController, maxLines: 2),
-              _buildTextField('登入 URL', _loginUrlController),
-              _buildTextField('Header (JSON)', _headerController, maxLines: 2),
-            ]),
-            _buildSection('搜尋與發現', [
-              _buildTextField('搜尋 URL', _searchUrlController),
-              _buildTextField('發現 URL', _exploreUrlController, maxLines: 2),
-            ]),
-            _buildRuleSection('搜尋規則', _editingSource.ruleSearch ?? SearchRule(), (r) => _editingSource.ruleSearch = r as SearchRule),
-            _buildRuleSection('發現規則', _editingSource.ruleExplore ?? ExploreRule(), (r) => _editingSource.ruleExplore = r as ExploreRule),
-            _buildRuleSection('詳情規則', _editingSource.ruleBookInfo ?? BookInfoRule(), (r) => _editingSource.ruleBookInfo = r as BookInfoRule),
-            _buildRuleSection('目錄規則', _editingSource.ruleToc ?? TocRule(), (r) => _editingSource.ruleToc = r as TocRule),
-            _buildRuleSection('正文規則', _editingSource.ruleContent ?? ContentRule(), (r) => _editingSource.ruleContent = r as ContentRule),
-            const SizedBox(height: 100),
-          ],
-        ),
+        child: Column(children: [
+          _buildSection('基本資訊', [
+            _buildTextField('名稱', _nameController, hint: '書源顯示名稱'),
+            _buildTextField('URL', _urlController, hint: '書源首頁位址'),
+            _buildTextField('分組', _groupController, hint: '多個分組用逗號隔開'),
+            _buildTextField('Header', _headerController, hint: 'JSON 格式的請求頭', maxLines: 2),
+          ]),
+          _buildSection('搜尋與發現', [
+            _buildTextField('搜尋 URL', _searchUrlController, hint: '支援 {{key}} 變數'),
+            _buildTextField('發現 URL', _exploreUrlController, hint: '支援分頁與分類', maxLines: 2),
+          ]),
+          _buildRuleEditor('搜尋規則', _editingSource.ruleSearch ?? SearchRule(), 
+            ['bookList', 'name', 'author', 'kind', 'wordCount', 'lastChapter', 'intro', 'coverUrl', 'bookUrl'],
+            (m) => _editingSource.ruleSearch = SearchRule.fromJson(m),
+            {
+              'bookList': '列表規則',
+              'bookUrl': '詳情頁連結',
+              'coverUrl': '封面圖連結'
+            }),
+          _buildRuleEditor('詳情規則', _editingSource.ruleBookInfo ?? BookInfoRule(),
+            ['name', 'author', 'kind', 'wordCount', 'lastChapter', 'intro', 'coverUrl', 'tocUrl'],
+            (m) => _editingSource.ruleBookInfo = BookInfoRule.fromJson(m),
+            {}),
+          _buildRuleEditor('目錄規則', _editingSource.ruleToc ?? TocRule(),
+            ['chapterList', 'chapterName', 'chapterUrl', 'nextPage'],
+            (m) => _editingSource.ruleToc = TocRule.fromJson(m),
+            {}),
+          _buildRuleEditor('正文規則', _editingSource.ruleContent ?? ContentRule(),
+            ['content', 'nextPage', 'replaceRegex', 'sourceRegex'],
+            (m) => _editingSource.ruleContent = ContentRule.fromJson(m),
+            {}),
+          const SizedBox(height: 100),
+        ]),
       ),
     );
   }
 
-  Widget _buildJsonTab() {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: TextField(
-        controller: _jsonController,
-        maxLines: null,
-        expands: true,
-        style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-        decoration: const InputDecoration(
-          border: OutlineInputBorder(),
-          hintText: '輸入書源 JSON...',
-        ),
-      ),
-    );
-  }
-
-  void _showDebugConsole() {
-    if (_tabController.index == 1) {
-      if (!_updateFormFromJson()) return;
-    } else {
-      _syncSourceFromForm();
-    }
-    
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => DebugPage(source: _editingSource),
-      ),
-    );
-  }
-
-  Widget _buildSection(String title, List<Widget> children) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildRuleEditor(String title, dynamic rule, List<String> allKeys, Function(Map<String, dynamic>) onUpdate, Map<String, String> hints) {
+    return ExpansionTile(
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Text(
-            title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue),
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(children: allKeys.map((key) {
+            final currentVal = rule.toJson()[key]?.toString() ?? '';
+            final ctrl = TextEditingController(text: currentVal);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: TextField(
+                controller: ctrl,
+                decoration: InputDecoration(
+                  labelText: key, 
+                  helperText: hints[key],
+                  isDense: true,
+                  border: const UnderlineInputBorder()
+                ),
+                onChanged: (v) {
+                  final map = rule.toJson() as Map<String, dynamic>;
+                  map[key] = v;
+                  onUpdate(map);
+                },
+              ),
+            );
+          }).toList()),
         ),
-        ...children,
-        const Divider(),
       ],
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, {int maxLines = 1}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: TextFormField(
-        controller: controller,
-        maxLines: maxLines,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        ),
-      ),
-    );
-  }
+  Widget _buildSection(String title, List<Widget> children) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue))),
+    ...children, const Divider(),
+  ]);
 
-  Widget _buildRuleSection(String title, dynamic rule, Function(dynamic) onUpdate) {
-    return ExpansionTile(
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-      children: _buildRuleFields(rule, onUpdate),
-    );
-  }
+  Widget _buildTextField(String label, TextEditingController ctrl, {String? hint, int maxLines = 1}) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: TextFormField(controller: ctrl, maxLines: maxLines, decoration: InputDecoration(labelText: label, hintText: hint, border: const OutlineInputBorder())),
+  );
 
-  List<Widget> _buildRuleFields(dynamic rule, Function(dynamic) onUpdate) {
-    final List<Widget> fields = [];
-    final json = rule.toJson() as Map<String, dynamic>;
-    
-    json.forEach((key, value) {
-      final controller = TextEditingController(text: value?.toString() ?? '');
-      fields.add(
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: TextField(
-            controller: controller,
-            decoration: InputDecoration(labelText: key, border: const UnderlineInputBorder()),
-            onChanged: (val) {
-              json[key] = val;
-              // Reconstruct rule object
-              if (rule is SearchRule) {
-                onUpdate(SearchRule.fromJson(json));
-              } else if (rule is ExploreRule) {
-                onUpdate(ExploreRule.fromJson(json));
-              } else if (rule is BookInfoRule) {
-                onUpdate(BookInfoRule.fromJson(json));
-              } else if (rule is TocRule) {
-                onUpdate(TocRule.fromJson(json));
-              } else if (rule is ContentRule) {
-                onUpdate(ContentRule.fromJson(json));
-              }
-            },
-          ),
-        ),
-      );
-    });
-    
-    return fields;
-  }
+  Widget _buildJsonTab() => Padding(padding: const EdgeInsets.all(8), child: TextField(controller: _jsonController, maxLines: null, expands: true, style: const TextStyle(fontFamily: 'monospace', fontSize: 12), decoration: const InputDecoration(border: OutlineInputBorder(), hintText: '輸入書源 JSON...')));
+
+  void _showDebugConsole() { _syncSourceFromForm(); Navigator.push(context, MaterialPageRoute(builder: (context) => DebugPage(source: _editingSource))); }
 }

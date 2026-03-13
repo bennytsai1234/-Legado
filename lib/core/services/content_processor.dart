@@ -15,16 +15,19 @@ class ContentProcessor {
   static const String markQuotationRight = "”\"’";
   static const String markQuotationLeft = "“\"‘";
 
+  /// 段落縮排 (對標 Android: ReadBookConfig.paragraphIndent)
+  static String paragraphIndent = "　　";
+
   /// 基礎處理方法 (供 ExportBookService 使用)
-  String process(String content) {
+  String process(String content, {bool toTraditional = false}) {
     if (content == "null" || content.isEmpty) return content;
-    String result = ChineseUtils.t2s(content);
+    String result = toTraditional ? ChineseUtils.s2t(content) : ChineseUtils.t2s(content);
     result = reSegment(result, "");
     
     final lines = result.split('\n');
     final processedLines = lines.map((line) {
       final paragraph = line.trimLeft().replaceAll(RegExp(r'^[\s　]+'), '');
-      return paragraph.isNotEmpty ? "　　$paragraph" : "";
+      return paragraph.isNotEmpty ? "$paragraphIndent$paragraph" : "";
     }).where((line) => line.isNotEmpty);
     
     return processedLines.join('\n');
@@ -37,7 +40,7 @@ class ContentProcessor {
     String content, {
     bool includeTitle = true,
     bool useReplace = true,
-    bool chineseConvert = true,
+    int chineseConvertType = 0, // 0: None, 1: T2S, 2: S2T
     bool reSegmentEnabled = true,
     List<ReplaceRule>? rules,
   }) {
@@ -66,8 +69,10 @@ class ContentProcessor {
     }
 
     // 3. 簡繁轉換
-    if (chineseConvert) {
+    if (chineseConvertType == 1) {
       mContent = ChineseUtils.t2s(mContent);
+    } else if (chineseConvertType == 2) {
+      mContent = ChineseUtils.s2t(mContent);
     }
 
     // 4. 執行取代規則 (對標 Android: 支援 scope 與正則替換)
@@ -83,7 +88,7 @@ class ContentProcessor {
       mContent = '${chapter.title}\n$mContent';
     }
 
-    // 6. 排版整理 (段首縮排，對標 Android: 統一全形雙空格)
+    // 6. 排版整理 (段首縮排)
     final contents = <String>[];
     for (final str in mContent.split('\n')) {
       final paragraph = str.trimLeft().replaceAll(RegExp(r'^[\s　]+'), '');
@@ -91,7 +96,7 @@ class ContentProcessor {
         if (contents.isEmpty && includeTitle) {
           contents.add(paragraph);
         } else {
-          contents.add("　　$paragraph");
+          contents.add("$paragraphIndent$paragraph");
         }
       }
     }

@@ -2,236 +2,57 @@
 description: "[2/4] 基於結構地圖，對每個模組進行邏輯級別的語義比對分析，生成功能審計報告"
 ---
 
-# 🔍 [2/4] 功能對齊分析工作流 (Feature Parity Audit) v5
+# 🔍 [2/4] 功能對齊分析工作流 (Feature Parity Audit) v6
 
-本工作流為遷移管線的**第二步**。基於 `/01-structure-mapping` 產出的地圖，深入每個模組做**原始碼級別的語義比對**，生成審計報告。
+本工作流為遷移管線的**第二步**。深入每個模組進行原始碼級別的語義比對，識別「偽對齊」並產出審計報告。
 
 > **執行順序**：`01-structure-mapping` → `02-feature-parity` → `03-incremental-alignment` → `04-debug`
 
 ---
 
-## 核心產物
+## 🏗️ 嚴謹稽核規範 (Rigorous Audit Mandate)
 
-- **`FEATURE_AUDIT_v2.md`**（單一報告，同時包含模組級總覽 + 原子級證據鏈）
-
-> [!NOTE]
-> 報告採雙層結構：頂部為模組級儀表板與完成度追蹤，每個模組章節內包含證據鏈明細表格。
-> 新的審計結果直接追加至對應模組章節內，不再維護獨立的 LOG 檔案。
-
----
-
-## 前置條件
-
-- **必須先完成** `/01-structure-mapping`，確保 `COMPREHENSIVE_FEATURE_MAPPING.md` 存在
-
----
-
-## 區段錨點規範（Section Anchor）
-
-> [!IMPORTANT]
-> 產物檔案 `FEATURE_AUDIT_v2.md` 使用 HTML 註解錨點標記**每個模組章節的邊界**。
-> 這是防止 `replace` 操作溢出覆蓋相鄰模組的**核心機制**。
-
-### 錨點格式
-```markdown
-<!-- BEGIN_AUDIT_17 -->
-## 17. 本地書籍掃描
-
-**模組職責**：...
-**Legado 檔案**：...
-...（完整模組審計內容）...
-
-### 證據鏈明細
-| 邏輯點 | Android 證據鏈 | iOS 證據鏈 | 狀態 | 狀態描述 |
-| :--- | :--- | :--- | :--- | :--- |
-| ... | ... | ... | ... | ... |
-<!-- END_AUDIT_17 -->
-```
-
-### 寫入規則
-
-> [!CAUTION]
-> **以下規則為強制性約束，違反任何一條都算作工作流失敗。**
-
-1. **新增模組**：在上一個模組的 `<!-- END_AUDIT_{N-1} -->` 之後追加新的 `BEGIN/END` 區塊
-2. **更新模組**：精確替換 `<!-- BEGIN_AUDIT_N -->` 與 `<!-- END_AUDIT_N -->` 之間的全部內容（含錨點本身一起替換以確保完整性）
-3. **禁止跨錨點替換**：一次 `replace` 操作**嚴禁觸及多個** `BEGIN/END` 對。寫模組 18 時，`replace` 的目標文字中**絕對不能包含**模組 17 的任何內容
-4. **替換範圍最小化**：`replace` 的 TargetContent 應以該模組的 `<!-- BEGIN_AUDIT_N -->` 為起始、`<!-- END_AUDIT_N -->` 為結尾，精準鎖定
-
-### 頂部儀表板的特殊處理
-
-儀表板區域使用獨立的錨點對：
-```markdown
-<!-- BEGIN_DASHBOARD -->
-## 總覽儀表板
-| ID | 模組名稱 | 完成度 | 狀態 | 核心邏輯比對結果 |
-...
-<!-- END_DASHBOARD -->
-```
-
-更新儀表板時，只替換 `BEGIN_DASHBOARD` 與 `END_DASHBOARD` 之間的內容，**不觸及任何模組章節**。
-
----
-
-## 執行模式判定
-
-> [!IMPORTANT]
-> **自動判定邏輯**：檢查 `FEATURE_AUDIT_v2.md` 是否存在。
-> - **不存在** → 預設為 **全量審計**（按地圖順序逐一審計所有模組）
-> - **已存在** → 預設為 **增量審計**（等待使用者指定目標模組）
-
-### 模式 A：全量審計（預設：報告不存在時）
-按地圖中的 ID 順序，從零建立完整的審計報告。
-
-### 模式 B：增量審計（預設：報告已存在時）
-使用者指定模組 ID 或名稱（如 `14. 核心閱讀器`），僅審計該模組並更新對應章節。
+> [!DANGER]
+> **拒絕空殼對齊**：禁止因 iOS 存在同名檔案而直接標註為 `Matched`。
+> 1. **占位符搜查**：必須檢索 `_showComingSoon`, `unimplemented`, `TODO` 等關鍵字。凡有此類標識，該功能點一律視為 `Logic Gap`。
+> 2. **API 完整性矩陣 (Completeness Matrix)**：必須列出 Android 類別的所有 **Public Methods**，並在 iOS 對應檔案中逐一對照。
+> 3. **平台敏感性分析**：涉及系統權限（背景任務、儲存權限、原生 UI）的邏輯，必須單獨標註其 iOS 實作方案。
 
 ---
 
 ## 執行步驟
 
-### Step 1：讀取地圖定位
-// turbo
-- 開啟 `COMPREHENSIVE_FEATURE_MAPPING.md`
-- 定位目標模組，取得 Android / iOS 的檔案路徑清單（從模組子章節的完整檔案對應表中獲取）
+### Step 1：讀取地圖與盤點
+- 開啟 `COMPREHENSIVE_FEATURE_MAPPING.md`。
+- 準備目標模組的 Android 原始碼與 iOS 原始碼。
 
-### Step 2：Android 端深度提取
-// turbo
-- 逐一讀取 Android 端所有相關檔案（Kotlin + XML 佈局）
-- **提取重點**（建立特徵清單）：
-  1. **UI 進入點**：所有 Activity/Fragment 的 UI 初始化與互動回調
-  2. **判定分支**：所有影響顯示與資料的 `if/else`、`when`、`switch`
-  3. **核心演算**：正則表達式、排序比較器、加密解密、分頁公式
-  4. **邊際處理**：空值防護、異常捕獲、預設值回退
-  5. **資料流**：ViewModel → UI 的 LiveData/StateFlow 綁定
+### Step 2：建立 API 完整性矩陣
+- **分析 Android 端**：列出所有業務關鍵函式。
+- **對照 iOS 端**：
+  - 存在且邏輯一致 → `Matched`
+  - 存在但功能缺失/空殼 → `🚨 Placeholder`
+  - 完全不存在 → `Logic Gap`
 
-### Step 3：iOS 端精確閱讀
-// turbo
-- 根據地圖，直接開啟 iOS 對應檔案（Dart）
-- 對照 Step 2 的特徵清單，逐條檢核：
-  - 這段邏輯在 iOS 是否存在？
-  - 處理流程是否一致？（忽略變數命名差異）
-  - 是否有語義等效但寫法不同的實作？
+### Step 3：深度邏輯比對
+- 比較關鍵演算法（如：分頁、正則處理、JS 變數傳遞）的具體步驟。
+- 檢查異常處理 (Exception Handling) 是否對齊。
 
-### Step 4：標註與分類
-- 對每個邏輯點標註狀態：
-  - **`Matched`**：邏輯完全一致
-  - **`Equivalent`**：語義對等但實作方式不同（需說明差異）
-  - **`Logic Gap`**：iOS 完全缺失此邏輯（需說明缺失影響）
+### Step 4：寫入 FEATURE_AUDIT_v2.md
+- **證據鏈明細升級**：
 
-### Step 5：寫入 FEATURE_AUDIT_v2.md（使用區段錨點）
-
-> [!IMPORTANT]
-> 每個模組章節**必須包含以下所有區塊**，缺少任何一個都不算完成：
-
-#### 5.1 模組章節必要結構
-
-```markdown
-<!-- BEGIN_AUDIT_XX -->
-## XX. 模組名稱
-
-**模組職責**：一句話描述此模組核心功能
-**Legado 檔案**：列出所有相關的 Android 原始碼檔案名
-**Flutter (iOS) 對應檔案**：列出所有相關的 Dart 檔案名
-**完成度：XX%**
-**狀態：✅/⚠️/🚨**
-
-**已完成項目 ✅**：
-- ✅ **項目名**：具體描述（引用對應的 Android 函式/類別名）
-- ✅ ...
-
-**不足之處**：
-- [ ] **缺失項**：具體描述缺什麼，影響是什麼
-- [ ] ...
-（如果沒有不足之處，寫「無」，不得省略此區塊）
-
-### 證據鏈明細
-
-| 邏輯點 | Android 證據鏈 | iOS 證據鏈 | 狀態 | 狀態描述 |
+| 邏輯點 / Method | Android 證據 | iOS 證據 | 狀態 | 診斷描述 |
 | :--- | :--- | :--- | :--- | :--- |
-| **XX.1 名稱** | `檔案.kt`: L行號 (`函式名`) | `檔案.dart`: L行號 (`函式名`) | **Matched** | 邏輯一致 |
-| **XX.2 名稱** | `檔案.kt`: L行號 (`函式名`) | ❌ 無對應 | **Logic Gap** | 缺失影響描述 |
-<!-- END_AUDIT_XX -->
-```
+| `loadChapters` | `BookDao.kt`: L40 | `book_dao.dart`: L50 | ✅ Matched | 邏輯一致 |
+| `changeIcon` | `Helper.kt`: L10 | `ui.dart`: `_showSoon` | 🚨 Placeholder | UI 存在但無實作內容 |
 
-#### 5.2 每模組最低證據鏈要求
-- 證據鏈明細表**至少包含 5 筆邏輯點比對記錄**
-- 每筆記錄必須包含：檔案名、行號（或近似範圍）、函式名或關鍵標識
-- 編號規則：`模組ID.序號`（如 `17.1`、`17.2`）
+### Step 5：計算真實完成度
+- **計算公式**：`Matched / (Matched + Equivalent + Logic Gap + Placeholder)`
+- **注意**：`Placeholder` 絕對不計入分子。
 
-#### 5.3 寫入操作規範
-- **每次只寫入一個模組**，使用精確的錨點範圍
-- 寫入前，先 `read_file` 確認目標區段的當前內容
-- 寫入後，立即執行 Step 6 完整性閘門
-
-### Step 6：完整性閘門驗證
-
-> [!IMPORTANT]
-> **每寫完一個模組後，必須立即執行以下驗證，確認 replace 沒有破壞其他內容：**
-
-1. **前序模組抽檢**：`read_file` 讀取**前一個模組**的 `BEGIN/END` 區段，確認：
-   - 錨點 `<!-- BEGIN_AUDIT_{N-1} -->` 和 `<!-- END_AUDIT_{N-1} -->` 依然存在
-   - 前序模組的「已完成項目」或「證據鏈明細」內容**未被覆蓋或截斷**
-2. **當前模組完整性**：確認剛寫入的模組包含所有必要區塊（模組概述 + 已完成 + 不足 + 證據鏈）
-3. **若驗證失敗**：
-   - **立即回滾**該次替換
-   - 縮小 replace 的 TargetContent 範圍
-   - 重新執行寫入
-
-### Step 7：更新頂部儀表板
-- 使用 `BEGIN_DASHBOARD / END_DASHBOARD` 錨點，精確替換儀表板區域
-- 同步更新對應模組行的完成度、狀態與比對結果摘要
-- **此操作不得觸及任何模組章節的錨點區域**
-
-### Step 8：Git 備份
-```powershell
-git add FEATURE_AUDIT_v2.md ; git commit -m "audit: complete module [模組名] parity analysis"
-```
-
----
-
-## 禁止事項
-
-> [!CAUTION]
-> 1. **禁止使用佔位符**：嚴禁使用 `(完整內容已恢復)` / `(待補充)` / `(略)` / `(同上)` 等文字代替實質內容
-> 2. **禁止空章節**：儀表板中有記錄的模組，必須有對應的完整章節內容
-> 3. **禁止跨模組 replace**：一次 replace 只能觸及一個 `BEGIN_AUDIT / END_AUDIT` 對
-> 4. **禁止省略證據鏈**：每個模組章節必須包含證據鏈明細表格，且至少 5 筆記錄
-> 5. **禁止只更新儀表板不更新章節**：兩者必須同步
-
----
-
-## 完成度百分比計算規範
-
-> [!NOTE]
-> 完成度不得憑感覺填寫，必須依據以下公式計算：
-
-```
-完成度 = (Matched 數量 + Equivalent 數量) / 邏輯點總數 × 100%
-```
-
-- 只有證據鏈明細中狀態為 `Matched` 或 `Equivalent` 的邏輯點才計入分子
-- `Logic Gap` 不計入分子
-- 四捨五入至 5% 的倍數（如 87% → 85%，93% → 95%）
-
----
-
-## 完成判定
-
-- 所有目標模組的邏輯點已逐條比對
-- `FEATURE_AUDIT_v2.md` 對應章節已更新，且每個章節包含：
-  - ✅ 模組概述（職責、檔案路徑）
-  - ✅ 已完成項目清單
-  - ✅ 不足之處清單
-  - ✅ 證據鏈明細表格（≥ 5 筆記錄）
-  - ✅ `BEGIN/END` 錨點完整
-- 儀表板已同步，完成度百分比依公式計算
-- 完整性閘門驗證通過（前序模組未被覆蓋）
-- Git 已備份
-- 回報使用者：審計摘要（X 個 Matched / Y 個 Equivalent / Z 個 Logic Gap）
+### Step 6：Git 備份
+- `git add FEATURE_AUDIT_v2.md ; git commit -m "audit: update parity report"`
 
 ---
 
 ## 下一步
-
-→ 執行 **`/03-incremental-alignment`** 修復 Logic Gap
+→ 執行 **`/03-incremental-alignment`** 修復 Logic Gap 與 Placeholder

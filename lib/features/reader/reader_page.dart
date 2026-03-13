@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -148,10 +149,20 @@ class _ReaderPageState extends State<ReaderPage> {
     if (provider.isLoading || provider.pages.isEmpty) {
       return Center(child: provider.isLoading ? const CircularProgressIndicator() : Text("內容為空\n${provider.content}", style: TextStyle(color: theme.textColor), textAlign: TextAlign.center));
     }
-    final titleStyle = TextStyle(fontSize: provider.fontSize + 4, fontWeight: FontWeight.bold, color: theme.textColor, fontFamily: provider.fontFamily);
-    final contentStyle = TextStyle(fontSize: provider.fontSize, height: provider.lineHeight, color: theme.textColor, fontFamily: provider.fontFamily);
+    final titleStyle = TextStyle(fontSize: provider.fontSize + 4, fontWeight: FontWeight.bold, color: theme.textColor, fontFamily: provider.fontFamily, letterSpacing: provider.letterSpacing);
+    final contentStyle = TextStyle(fontSize: provider.fontSize, height: provider.lineHeight, color: theme.textColor, fontFamily: provider.fontFamily, letterSpacing: provider.letterSpacing);
     return Stack(
       children: [
+        // 背景圖片渲染
+        if (provider.backgroundImage.isNotEmpty && File(provider.backgroundImage).existsSync())
+          Positioned.fill(
+            child: Image.file(
+              File(provider.backgroundImage),
+              fit: BoxFit.cover,
+              color: Colors.black.withValues(alpha: 0.05), // 微弱遮罩增加文字可讀性
+              colorBlendMode: BlendMode.darken,
+            ),
+          ),
         SelectionArea(
           onSelectionChanged: (c) => _selectedText = c?.plainText ?? "",
           contextMenuBuilder: (context, state) => AdaptiveTextSelectionToolbar.buttonItems(
@@ -321,6 +332,9 @@ class _ReaderPageState extends State<ReaderPage> {
       const Text("字體大小", style: TextStyle(color: Colors.white)),
       Row(children: [IconButton(onPressed: () => provider.setFontSize(provider.fontSize - 1), icon: const Icon(Icons.remove, color: Colors.white)), Text(provider.fontSize.toInt().toString(), style: const TextStyle(color: Colors.white)), IconButton(onPressed: () => provider.setFontSize(provider.fontSize + 1), icon: const Icon(Icons.add, color: Colors.white))]),
       const Text("行間距", style: TextStyle(color: Colors.white)), Slider(value: provider.lineHeight, min: 1.2, max: 2.5, onChanged: provider.setLineHeight),
+      const Text("段落間距", style: TextStyle(color: Colors.white)), Slider(value: provider.paragraphSpacing, min: 0.0, max: 3.0, onChanged: provider.setParagraphSpacing),
+      const Text("字間距", style: TextStyle(color: Colors.white)), Slider(value: provider.letterSpacing, min: -1.0, max: 5.0, onChanged: provider.setLetterSpacing),
+      const Text("頁邊距", style: TextStyle(color: Colors.white)), Slider(value: provider.textPadding, min: 0.0, max: 40.0, onChanged: provider.setTextPadding),
       const Text("閱讀主題", style: TextStyle(color: Colors.white)), const SizedBox(height: 10),
       SizedBox(height: 40, child: ListView.builder(scrollDirection: Axis.horizontal, itemCount: AppTheme.readingThemes.length, itemBuilder: (context, index) {
         final t = AppTheme.readingThemes[index];
@@ -331,7 +345,12 @@ class _ReaderPageState extends State<ReaderPage> {
       const Text("翻頁方式", style: TextStyle(color: Colors.white)), Wrap(spacing: 8, children: [ChoiceChip(label: const Text('水平'), selected: provider.pageTurnMode == 0, onSelected: (v) => provider.setPageTurnMode(0)), ChoiceChip(label: const Text('覆蓋'), selected: provider.pageTurnMode == 1, onSelected: (v) => provider.setPageTurnMode(1)), ChoiceChip(label: const Text('垂直'), selected: provider.pageTurnMode == 2, onSelected: (v) => provider.setPageTurnMode(2))]),
       const SizedBox(height: 10),
       const Text("亮度調節", style: TextStyle(color: Colors.white)), Slider(value: provider.brightness, min: 0.1, max: 1.0, onChanged: provider.setBrightness),
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text("繁簡轉換", style: TextStyle(color: Colors.white)), Switch(value: provider.chineseConvert, onChanged: provider.setChineseConvert)]),
+      const Text("繁簡轉換", style: TextStyle(color: Colors.white)),
+      Wrap(spacing: 8, children: [
+        ChoiceChip(label: const Text('無'), selected: provider.chineseConvert == 0, onSelected: (v) => provider.setChineseConvert(0)),
+        ChoiceChip(label: const Text('簡轉繁'), selected: provider.chineseConvert == 2, onSelected: (v) => provider.setChineseConvert(2)),
+        ChoiceChip(label: const Text('繁轉簡'), selected: provider.chineseConvert == 1, onSelected: (v) => provider.setChineseConvert(1)),
+      ]),
       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text("反轉內容", style: TextStyle(color: Colors.white)), Switch(value: provider.reverseContent, onChanged: (v) { provider.toggleReverseContent(); setState(() {}); })]),
       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text("刪除重複標題", style: TextStyle(color: Colors.white)), Switch(value: provider.removeSameTitle, onChanged: (v) { provider.toggleRemoveSameTitle(); setState(() {}); })]),
       const Divider(color: Colors.white24),

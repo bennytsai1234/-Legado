@@ -62,6 +62,8 @@ class SettingsProvider extends ChangeNotifier {
   Color nightAccentColor = Colors.deepOrange.shade800;
   Color nightBackgroundColor = Colors.grey.shade900;
   Color nightBottomBackgroundColor = Colors.grey.shade800;
+  String dayBackgroundImage = '';
+  String nightBackgroundImage = '';
 
   // --- 閱讀設定 ---
   bool hideStatusBar = false;
@@ -157,6 +159,8 @@ class SettingsProvider extends ChangeNotifier {
     welcomeShowTextDark = prefs.getBool('welcome_show_text_dark') ?? true;
     welcomeShowIconDark = prefs.getBool('welcome_show_icon_dark') ?? true;
     launcherIcon = prefs.getString(PreferKey.launcherIcon) ?? '';
+    dayBackgroundImage = prefs.getString(PreferKey.bgImage) ?? '';
+    nightBackgroundImage = prefs.getString(PreferKey.bgImageN) ?? '';
 
     _webdavUrl = prefs.getString(PreferKey.webDavUrl) ?? '';
     _webdavUser = prefs.getString(PreferKey.webDavAccount) ?? '';
@@ -348,6 +352,8 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setNightAccentColor(Color c) async { nightAccentColor = c; notifyListeners(); }
   Future<void> setNightBackgroundColor(Color c) async { nightBackgroundColor = c; notifyListeners(); }
   Future<void> setNightBottomBackgroundColor(Color c) async { nightBottomBackgroundColor = c; notifyListeners(); }
+  Future<void> setDayBackgroundImage(String v) async { dayBackgroundImage = v; await _save(PreferKey.bgImage, v); notifyListeners(); }
+  Future<void> setNightBackgroundImage(String v) async { nightBackgroundImage = v; await _save(PreferKey.bgImageN, v); notifyListeners(); }
 
   Future<void> setIgnoreAudioFocusAloud(bool v) async { ignoreAudioFocusAloud = v; await _save('ignore_audio_focus_aloud', v); notifyListeners(); }
   Future<void> setPauseReadAloudWhilePhoneCalls(bool v) async { pauseReadAloudWhilePhoneCalls = v; await _save('pause_read_aloud_while_phone_calls', v); notifyListeners(); }
@@ -372,17 +378,12 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setLauncherIcon(String v) async {
     launcherIcon = v;
     await _save(PreferKey.launcherIcon, v);
-    
-    // 調用原生 Android 邏輯
     if (Platform.isAndroid) {
       try {
         const platform = MethodChannel('com.legado.reader/launcher_icon');
         await platform.invokeMethod('changeIcon', {'iconName': v});
-      } catch (e) {
-        debugPrint('變更啟動圖標失敗: $e');
-      }
+      } catch (e) { debugPrint('變更啟動圖標失敗: $e'); }
     }
-    
     notifyListeners();
   }
 
@@ -427,18 +428,11 @@ class SettingsProvider extends ChangeNotifier {
     try {
       final lastFile = await WebDAVService().lastBackUp();
       if (lastFile == null) return null;
-      
-      // 解析備份檔案名稱中的時間戳 (格式: backup_12345678.zip)
       final name = lastFile.name ?? "";
       final tsStr = name.replaceAll('backup_', '').replaceAll('.zip', '');
       final remoteTs = int.tryParse(tsStr) ?? 0;
-      
-      if (remoteTs > _lastBackup) {
-        return name;
-      }
-    } catch (e) {
-      debugPrint('Check WebDav sync failed: $e');
-    }
+      if (remoteTs > _lastBackup) return name;
+    } catch (e) { debugPrint('Check WebDav sync failed: $e'); }
     return null;
   }
 }
