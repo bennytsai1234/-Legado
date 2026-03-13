@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'cookie_store.dart';
+import '../constant/prefer_key.dart';
 
 /// HttpClient - 全域 HTTP 客戶端
 /// 參考 Android: help/http/HttpHelper.kt
@@ -26,6 +28,13 @@ class HttpClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+          // 0. 注入自定義 User-Agent
+          final prefs = await SharedPreferences.getInstance();
+          final customUA = prefs.getString(PreferKey.userAgent) ?? '';
+          if (customUA.isNotEmpty) {
+            options.headers['User-Agent'] = customUA;
+          }
+
           // 1. 注入 Cookie
           final cookie = await _cookieStore.getCookie(options.uri.toString());
           if (cookie.isNotEmpty) {

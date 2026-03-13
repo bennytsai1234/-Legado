@@ -56,8 +56,8 @@ class OtherSettingsPage extends StatelessWidget {
               ),
               ListTile(
                 title: const Text('User Agent'),
-                subtitle: const Text('變更網路請求的預設 User-Agent'),
-                onTap: () => _showComingSoon(context),
+                subtitle: Text(settings.userAgent.isEmpty ? '預設' : settings.userAgent),
+                onTap: () => _showUserAgentDialog(context, settings),
               ),
               SwitchListTile(
                 title: const Text('Web 服務保留喚醒鎖'),
@@ -206,6 +206,35 @@ class OtherSettingsPage extends StatelessWidget {
   void _showComingSoon(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('功能開發中 (Work in Progress)')),
+    );
+  }
+
+  void _showUserAgentDialog(BuildContext context, SettingsProvider settings) {
+    final controller = TextEditingController(text: settings.userAgent);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('設定 User Agent'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            hintText: '輸入自定義 User-Agent',
+            helperText: '留空則使用系統預設',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          TextButton(
+            onPressed: () {
+              settings.setUserAgent(controller.text.trim());
+              Navigator.pop(context);
+            },
+            child: const Text('儲存'),
+          ),
+        ],
+      ),
     );
   }
 

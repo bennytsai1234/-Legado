@@ -109,6 +109,7 @@ class SettingsProvider extends ChangeNotifier {
   bool recordLog = false;
   bool recordHeapDump = false;
   int threadCount = 8;
+  String userAgent = '';
 
   // --- 朗讀設定 ---
   bool ignoreAudioFocusAloud = false;
@@ -225,6 +226,7 @@ class SettingsProvider extends ChangeNotifier {
     recordLog = prefs.getBool('record_log') ?? false;
     recordHeapDump = prefs.getBool('record_heap_dump') ?? false;
     threadCount = prefs.getInt('thread_count') ?? 8;
+    userAgent = prefs.getString(PreferKey.userAgent) ?? '';
 
     notifyListeners();
   }
@@ -314,6 +316,7 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setRecordLog(bool v) async { recordLog = v; await _save('record_log', v); notifyListeners(); }
   Future<void> setRecordHeapDump(bool v) async { recordHeapDump = v; await _save('record_heap_dump', v); notifyListeners(); }
   Future<void> setThreadCount(int v) async { threadCount = v; await _save('thread_count', v); notifyListeners(); }
+  Future<void> setUserAgent(String v) async { userAgent = v; await _save(PreferKey.userAgent, v); notifyListeners(); }
 
   Future<void> setDayPrimaryColor(Color c) async { dayPrimaryColor = c; notifyListeners(); }
   Future<void> setDayAccentColor(Color c) async { dayAccentColor = c; notifyListeners(); }
