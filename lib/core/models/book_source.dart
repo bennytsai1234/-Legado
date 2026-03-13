@@ -202,13 +202,13 @@ class BookSource implements BaseSource {
       'weight': weight,
       'exploreUrl': exploreUrl,
       'exploreScreen': exploreScreen,
-      'ruleExplore': ruleExplore?.toJson(),
+      'ruleExplore': ruleExplore != null ? jsonEncode(ruleExplore!.toJson()) : null,
       'searchUrl': searchUrl,
-      'ruleSearch': ruleSearch?.toJson(),
-      'ruleBookInfo': ruleBookInfo?.toJson(),
-      'ruleToc': ruleToc?.toJson(),
-      'ruleContent': ruleContent?.toJson(),
-      'ruleReview': ruleReview?.toJson(),
+      'ruleSearch': ruleSearch != null ? jsonEncode(ruleSearch!.toJson()) : null,
+      'ruleBookInfo': ruleBookInfo != null ? jsonEncode(ruleBookInfo!.toJson()) : null,
+      'ruleToc': ruleToc != null ? jsonEncode(ruleToc!.toJson()) : null,
+      'ruleContent': ruleContent != null ? jsonEncode(ruleContent!.toJson()) : null,
+      'ruleReview': ruleReview != null ? jsonEncode(ruleReview!.toJson()) : null,
     };
   }
 }
