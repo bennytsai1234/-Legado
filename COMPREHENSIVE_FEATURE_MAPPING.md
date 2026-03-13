@@ -99,12 +99,43 @@
 
 ---
 
+## 📂 資料夾路徑：legado/app/src/main/java/io/legado/app/data/entities (對標 iOS models)
+
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `Book.kt` | 書籍資訊實體 | `lib/core/models/book.dart` | ✅ Matched |
+| `BookSource.kt` | 書源規則實體 | `lib/core/models/book_source.dart` | ✅ Matched |
+| `BookChapter.kt` | 章節資訊實體 | `lib/core/models/chapter.dart` | ✅ Matched |
+| `BookGroup.kt` | 書籍分組實體 | `lib/core/models/book_group.dart` | ✅ Matched |
+| `Bookmark.kt` | 書籤實體 | `lib/core/models/bookmark.dart` | ✅ Matched |
+| `HttpTTS.kt` | 自定義 TTS 引擎實體 | `lib/core/models/http_tts.dart` | ✅ Matched |
+| `ReplaceRule.kt` | 內容替換規則實體 | `lib/core/models/replace_rule.dart` | ✅ Matched |
+| `RssSource.kt` | RSS 訂閱源實體 | `lib/core/models/rss_source.dart` | ✅ Matched |
+| `SearchBook.kt` | 搜尋結果書籍實體 | `lib/core/models/search_book.dart` | ✅ Matched |
+| `TxtTocRule.kt` | 本地書目錄規則實體 | `lib/core/models/txt_toc_rule.dart` | ✅ Matched |
+| `Base*` / `Rss*` (其餘 15+) | 其他輔助與 RSS 相關實體 | `lib/core/models/*.dart` | ✅ Matched |
+
+---
+
+## 📂 資料夾路徑：legado/app/src/main/java/io/legado/app/model (業務邏輯對位)
+
+| Android 檔案 | 職責描述 | iOS 對位檔案 | 狀態 |
+|:---|:---|:---|:---|
+| `ReadBook.kt` | 閱讀器核心狀態與頁面調度 | `lib/features/book/book_provider.dart` | ⚠️ Partial |
+| `CacheBook.kt` | 章節預加載與快取邏輯 | `lib/core/services/download_service.dart` | ⚠️ Partial |
+| `CheckSource.kt` | 書源效能測試與驗證 | `lib/core/services/check_source_service.dart` | ✅ Matched |
+| `Debug.kt` | 書源調試日誌與邏輯 | - | ❌ Missing |
+| `SharedJsScope.kt` | JS 執行環境共用變數管理 | `lib/core/engine/js/shared_js_scope.dart` | ✅ Matched |
+| `webBook/*` | 網路書源具體解析實作 | `lib/core/engine/book_source_engine.dart` | ⚠️ Partial |
+
+---
+
 ## 遞迴進度回報
 - [x] `constant`
 - [x] `exception`
 - [x] `utils`
 - [x] `help`
-- [ ] `model`
-- [ ] `data`
+- [x] `model`
+- [x] `data` (entities)
 - [ ] `service`
 - [ ] `ui`
