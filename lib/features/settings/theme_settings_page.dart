@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'settings_provider.dart';
+import 'welcome_settings_page.dart';
+import 'icon_settings_page.dart';
 
 class ThemeSettingsPage extends StatelessWidget {
   const ThemeSettingsPage({super.key});
@@ -18,14 +20,24 @@ class ThemeSettingsPage extends StatelessWidget {
                 title: const Text('更換圖標'),
                 subtitle: const Text('更換桌面圖標'),
                 leading: const Icon(Icons.app_shortcut),
-                onTap: () => _showComingSoon(context),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const IconSettingsPage()),
+                  );
+                },
               ),
               // 2. 歡迎介面
               ListTile(
                 title: const Text('歡迎介面'),
-                subtitle: const Text('設定歡迎介面語錄'),
+                subtitle: const Text('設定歡迎介面圖片與樣式'),
                 leading: const Icon(Icons.waving_hand_outlined),
-                onTap: () => _showComingSoon(context),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const WelcomeSettingsPage()),
+                  );
+                },
               ),
               // 3. 沉浸式狀態欄
               SwitchListTile(
@@ -138,7 +150,60 @@ class ThemeSettingsPage extends StatelessWidget {
           border: Border.all(color: Colors.grey.shade400, width: 1),
         ),
       ),
-      onTap: () => _showComingSoon(context), // Color picker needs an external package or custom dialog
+      onTap: () => _showColorPicker(context, title, currentColor, onColorChanged),
+    );
+  }
+
+  void _showColorPicker(BuildContext context, String title, Color currentColor, Function(Color) onColorChanged) {
+    final colors = [
+      Colors.brown, Colors.red, Colors.pink, Colors.purple, Colors.deepPurple,
+      Colors.indigo, Colors.blue, Colors.lightBlue, Colors.cyan, Colors.teal,
+      Colors.green, Colors.lightGreen, Colors.lime, Colors.yellow, Colors.amber,
+      Colors.orange, Colors.deepOrange, Colors.grey, Colors.blueGrey, Colors.black,
+    ];
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('選擇 $title'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: GridView.builder(
+            shrinkWrap: true,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 5,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+            ),
+            itemCount: colors.length,
+            itemBuilder: (context, index) {
+              return InkWell(
+                onTap: () {
+                  onColorChanged(colors[index]);
+                  Navigator.pop(context);
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: colors[index],
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: currentColor == colors[index] ? Colors.white : Colors.transparent,
+                      width: 2,
+                    ),
+                    boxShadow: [
+                      if (currentColor == colors[index])
+                        const BoxShadow(color: Colors.black26, blurRadius: 4, spreadRadius: 1)
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+        ],
+      ),
     );
   }
 
