@@ -1,49 +1,56 @@
 ---
-description: "[3/4] 根據審計報告的缺口進行代碼實作與功能對齊"
+description: "[3/4] 規格驅動移植實作：根據審計手冊的移植規格，精確還原 Android 邏輯至 iOS"
 ---
 
-# 🔧 [3/4] 功能對齊實作工作流 (Parity Alignment) v1
+# 🔧 [3/4] 規格驅動移植工作流 (Spec-Driven Implementation) v2
 
-本工作流專注於將 `FEATURE_AUDIT_v2.md` 中記錄的 **Logic Gap** 或 **Placeholder** 轉化為 100% 對齊的實作。
+本工作流是搬遷過程的「執行手臂」。它將 `/02-feature-parity` 產出的詳細審計手冊視為**藍圖**，進行精確的代碼移植。
 
 ---
 
-## 🏗️ 實作鐵律 (Implementation Mandate)
+## 🛠️ 強連動開發策略 (Referential strategy)
 
-> [!DANGER]
-> **1. 外科手術式修改**：優先使用 `replace` 植入邏輯，禁止無意義的 `write_file` 全量覆寫，保持檔案結構穩定。
-> **2. 零占位符協定**：嚴禁寫入 `// 同 Android` 或 `/* 此處省略 */`。所有產出的程式碼必須是完整、可編譯且邏輯閉環的。
-> **3. 嚴謹同步**：核心演算法（如：解密、緩存校驗、規則解析）必須與 Legado Android 原始碼邏輯 100% 平移。
+> [!IMPORTANT]
+> **1. 規格優先 (Spec-First)**：實作前必須完整讀取 `FEATURE_AUDIT_v2.md` 中針對該資料夾的「移植規格說明」。禁止憑經驗猜測。
+> **2. 原始碼三角形對位**：實作每段邏輯時，必須同時開啟：
+>    - **地圖**：確認檔案職責位置。
+>    - **Android 原始碼**：比對演算法細節與邊際處理（確保不漏掉任何一個 `if` 或 `try-catch`）。
+>    - **iOS 目標檔案**：執行外科手術式植入。
+> **3. 跨檔案協作 (Multi-file Orchestration)**：若規格要求分散實作（例如：一部分在 Provider，一部分在 Page），必須在同一個 Session 內完成。
 
 ---
 
 ## 執行步驟
 
-### Step 1：任務提取
-- 開啟 `FEATURE_AUDIT_v2.md`，定位到最新的「比對報告」區塊。
-- 挑選一個標註為 `❌ Logic Gap` 或 `🚨 Placeholder` 的功能點作為本次實作目標。
+### Step 1：藍圖讀取與定位
+- 定位 `FEATURE_AUDIT_v2.md` 中的目標 GAP。
+- 透過 `COMPREHENSIVE_FEATURE_MAPPING.md` 找到對應的 Android 參考路徑與 iOS 目標位置。
 
-### Step 2：參考實作研究
-- **讀取 Android 原始碼**：理解目標功能的資料流、邊際條件（Edge Cases）與異常處理。
-- **讀取 iOS 現狀**：確認目前的類別結構、Provider 狀態與可用的 Utility 函式。
+### Step 2：深度邏輯對標 (Deep Reference)
+- **讀取 Android 原文**：不只是看 Method 名稱，要讀取內部的邏輯分支。
+- **評估 Flutter 配適**：若 Android 使用了原生廣播 (Broadcast) 或 Service，對應至 Flutter 的 `MethodChannel` 或 `Stream` 方案。
 
-### Step 3：外科手術式實作
-- **邏輯植入**：
-  - 若為現有檔案補全：使用 `replace` 在正確的 Method 位置插入邏輯。
-  - 若為新功能：建立對應的新檔案。
-- **依賴檢查**：確保所需之 Service (如 `BookDao`, `WebDavService`) 已正確注入。
+### Step 3：外科手術式開發 (Surgical Patching)
+- **優先採用 `replace`**：避免破壞現有的 UI 佈局或 Provider 狀態。
+- **嵌入溯源註解**：在關鍵代碼旁加上 `// AI_PORT: GAP-XX derived from [AndroidFile.kt]`，方便日後維護。
 
-### Step 4：品質校核
-- **無退化驗證**：確保原子修改未影響該檔案原有的其他功能。
-- **語法自查**：檢查是否有漏掉的 `import` 或括號未閉合。
+### Step 4：實作後同步 (Sync Back)
+- 修復完成後，回頭修改 `FEATURE_AUDIT_v2.md`：
+  - 將對應的 `[ ]` 變更為 `[x]`。
+  - 在「診斷詳情」旁加上 `✅ Done in [commit_hash/date]`。
 
-### Step 5：更新審計報告
-- 在 `FEATURE_AUDIT_v2.md` 對應位置將 `[ ]` 標註為 `[x]` 或變更狀態為 `✅ Matched`。
+---
 
-### Step 6：Git 備份
-- `git add <file> ; git commit -m "feat: align logic for [功能] (from audit)"`
+## 🏗️ 代碼品質鐵律 (Implementation Mandate)
+- **零 Placeholder**：產出的代碼必須能直接跑，不准留下 `// Todo: implement the rest`。
+- **一致性校核**：修改後必須確認檔案依然符合 Dart 語法規範與專案風格。
+
+---
+
+## Git 備份
+`git add . ; git commit -m "feat: spec-driven porting for [GAP-ID] ([目標邏輯])"`
 
 ---
 
 ## 下一步
-→ 執行 **`/04-debug-loop`** 驗證實作後的程式碼正確性。
+→ 執行 **`/04-debug`** 進入分析與修復迴圈。
