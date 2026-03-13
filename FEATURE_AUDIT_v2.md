@@ -11,7 +11,7 @@
 | **05** | **數據持久化** | 95% | ✅ | 數據模型、響應式監聽、位運算分組對齊；事務控制微小差異 |
 | **06** | **RSS 閱覽** | 90% | ✅ | 規則解析、文章列表、收藏夾邏輯一致 |
 | **07** | **背景服務** | 95% | ✅ | TTS 朗讀、HTTP TTS、本地 Web 服務對齊 |
-| **08** | **系統助手/備份** | 85% | ✅ | WebDav 同步、JS 工具類對齊；統一恢復調度器缺失 |
+| **08** | **系統助手/備份** | 95% | ✅ | WebDav 同步、JS 工具類對齊；統一恢復機制已完善 |
 | **09** | **替換規則** | 95% | ✅ | 正則替換、範圍控制與分組管理完全對齊 |
 | **10** | **通用配置** | 92% | ✅ | 主題、備份、朗讀設定一致；字體權重微調功能缺失 |
 | **11** | **底層基類** | 80% | ✅ | ViewModel/Provider 基類對齊；缺乏統一 UI 狀態 Scaffold 基類 |
@@ -237,16 +237,17 @@
 **模組職責**：管理全局數據備份恢復、WebDav 同步、加密工具及內容處理插件。
 **Legado 檔案**：`Backup.kt`, `Restore.kt`, `AppWebDav.kt`, `JsExtensions.kt`, `ContentProcessor.kt`
 **Flutter (iOS) 對應檔案**：`webdav_service.dart`, `backup_aes_service.dart`, `js_extensions.dart`, `content_processor.dart`
-**完成度：85%**
+**完成度：95%**
 **狀態：✅**
 
 **已完成項目 ✅**：
 - ✅ **WebDav 同步**：完整對標了 Android 的自動備份與遠端文件列表管理。
 - ✅ **內容預處理**：實現了與 Android 一致的內容去廣告、正則清洗與排版優化。
 - ✅ **JS 擴展工具**：提供了與 Android 完全相容的加密 (`md5`, `aes`, `base64`) 工具類。
+- ✅ **統一恢復機制**：實現了基於 `RestoreService` 的統一恢復調度，支持 ZIP 數據包的原子恢復。
 
 **不足之處**：
-- [ ] **統一恢復機制**：Android 有獨立的 `Restore.kt` 處理各類數據包的原子恢復，iOS 目前分散在各個 DAO 初始化中。
+- [ ] **異常日誌**：雖然已有初步事件總線監聽，但仍缺乏與 Android `CrashHandler` 等效的全局崩潰捕獲與本地日誌歸檔機制。
 
 ### 證據鏈明細
 
@@ -257,6 +258,7 @@
 | **08.3 內容替換** | `ContentProcessor.kt`: 145 (`replaceContent`) | `content_processor.dart`: 112 (`process`) | **Matched** | 正則替換與標籤移除邏輯一致 |
 | **08.4 本地備份** | `Backup.kt`: 55 (`autoBack`) | `backup_aes_service.dart`: 35 (`localBackup`) | **Matched** | 定時備份觸發語義一致 |
 | **08.5 異常日誌** | `CrashHandler.kt` | `app_event_bus.dart` (部分) | **Logic Gap** | 缺乏統一的全局崩潰日誌收集器 |
+| **08.6 恢復調度器** | `Restore.kt` | `RestoreService.restoreFromZip` | **Matched** | 恢復調度邏輯與 Android 一致 |
 <!-- END_AUDIT_08 -->
 
 <!-- BEGIN_AUDIT_09 -->
