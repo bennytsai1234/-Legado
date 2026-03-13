@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/engine/analyze_rule.dart';
 import '../../core/models/book_source.dart';
+import '../../core/services/book_source_service.dart';
+import '../../core/models/book.dart';
 import '../../shared/widgets/base_scaffold.dart';
 
 /// DebugPage - 規則調試頁面
@@ -48,13 +50,66 @@ class _DebugPageState extends State<DebugPage> {
       _logs.add('⇒ 開始偵錯: $key');
     });
 
+    final service = BookSourceService();
+    final source = widget.source;
+    AnalyzeRule.debugLogController ??= StreamController<String>.broadcast();
+
     try {
-      // TODO: 實作偵錯流程調用
-      // 目前僅模擬日誌
-      await Future.delayed(const Duration(seconds: 1));
-      AnalyzeRule.debugLogController?.add('✓ 偵錯功能待完全補齊');
+      if (key.startsWith('http')) {
+        // 1. 詳情頁偵錯
+        _logs.add('︾ 開始解析詳情頁');
+        var book = Book(bookUrl: key, name: '偵錯書籍', author: '', origin: source.bookSourceUrl, originName: source.bookSourceName, isInBookshelf: false);
+        book = await service.getBookInfo(source, book);
+        _logs.add('✓ 詳情頁解析完成: ${book.name}');
+        
+        // 2. 目錄頁偵錯
+        _logs.add('︾ 開始解析目錄頁');
+        final chapters = await service.getChapterList(source, book);
+        _logs.add('✓ 目錄頁解析完成，共 ${chapters.length} 章');
+        
+        if (chapters.isNotEmpty) {
+          // 3. 正文偵錯 (第一章)
+          _logs.add('︾ 開始解析正文頁: ${chapters.first.title}');
+          final content = await service.getContent(source, book, chapters.first);
+          _logs.add('✓ 正文解析完成，長度: ${content.length}');
+          _logs.add('︽ 偵錯結束');
+        }
+      } else {
+        // 搜尋偵錯
+        _logs.add('︾ 開始解析搜尋頁');
+        final searchResults = await service.searchBooks(source, key);
+        if (searchResults.isNotEmpty) {
+          final first = searchResults.first;
+          _logs.add('✓ 搜尋頁解析成功: ${first.name}');
+          
+          // 繼續詳情頁
+          _logs.add('︾ 開始解析詳情頁');
+          var book = first.toBook();
+          book = await service.getBookInfo(source, book);
+          _logs.add('✓ 詳情頁解析完成: ${book.name}');
+          
+          // 目錄頁
+          _logs.add('︾ 開始解析目錄頁');
+          final chapters = await service.getChapterList(source, book);
+          _logs.add('✓ 目錄頁解析完成，共 ${chapters.length} 章');
+          
+          if (chapters.isNotEmpty) {
+            _logs.add('︾ 開始解析正文頁: ${chapters.first.title}');
+            final content = await service.getContent(source, book, chapters.first);
+            _logs.add('✓ 正文解析完成，長度: ${content.length}');
+          }
+          _logs.add('︽ 偵錯結束');
+        } else {
+          _logs.add('✕ 搜尋結果為空');
+        }
+      }
+    } catch (e) {
+      _logs.add('✕ 偵錯出錯: $e');
     } finally {
-      if (mounted) setState(() => _isDebugging = false);
+      if (mounted) {
+        setState(() => _isDebugging = false);
+        _logs.add('1000'); // 模擬 Android state = 1000 (結束)
+      }
     }
   }
 
