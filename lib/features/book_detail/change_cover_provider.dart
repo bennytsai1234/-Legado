@@ -117,12 +117,11 @@ class ChangeCoverProvider extends ChangeNotifier {
       final List<SearchBook> books = await _service.searchBooks(
         source,
         name,
-        filter: (fName, fAuthor) {
-          return fName == name && (author.isEmpty || fAuthor.contains(author) || author.contains(fAuthor));
-        },
       );
 
-      for (var result in books) {
+      final filtered = books.where((b) => b.name == name && (author.isEmpty || (b.author?.contains(author) ?? false) || author.contains(b.author ?? "")));
+
+      for (var result in filtered) {
         if (result.coverUrl != null && result.coverUrl!.isNotEmpty) {
           if (!_covers.any((c) => c.book.coverUrl == result.coverUrl)) {
             final aggregated = AggregatedSearchBook(

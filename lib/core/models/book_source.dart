@@ -14,6 +14,11 @@ class BookSource implements BaseSource {
   int customOrder; // 手動排序
   bool enabled; // 是否啟用
   bool enabledExplore; // 啟用發現
+
+  String? get bookSourceIcon => icon;
+  set bookSourceIcon(String? value) => icon = value;
+  
+  String? icon; // 改名以對標底層
   @override
   String? jsLib; // JS 庫
   @override
@@ -322,6 +327,8 @@ class TocRule {
   String? nextTocUrl;
   String? preUpdateJs;
 
+  String? get nextPage => nextTocUrl;
+
   TocRule({
     this.init, this.chapterList, this.chapterName, this.chapterUrl, this.isVolume,
     this.isVip, this.isPay, this.updateTime, this.nextTocUrl, this.preUpdateJs
@@ -354,6 +361,9 @@ class ContentRule {
   String? imageStyle;
   String? imageDecode;
   String? payAction;
+
+  String? get nextPage => nextContentUrl;
+  String? get replace => replaceRegex;
 
   ContentRule({
     this.init, this.content, this.nextContentUrl, this.webJs, this.sourceRegex,
