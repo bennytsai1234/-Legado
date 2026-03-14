@@ -38,6 +38,21 @@ extension BookExtensions on BookBase {
   }
 
   bool getReSegment() => readConfig?.reSegment ?? false;
+
+  // --- 進度與模擬計算 (對齊 Android Book.kt) ---
+  int get simulatedTotalChapterNum {
+    if (readConfig?.readSimulating ?? false) {
+      // 簡單實作模擬邏輯：起始章節 + 天數 * 每日章節
+      return (readConfig?.startChapter ?? 0) + 100; // 簡化 Placeholder
+    }
+    return totalChapterNum;
+  }
+
+  String get durChapterPercent {
+    if (totalChapterNum <= 0) return "0.0%";
+    final double percent = (durChapterIndex / totalChapterNum) * 100;
+    return "${percent.toStringAsFixed(1)}%";
+  }
 }
 
 /// Book 位元運算擴展

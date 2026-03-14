@@ -13,14 +13,14 @@ extension BookSourceLogic on BookSourceBase {
 
   // 分組操作
   void addGroup(String groups) {
-    var currentGroups = bookSourceGroup?.split(RegExp(r'[,，\s]+')).where((s) => s.isNotEmpty).toSet() ?? {};
-    currentGroups.addAll(groups.split(RegExp(r'[,，\s]+')).where((s) => s.isNotEmpty));
+    var currentGroups = bookSourceGroup?.split(RegExp(r'[,，\s]+')).where((s) => s.trim().isNotEmpty).toSet() ?? {};
+    currentGroups.addAll(groups.split(RegExp(r'[,，\s]+')).where((s) => s.trim().isNotEmpty));
     bookSourceGroup = currentGroups.isEmpty ? null : currentGroups.join(',');
   }
 
   void removeGroup(String groups) {
-    var currentGroups = bookSourceGroup?.split(RegExp(r'[,，\s]+')).where((s) => s.isNotEmpty).toSet() ?? {};
-    currentGroups.removeAll(groups.split(RegExp(r'[,，\s]+')).where((s) => s.isNotEmpty));
+    var currentGroups = bookSourceGroup?.split(RegExp(r'[,，\s]+')).where((s) => s.trim().isNotEmpty).toSet() ?? {};
+    currentGroups.removeAll(groups.split(RegExp(r'[,，\s]+')).where((s) => s.trim().isNotEmpty));
     bookSourceGroup = currentGroups.isEmpty ? null : currentGroups.join(',');
   }
 

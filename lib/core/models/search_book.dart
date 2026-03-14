@@ -19,6 +19,12 @@ class SearchBook {
   String? variable; // 暫存變數
   String? tocUrl; // 目錄 URL
 
+  late final Set<String> origins = {origin};
+
+  void addOrigin(String o) {
+    origins.add(o);
+  }
+
   // 核心業務方法
   String getRealAuthor() => (author ?? "").replaceAll(RegExp(r'\(.*?\)|\[.*?\]|（.*?）|【.*?】'), '').trim();
 
