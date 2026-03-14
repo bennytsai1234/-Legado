@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'source_debug_page.dart';
 import '../../core/models/book_source.dart';
 import 'source_manager_provider.dart';
 import '../../core/database/dao/book_source_dao.dart';
-import '../debug/debug_page.dart';
 
 class SourceEditorPage extends StatefulWidget {
   final BookSource? source;
@@ -213,5 +213,16 @@ class _SourceEditorPageState extends State<SourceEditorPage>
 
   Widget _buildJsonTab() => Padding(padding: const EdgeInsets.all(8), child: TextField(controller: _jsonController, maxLines: null, expands: true, style: const TextStyle(fontFamily: 'monospace', fontSize: 12), decoration: const InputDecoration(border: OutlineInputBorder(), hintText: '輸入書源 JSON...')));
 
-  void _showDebugConsole() { _syncSourceFromForm(); Navigator.push(context, MaterialPageRoute(builder: (context) => DebugPage(source: _editingSource))); }
+  void _showDebugConsole() {
+    _syncSourceFromForm();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SourceDebugPage(
+          source: _editingSource,
+          debugKey: '我的世界',
+        ),
+      ),
+    );
+  }
 }
