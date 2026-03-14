@@ -6,7 +6,10 @@ import 'change_cover_sheet.dart';
 import '../../core/models/search_book.dart';
 import '../../core/models/book.dart';
 
+import '../source_manager/source_editor_page.dart';
+import '../source_manager/source_debug_page.dart';
 import '../reader/reader_page.dart';
+import '../../core/database/dao/book_source_dao.dart';
 import '../../core/services/export_book_service.dart';
 
 class BookDetailPage extends StatelessWidget {
@@ -161,7 +164,13 @@ class BookDetailPage extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text('作者：${book.author}', style: const TextStyle(fontSize: 16)),
                   const SizedBox(height: 4),
-                  Text('來源：${book.originName}', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                  GestureDetector(
+                    onTap: () => _showSourceOptions(context, book),
+                    child: Text(
+                      '來源：${book.originName}', 
+                      style: const TextStyle(fontSize: 14, color: Colors.blue, decoration: TextDecoration.underline)
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -197,6 +206,45 @@ class BookDetailPage extends StatelessWidget {
           const SizedBox(height: 8),
           Text(book.intro ?? '暫無簡介', style: const TextStyle(fontSize: 15, height: 1.5)),
           const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  void _showSourceOptions(BuildContext context, Book book) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(book.originName),
+        content: const Text('請選擇操作'),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              final source = await BookSourceDao().getByUrl(book.origin);
+              if (context.mounted) {
+                Navigator.pop(context);
+                if (source != null) {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => SourceEditorPage(source: source)));
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('未找到書源資訊')));
+                }
+              }
+            },
+            child: const Text('查看書源詳情'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final source = await BookSourceDao().getByUrl(book.origin);
+              if (context.mounted) {
+                Navigator.pop(context);
+                if (source != null) {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => SourceDebugPage(source: source, debugKey: book.name)));
+                }
+              }
+            },
+            child: const Text('調試此書源'),
+          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('關閉')),
         ],
       ),
     );
