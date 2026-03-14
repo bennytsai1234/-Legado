@@ -99,7 +99,10 @@ class SettingsProvider extends ChangeNotifier {
   bool autoCheckNewBackup = true;
   bool autoBackup = false;
 
-  // --- 其他設定 ---
+  // 其他設定
+  bool _privacyAgreed = false;
+  bool get privacyAgreed => _privacyAgreed;
+
   bool autoRefresh = false;
   bool defaultToRead = false;
   bool showDiscovery = true;
@@ -178,6 +181,7 @@ class SettingsProvider extends ChangeNotifier {
     _localPassword = prefs.getString('local_password') ?? '';
     _lastBackup = prefs.getInt('last_backup') ?? 0;
     _lastVersionCode = prefs.getInt('last_version_code') ?? 0;
+    _privacyAgreed = prefs.getBool('privacy_agreed') ?? false;
 
     _coverSearchPriority = prefs.getInt('cover_search_priority') ?? 0;
     _coverTimeout = prefs.getInt('cover_timeout') ?? 5000;
@@ -431,6 +435,7 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setLastVersionCode(int value) async { _lastVersionCode = value; await _save('last_version_code', value); notifyListeners(); }
   Future<void> setLocalPassword(String value) async { _localPassword = value; await _save('local_password', value); notifyListeners(); }
   Future<void> setAppCrash(bool value) async { _appCrash = value; await _save('app_crash', value); notifyListeners(); }
+  Future<void> setPrivacyAgreed(bool value) async { _privacyAgreed = value; await _save('privacy_agreed', value); notifyListeners(); }
 
   Future<String?> checkWebDavBackupSync() async {
     if (!_webdavEnabled || !autoCheckNewBackup) return null;
