@@ -19,10 +19,12 @@ class SearchProvider extends ChangeNotifier {
   bool _isCancelled = false;
   int _searchCount = 0;
   int _totalSources = 0;
+  String _currentSource = "";
 
   void stopSearch() {
     _isCancelled = true;
     _isSearching = false;
+    _currentSource = "已停止";
     notifyListeners();
   }
 
@@ -34,6 +36,7 @@ class SearchProvider extends ChangeNotifier {
   List<String> get history => _history;
   List<AggregatedSearchBook> get results => _results;
   bool get isSearching => _isSearching;
+  String get currentSource => _currentSource;
   double get progress => _totalSources == 0 ? 0 : _searchCount / _totalSources;
   
   List<String> get sourceGroups => _sourceGroups;
@@ -145,6 +148,8 @@ class SearchProvider extends ChangeNotifier {
 
   Future<void> _searchSingleSource(BookSource source, String keyword) async {
     if (_isCancelled) return;
+    _currentSource = source.bookSourceName;
+    notifyListeners();
     try {
       // 深度對標：單個書源搜尋超時控制 (預設 30 秒)
       final List<SearchBook> books = await _service.searchBooks(

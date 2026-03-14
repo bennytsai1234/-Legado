@@ -115,8 +115,20 @@ class _SearchPageContentState extends State<_SearchPageContent> {
         builder: (context, provider, child) {
           return Column(
             children: [
-              if (provider.isSearching)
-                LinearProgressIndicator(value: provider.progress),
+              if (provider.isSearching) ...[
+                LinearProgressIndicator(value: provider.progress, backgroundColor: Colors.transparent, valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue)),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  width: double.infinity,
+                  color: Colors.blue.withValues(alpha: 0.05),
+                  child: Text(
+                    '正在搜尋: ${provider.currentSource}',
+                    style: const TextStyle(fontSize: 11, color: Colors.blueGrey),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
               if (provider.selectedGroup != '全部')
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
