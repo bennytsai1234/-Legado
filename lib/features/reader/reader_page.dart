@@ -234,7 +234,7 @@ class _ReaderPageState extends State<ReaderPage> {
                 label: '分享',
                 onPressed: () {
                   state.hideToolbar();
-                  Share.share(_selectedText);
+                  SharePlus.instance.share(_selectedText);
                 },
               ),
 
