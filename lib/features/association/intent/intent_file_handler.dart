@@ -19,26 +19,32 @@ mixin IntentFileHandler on IntentBase {
         _handleSharedFile(context, file.path, showImportDialog, showForceImportDialog);
       } else if (ext == '.txt' || ext == '.epub') {
         if (!context.mounted) return;
-        _handleSharedBook(context, file.path);
+        handleSharedBook(context, file.path);
       }
     }
   }
 
-  Future<void> _handleSharedBook(BuildContext context, String path) async {
+  Future<void> handleSharedBook(BuildContext context, String path) async {
     try {
       final appDocDir = await getApplicationDocumentsDirectory();
       final targetDir = Directory(p.join(appDocDir.path, 'LegadoBooks'));
-      if (!await targetDir.exists()) await targetDir.create(recursive: true);
+      if (!await targetDir.exists()) {
+        await targetDir.create(recursive: true);
+      }
 
       final fileName = p.basename(path);
       final targetPath = p.join(targetDir.path, fileName);
-      if (!await File(targetPath).exists()) await File(path).copy(targetPath);
+      if (!await File(targetPath).exists()) {
+        await File(path).copy(targetPath);
+      }
 
       if (context.mounted) {
         context.read<BookshelfProvider>().importLocalBookPath(targetPath);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('已將書籍複製並匯入: $fileName')));
       }
-    } catch (e) { debugPrint("搬移並匯入書籍失敗: $e"); }
+    } catch (e) {
+      debugPrint("搬移並匯入書籍失敗: $e");
+    }
   }
 
   Future<void> _handleSharedFile(BuildContext context, String path, Function(BuildContext, String, String, {bool isFile, String? jsonData}) showImportDialog, Function(BuildContext, String) showForceImportDialog) async {

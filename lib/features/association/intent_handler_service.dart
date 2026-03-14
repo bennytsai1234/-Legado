@@ -29,19 +29,16 @@ class IntentHandlerService extends IntentBase with IntentUriHandler, IntentFileH
 
     // 2. Sharing Intent (File/Text)
     sharedMediaSubscription = ReceiveSharingIntent.instance.getMediaStream().listen((value) {
-      if (context.mounted) handleSharedMedia(context, value, showImportDialog, (ctx, path) => showForceImportDialog(ctx, path, _handleSharedBook));
+      if (context.mounted) handleSharedMedia(context, value, showImportDialog, (ctx, path) => showForceImportDialog(ctx, path, handleSharedBook));
     }, onError: (err) => debugPrint("SharingIntent error: $err"));
 
     // Check initial intents
     ReceiveSharingIntent.instance.getInitialMedia().then((value) {
-      if (value.isNotEmpty && context.mounted) handleSharedMedia(context, value, showImportDialog, (ctx, path) => showForceImportDialog(ctx, path, _handleSharedBook));
+      if (value.isNotEmpty && context.mounted) handleSharedMedia(context, value, showImportDialog, (ctx, path) => showForceImportDialog(ctx, path, handleSharedBook));
     });
 
     appLinks.getInitialLink().then((uri) {
       if (uri != null && context.mounted) handleUri(context, uri, showImportDialog);
     });
   }
-
-  // Wrapper for private book handling from Mixin if needed, or using direct call
-  void _handleSharedBook(BuildContext ctx, String path) => (this as IntentFileHandler)._handleSharedBook(ctx, path);
 }

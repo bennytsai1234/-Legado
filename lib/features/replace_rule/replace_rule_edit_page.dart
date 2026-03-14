@@ -36,19 +36,25 @@ class _ReplaceRuleEditPageState extends State<ReplaceRuleEditPage> {
     _isRegex = r?.isRegex ?? true;
     _scopeTitle = r?.scopeTitle ?? false;
     _scopeContent = r?.scopeContent ?? true;
-    [_patternCtrl, _replacementCtrl, _testInputCtrl].forEach((c) => c.addListener(_runTest));
+    for (final c in [_patternCtrl, _replacementCtrl, _testInputCtrl]) {
+      c.addListener(_runTest);
+    }
     _runTest();
   }
 
   @override
   void dispose() {
-    [_nameCtrl, _groupCtrl, _patternCtrl, _replacementCtrl, _scopeCtrl, _excludeScopeCtrl, _timeoutCtrl, _testInputCtrl].forEach((c) => c.dispose());
+    for (final c in [_nameCtrl, _groupCtrl, _patternCtrl, _replacementCtrl, _scopeCtrl, _excludeScopeCtrl, _timeoutCtrl, _testInputCtrl]) {
+      c.dispose();
+    }
     super.dispose();
   }
 
   void _runTest() {
     final r = ReplaceRule(pattern: _patternCtrl.text, replacement: _replacementCtrl.text, isRegex: _isRegex);
-    setState(() => _testResult = r.apply(_testInputCtrl.text));
+    setState(() {
+      _testResult = r.apply(_testInputCtrl.text);
+    });
   }
 
   void _save() {
@@ -58,7 +64,8 @@ class _ReplaceRuleEditPageState extends State<ReplaceRuleEditPage> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('正則表達式語法錯誤，請檢查！')));
         return;
       }
-      widget.onSave(r); Navigator.pop(context);
+      widget.onSave(r);
+      Navigator.pop(context);
     }
   }
 

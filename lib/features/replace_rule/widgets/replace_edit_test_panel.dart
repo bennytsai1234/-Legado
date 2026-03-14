@@ -25,7 +25,7 @@ class ReplaceEditTestPanel extends StatelessWidget {
           const Row(
             children: [
               Icon(Icons.bug_report, size: 18, color: Colors.orange),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text('規則調試', style: TextStyle(fontWeight: FontWeight.bold)),
             ],
           ),
