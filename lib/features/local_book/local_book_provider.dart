@@ -92,7 +92,8 @@ class LocalBookProvider extends ChangeNotifier {
     final List<Map<String, dynamic>> contents = [];
     
     // 深度還原：分批寫入資料庫，防止大量匯入導致的 UI 凍結或 OOM
-    const int batchSize = 100;
+    // 注意：批量過大會觸發 Android CursorWindow 溢出，此處設定為 10
+    const int batchSize = 10;
     
     for (int i = 0; i < chaptersData.length; i++) {
       final item = chaptersData[i];
@@ -114,6 +115,8 @@ class LocalBookProvider extends ChangeNotifier {
         await _chapterDao.insertContents(List.from(contents));
         chapters.clear();
         contents.clear();
+        // 釋放執行權，維持 UI 響應
+        await Future.delayed(Duration.zero);
       }
     }
     
