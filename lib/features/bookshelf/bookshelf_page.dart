@@ -262,6 +262,36 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
     );
   }
 
+  void _showMoveGroupDialog(BuildContext context, BookshelfProvider provider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('移動書籍到分組'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: provider.groups.length,
+            itemBuilder: (context, index) {
+              final group = provider.groups[index];
+              if (group.groupId == -1) return const SizedBox.shrink(); // 跳過 '全部'
+              return ListTile(
+                title: Text(group.groupName),
+                onTap: () {
+                  provider.moveSelectedToGroup(group.groupId);
+                  Navigator.pop(context);
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+        ],
+      ),
+    );
+  }
+
   Widget _buildGridView(BookshelfProvider provider, List<Book> books) {
     return GridView.builder(
       padding: const EdgeInsets.all(12),
@@ -392,34 +422,6 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
         }
       },
       onLongPress: () => provider.toggleBatchMode(book.bookUrl),
-    );
-  }
-
-  void _showMoveGroupDialog(BuildContext context, BookshelfProvider provider) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('選擇分組'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView(
-            shrinkWrap: true,
-            children: provider.groups.where((g) => g.groupId >= 0).map((group) {
-              return ListTile(
-                title: Text(group.groupName),
-                onTap: () {
-                  provider.moveSelectedToGroup(group.groupId);
-                  Navigator.pop(context);
-                },
-              );
-            }).toList(),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const GroupManagePage())); }, child: const Text('管理分組')),
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
-        ],
-      ),
     );
   }
 
