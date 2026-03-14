@@ -1,70 +1,70 @@
 /// RuleAnalyzer 的基礎狀態與核心掃描定義
 abstract class RuleAnalyzerBase {
-  final String _queue;
-  int _pos = 0;
-  int _start = 0;
-  int _startX = 0;
-  final bool _isCode;
+  final String queue;
+  int pos = 0;
+  int start = 0;
+  int startX = 0;
+  final bool isCode;
 
-  List<String> _rule = [];
-  int _step = 0;
+  List<String> ruleList = [];
+  int step = 0;
   String elementsType = '';
 
-  static const int _esc = 92;
+  static const int esc = 92;
 
-  RuleAnalyzerBase(this._queue, {bool isCode = false}) : _isCode = isCode;
+  RuleAnalyzerBase(this.queue, {bool isCode = false}) : isCode = isCode;
 
   void trim() {
-    if (_pos < _queue.length && (_queue[_pos] == '@' || _queue.codeUnitAt(_pos) < 33)) {
-      _pos++;
-      while (_pos < _queue.length && (_queue[_pos] == '@' || _queue.codeUnitAt(_pos) < 33)) {
-        _pos++;
+    if (pos < queue.length && (queue[pos] == '@' || queue.codeUnitAt(pos) < 33)) {
+      pos++;
+      while (pos < queue.length && (queue[pos] == '@' || queue.codeUnitAt(pos) < 33)) {
+        pos++;
       }
-      _start = _pos;
-      _startX = _pos;
+      start = pos;
+      startX = pos;
     }
   }
 
   void reSetPos() {
-    _pos = 0;
-    _startX = 0;
-    _start = 0;
-    _rule = [];
+    pos = 0;
+    startX = 0;
+    start = 0;
+    ruleList = [];
   }
 
   bool consumeTo(String seq) {
-    _start = _pos;
-    if (_pos >= _queue.length) return false;
-    final offset = _queue.indexOf(seq, _pos);
+    start = pos;
+    if (pos >= queue.length) return false;
+    final offset = queue.indexOf(seq, pos);
     if (offset != -1) {
-      _pos = offset;
+      pos = offset;
       return true;
     }
     return false;
   }
 
   bool consumeToAny(List<String> seq) {
-    int pos = _pos;
-    while (pos < _queue.length) {
+    int curPos = pos;
+    while (curPos < queue.length) {
       for (final s in seq) {
-        if (_queue.startsWith(s, pos)) {
-          _step = s.length;
-          _pos = pos;
+        if (queue.startsWith(s, curPos)) {
+          step = s.length;
+          pos = curPos;
           return true;
         }
       }
-      pos++;
+      curPos++;
     }
     return false;
   }
 
   int findToAny(List<String> seq) {
-    int pos = _pos;
-    while (pos < _queue.length) {
+    int curPos = pos;
+    while (curPos < queue.length) {
       for (final s in seq) {
-        if (_queue[pos] == s) return pos;
+        if (queue[curPos] == s) return curPos;
       }
-      pos++;
+      curPos++;
     }
     return -1;
   }

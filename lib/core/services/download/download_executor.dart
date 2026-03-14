@@ -23,8 +23,14 @@ mixin DownloadExecutor on DownloadBase, DownloadScheduler {
       if (chapters.isEmpty) {
         chapters = await sourceService.getChapterList(source, book);
         await chapterDao.insertChapters(chapters);
-        task.totalCount = chapters.length;
-        task.endChapterIndex = chapters.isNotEmpty ? chapters.last.index : 0;
+        // 更新任務實例
+        final newTask = task.copyWith(
+          totalCount: chapters.length,
+          endChapterIndex: chapters.isNotEmpty ? chapters.last.index : 0,
+        );
+        int idx = tasks.indexOf(task);
+        if (idx != -1) tasks[idx] = newTask;
+        task = newTask;
       }
 
       final toDownload = chapters.where((c) => c.index >= task.startChapterIndex && c.index <= task.endChapterIndex).toList();

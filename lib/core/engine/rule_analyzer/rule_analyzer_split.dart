@@ -4,81 +4,89 @@ import 'rule_analyzer_match.dart';
 /// RuleAnalyzer 的規則切分邏輯擴展
 mixin RuleAnalyzerSplit on RuleAnalyzerBase, RuleAnalyzerMatch {
   List<String> splitRule(List<String> split) {
-    _rule = [];
-    _start = _pos;
-    _startX = _pos;
+    ruleList = [];
+    start = pos;
+    startX = pos;
 
     while (true) {
       if (!consumeToAny(split)) {
-        _rule.add(_queue.substring(_startX));
-        return _rule;
+        ruleList.add(queue.substring(startX));
+        return ruleList;
       }
 
-      final end = _pos;
-      _pos = _start;
+      final end = pos;
+      pos = start;
 
       bool skipMatch = false;
-      while (end > _pos) {
+      while (end > pos) {
         final st = findToAny(['[', '(']);
-        if (st == -1 || st > end) break;
+        if (st == -1 || st > end) {
+          break;
+        }
 
-        _pos = st;
-        final next = _queue[_pos] == '[' ? ']' : ')';
-        if (!chompBalanced(_queue[_pos], next)) return [_queue];
+        pos = st;
+        final next = queue[pos] == '[' ? ']' : ')';
+        if (!chompBalanced(queue[pos], next)) {
+          return [queue];
+        }
 
-        if (end <= _pos) {
+        if (end <= pos) {
           skipMatch = true;
           break;
         }
       }
 
       if (!skipMatch) {
-        _rule.add(_queue.substring(_startX, end));
-        elementsType = _queue.substring(end, end + _step);
-        _pos = end + _step;
-        _startX = _pos;
-        _start = _pos;
+        ruleList.add(queue.substring(startX, end));
+        elementsType = queue.substring(end, end + step);
+        pos = end + step;
+        startX = pos;
+        start = pos;
         return splitRuleSingle();
       }
 
-      _start = _pos;
-      _pos = _start;
+      start = pos;
+      pos = start;
     }
   }
 
   List<String> splitRuleSingle() {
-    _step = elementsType.length;
+    step = elementsType.length;
     while (true) {
       if (!consumeTo(elementsType)) {
-        _rule.add(_queue.substring(_startX));
-        return _rule;
+        ruleList.add(queue.substring(startX));
+        return ruleList;
       }
 
-      final end = _pos;
-      _pos = _start;
+      final end = pos;
+      pos = start;
 
       bool skipMatch = false;
-      while (end > _pos) {
+      while (end > pos) {
         final st = findToAny(['[', '(']);
-        if (st == -1 || st > end) break;
+        if (st == -1 || st > end) {
+          break;
+        }
 
-        _pos = st;
-        final next = _queue[_pos] == '[' ? ']' : ')';
-        if (!chompBalanced(_queue[_pos], next)) break;
+        pos = st;
+        final next = queue[pos] == '[' ? ']' : ')';
+        if (!chompBalanced(queue[pos], next)) {
+          break;
+        }
 
-        if (end <= _pos) {
+        if (end <= pos) {
           skipMatch = true;
           break;
         }
       }
 
       if (!skipMatch) {
-        _rule.add(_queue.substring(_startX, end));
-        _pos = end + _step;
-        _startX = _pos;
-        _start = _pos;
+        ruleList.add(queue.substring(startX, end));
+        pos = end + step;
+        startX = pos;
+        start = pos;
       } else {
-        _start = _pos;
+        start = pos;
       }
     }
   }

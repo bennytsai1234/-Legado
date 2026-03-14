@@ -13,6 +13,8 @@ class DownloadService extends DownloadBase with DownloadScheduler, DownloadExecu
   static final DownloadService _instance = DownloadService._internal();
   factory DownloadService() => _instance;
 
+  double get progress => totalProgress;
+
   DownloadService._internal() {
     _loadTasks();
     listenEvents();
