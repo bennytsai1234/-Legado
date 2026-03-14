@@ -239,6 +239,43 @@ class SourceManagerProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> selectionAddToGroups(Set<String> urls, String groupName) async {
+    if (urls.isEmpty || groupName.isEmpty) return;
+    
+    for (var url in urls) {
+      final source = await _dao.getByUrl(url);
+      if (source != null) {
+        final List<String> groups = (source.bookSourceGroup ?? "").split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+        if (!groups.contains(groupName)) {
+          groups.add(groupName);
+          source.bookSourceGroup = groups.join(',');
+          await _dao.insertOrUpdate(source);
+        }
+      }
+    }
+    _isBatchMode = false;
+    _selectedUrls.clear();
+    await loadSources();
+  }
+
+  Future<void> selectionRemoveFromGroups(Set<String> urls, String groupName) async {
+    if (urls.isEmpty || groupName.isEmpty) return;
+    
+    for (var url in urls) {
+      final source = await _dao.getByUrl(url);
+      if (source != null) {
+        final List<String> groups = (source.bookSourceGroup ?? "").split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+        if (groups.remove(groupName)) {
+          source.bookSourceGroup = groups.isEmpty ? null : groups.join(',');
+          await _dao.insertOrUpdate(source);
+        }
+      }
+    }
+    _isBatchMode = false;
+    _selectedUrls.clear();
+    await loadSources();
+  }
+
   // --- 書源遷移 (高度還原 Android migrateSource) ---
   Future<void> migrateSource(String oldUrl, String newUrl) async {
     final books = await _bookDao.getAll();

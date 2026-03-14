@@ -430,6 +430,59 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
     );
   }
 
+  void _showBatchGroupDialog(BuildContext context, SourceManagerProvider provider) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('批量管理分組'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(hintText: '輸入或選擇分組名'),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 150,
+              width: double.maxFinite,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: provider.groups.length,
+                itemBuilder: (context, index) {
+                  final g = provider.groups[index];
+                  if (g == '全部' || g == '未分組') return const SizedBox.shrink();
+                  return ListTile(
+                    title: Text(g),
+                    dense: true,
+                    onTap: () => controller.text = g,
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              provider.selectionRemoveFromGroups(provider.selectedUrls, controller.text.trim());
+              Navigator.pop(context);
+            },
+            child: const Text('移除分組'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              provider.selectionAddToGroups(provider.selectedUrls, controller.text.trim());
+              Navigator.pop(context);
+            },
+            child: const Text('加入分組'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _confirmClearInvalid(BuildContext context, SourceManagerProvider provider) {
     showDialog(
       context: context,
@@ -499,6 +552,11 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
             icon: const Icon(Icons.playlist_add_check),
             label: const Text('校驗'),
             onPressed: provider.selectedUrls.isEmpty ? null : () => provider.checkSelectedSources(),
+          ),
+          TextButton.icon(
+            icon: const Icon(Icons.group_add_outlined),
+            label: const Text('分組'),
+            onPressed: provider.selectedUrls.isEmpty ? null : () => _showBatchGroupDialog(context, provider),
           ),
           TextButton.icon(
             icon: const Icon(Icons.output),
