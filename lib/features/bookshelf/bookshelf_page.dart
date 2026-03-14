@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'bookshelf_provider.dart';
-import '../search/search_page.dart';
 import '../book_detail/book_detail_page.dart';
 import '../local_book/smart_scan_page.dart';
 import '../local_book/file_picker_page.dart';
@@ -22,6 +21,16 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
   final Map<String, GlobalKey> _itemKeys = {};
   String? _dragStartUrl;
   Set<String> _initialSelected = {};
+  
+  bool _isSearching = false;
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _searchQuery = "";
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
 
   void _handleDragUpdate(Offset localPosition, List<Book> groupBooks, BookshelfProvider provider) {
     if (!provider.isBatchMode) return;
@@ -74,13 +83,35 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
           length: provider.groups.isEmpty ? 1 : provider.groups.length,
           child: Scaffold(
             appBar: AppBar(
-              title: const Text('書架', style: TextStyle(fontWeight: FontWeight.bold)),
+              title: _isSearching 
+                ? TextField(
+                    controller: _searchCtrl,
+                    autofocus: true,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      hintText: '搜尋書架書籍...',
+                      hintStyle: TextStyle(color: Colors.white70),
+                      border: InputBorder.none,
+                    ),
+                    onChanged: (v) => setState(() => _searchQuery = v),
+                  )
+                : const Text('書架', style: TextStyle(fontWeight: FontWeight.bold)),
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchPage())),
+                  icon: Icon(_isSearching ? Icons.close : Icons.search),
+                  onPressed: () {
+                    setState(() {
+                      if (_isSearching) {
+                        _isSearching = false;
+                        _searchCtrl.clear();
+                        _searchQuery = "";
+                      } else {
+                        _isSearching = true;
+                      }
+                    });
+                  },
                 ),
-                _buildMoreMenu(context, provider),
+                if (!_isSearching) _buildMoreMenu(context, provider),
               ],
               bottom: provider.groups.isEmpty ? null : TabBar(
                 isScrollable: true,
@@ -99,9 +130,26 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
                     : TabBarView(
                         children: provider.groups.map((group) {
                           final groupBooks = provider.books.where((b) {
-                            if (group.groupId == -1) return true; // 全選
-                            if (group.groupId == 0) return b.group == 0; // 未分組
-                            return b.group == group.groupId;
+                            // 1. 分組過濾
+                            bool matchGroup = true;
+                            if (group.groupId == -1) {
+                              matchGroup = true;
+                            } else if (group.groupId == 0) {
+                              matchGroup = b.group == 0;
+                            } else {
+                              matchGroup = b.group == group.groupId;
+                            }
+
+                            if (!matchGroup) return false;
+
+                            // 2. 搜尋過濾
+                            if (_searchQuery.isNotEmpty) {
+                              final q = _searchQuery.toLowerCase();
+                              return b.name.toLowerCase().contains(q) || 
+                                     b.author.toLowerCase().contains(q);
+                            }
+
+                            return true;
                           }).toList();
 
                           if (groupBooks.isEmpty) {
