@@ -1,0 +1,101 @@
+import 'dart:convert';
+import '../parsers/analyze_by_css.dart';
+import '../parsers/analyze_by_json_path.dart';
+import '../parsers/analyze_by_xpath.dart';
+import 'analyze_rule_base.dart';
+
+enum Mode { xpath, json, defaultMode, js, regex }
+
+/// SourceRule 輔助類
+/// 對應 Android: model/analyzeRule/AnalyzeRule.kt 內部的私有類
+class SourceRule {
+  String rule;
+  Mode mode;
+  String replaceRegex = "";
+  String replacement = "";
+  bool replaceFirst = false;
+  Map<String, String> putMap = {};
+  bool isDynamic = false;
+  List<String> ruleParam = [];
+  List<int> ruleType = [];
+
+  static const int jsonPartRuleType = -3;
+  static const int getRuleType = -2;
+  static const int jsRuleType = -1;
+  static const int defaultRuleType = 0;
+
+  SourceRule(this.rule, {this.mode = Mode.defaultMode}) {
+    if (mode == Mode.defaultMode) {
+      if (rule.startsWith('@Json:')) { mode = Mode.json; rule = rule.substring(6); }
+      else if (rule.startsWith('@XPath:')) { mode = Mode.xpath; rule = rule.substring(7); }
+      else if (rule.startsWith('/')) { mode = Mode.xpath; }
+      else if (rule.startsWith(r'$.') || rule.startsWith(r'$[')) { mode = Mode.json; }
+    }
+    final putPattern = RegExp(r'@put:(\{.*?\})', caseSensitive: false);
+    var vRuleStr = rule;
+    final putMatches = putPattern.allMatches(rule);
+    for (final putMatch in putMatches) {
+      vRuleStr = vRuleStr.replaceFirst(putMatch.group(0)!, "");
+      try {
+        final jsonStr = putMatch.group(1)!;
+        final map = jsonDecode(jsonStr) as Map<String, dynamic>;
+        map.forEach((k, v) => putMap[k] = v.toString());
+      } catch (_) {}
+    }
+    rule = vRuleStr;
+    final evalPattern = RegExp(r'@get:\{[^}]+?\}|\{\{[\w\W]*?\}\}|\{\$\..*?\}', caseSensitive: false);
+    int start = 0;
+    final evalMatches = evalPattern.allMatches(rule);
+    if (evalMatches.isNotEmpty) isDynamic = true;
+    for (final match in evalMatches) {
+      if (match.start > start) _splitRegex(rule.substring(start, match.start));
+      final tmp = match.group(0)!;
+      if (tmp.toLowerCase().startsWith('@get:')) { ruleType.add(getRuleType); ruleParam.add(tmp.substring(6, tmp.length - 1)); }
+      else if (tmp.startsWith('{{')) { ruleType.add(jsRuleType); ruleParam.add(tmp.substring(2, tmp.length - 2)); }
+      else if (tmp.startsWith('{\$')) { ruleType.add(jsonPartRuleType); ruleParam.add(tmp.substring(1, tmp.length - 1)); }
+      start = match.end;
+    }
+    if (rule.length > start) _splitRegex(rule.substring(start));
+  }
+
+  void _splitRegex(String ruleStr) {
+    int start = 0;
+    final regexPattern = RegExp(r'\$\d{1,2}');
+    final matches = regexPattern.allMatches(ruleStr);
+    if (matches.isNotEmpty) {
+      isDynamic = true;
+      if (mode != Mode.js) {
+        mode = Mode.regex;
+      }
+    }
+    for (final match in matches) {
+      if (match.start > start) {
+        ruleType.add(defaultRuleType);
+        ruleParam.add(ruleStr.substring(start, match.start));
+      }
+      ruleType.add(int.parse(match.group(0)!.substring(1)));
+      ruleParam.add(match.group(0)!);
+      start = match.end;
+    }
+    if (ruleStr.length > start) {
+      ruleType.add(defaultRuleType);
+      ruleParam.add(ruleStr.substring(start));
+    }
+  }
+
+  // 延遲載入解析器
+  AnalyzeByXPath getAnalyzeByXPath(AnalyzeRuleBase analyzer, dynamic o) {
+    if (o != analyzer.content) return AnalyzeByXPath(o);
+    return analyzer.analyzeByXPath ??= AnalyzeByXPath(analyzer.content);
+  }
+
+  AnalyzeByCss getAnalyzeByJSoup(AnalyzeRuleBase analyzer, dynamic o) {
+    if (o != analyzer.content) return AnalyzeByCss(o);
+    return analyzer.analyzeByJSoup ??= AnalyzeByCss(analyzer.content);
+  }
+
+  AnalyzeByJsonPath getAnalyzeByJSonPath(AnalyzeRuleBase analyzer, dynamic o) {
+    if (o != analyzer.content) return AnalyzeByJsonPath(o);
+    return analyzer.analyzeByJSonPath ??= AnalyzeByJsonPath(analyzer.content);
+  }
+}
