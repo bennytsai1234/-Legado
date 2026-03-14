@@ -15,6 +15,8 @@ class CheckSourceService extends ChangeNotifier {
   final BookSourceDao _sourceDao = BookSourceDao();
   final AppEventBus _eventBus = AppEventBus();
 
+  AppEventBus get eventBus => _eventBus;
+
   bool _isChecking = false;
   int _totalCount = 0;
   int _currentCount = 0;

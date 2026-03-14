@@ -112,6 +112,10 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
                           provider.toggleGroupByDomain();
                         } else if (value.startsWith('sort_')) {
                           provider.setSortMode(int.parse(value.substring(5)));
+                        } else if (value == 'check_all') {
+                          provider.checkAllSources();
+                        } else if (value == 'clear_invalid') {
+                          _confirmClearInvalid(context, provider);
                         }
                       },
                       itemBuilder: (context) => [
@@ -131,6 +135,9 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
                         const PopupMenuItem(value: 'sort_2', child: Text('響應速度排序')),
                         const PopupMenuItem(value: 'sort_3', child: Text('更新時間排序')),
                         const PopupMenuItem(value: 'sort_4', child: Text('名稱排序')),
+                        const PopupMenuDivider(),
+                        const PopupMenuItem(value: 'check_all', child: Text('校驗所有書源')),
+                        const PopupMenuItem(value: 'clear_invalid', child: Text('清理失效書源', style: TextStyle(color: Colors.red))),
                       ],
                       icon: const Icon(Icons.more_vert),
                     ),
@@ -139,21 +146,25 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
           body: Column(
             children: [
               if (provider.checkService.isChecking)
-                Container(
-                  color: Colors.blue.withValues(alpha: 0.1),
-                  padding: const EdgeInsets.all(8),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          '正在校驗 (${provider.checkService.currentCount}/${provider.checkService.totalCount}): ${provider.checkService.statusMsg}',
-                          style: const TextStyle(fontSize: 12),
+                GestureDetector(
+                  onTap: () => _showCheckLogDialog(context, provider),
+                  child: Container(
+                    color: Colors.blue.withValues(alpha: 0.1),
+                    padding: const EdgeInsets.all(8),
+                    child: Row(
+                      children: [
+                        const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            '正在校驗 (${provider.checkService.currentCount}/${provider.checkService.totalCount}): ${provider.checkService.statusMsg}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
                         ),
-                      ),
-                      TextButton(onPressed: provider.checkService.cancel, child: const Text('取消')),
-                    ],
+                        const Icon(Icons.chevron_right, size: 16, color: Colors.blue),
+                        TextButton(onPressed: provider.checkService.cancel, child: const Text('取消')),
+                      ],
+                    ),
                   ),
                 ),
               if (!provider.isBatchMode) _buildGroupFilter(),
@@ -413,6 +424,66 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
               );
             },
             child: const Text('開始調試'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmClearInvalid(BuildContext context, SourceManagerProvider provider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('清理失效書源'),
+        content: const Text('確定要刪除所有標記為「失效」或「搜尋失效」的書源嗎？'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          TextButton(
+            onPressed: () {
+              provider.clearInvalidSources();
+              Navigator.pop(context);
+            },
+            child: const Text('確定刪除', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCheckLogDialog(BuildContext context, SourceManagerProvider provider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('校驗詳情'),
+        backgroundColor: Colors.black87,
+        titleTextStyle: const TextStyle(color: Colors.white, fontSize: 18),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: StreamBuilder(
+            stream: provider.checkService.eventBus.on(),
+            builder: (context, snapshot) {
+              // 注意：這裡需要一個能緩存日誌的機制，
+              // 為了簡化，目前僅顯示最後一條或提示使用者
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 20),
+                  Text(
+                    provider.checkService.statusMsg,
+                    style: const TextStyle(color: Colors.greenAccent, fontFamily: 'monospace'),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('關閉', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

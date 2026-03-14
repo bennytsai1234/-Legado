@@ -222,6 +222,23 @@ class SourceManagerProvider extends ChangeNotifier {
     await _checkService.check(urls);
   }
 
+  Future<void> checkAllSources() async {
+    final urls = sources.map((s) => s.bookSourceUrl).toList();
+    await _checkService.check(urls);
+  }
+
+  Future<void> clearInvalidSources() async {
+    final invalidUrls = _sources
+        .where((s) => (s.bookSourceGroup?.contains('失效') ?? false) || s.respondTime == -1)
+        .map((s) => s.bookSourceUrl)
+        .toList();
+    
+    if (invalidUrls.isNotEmpty) {
+      await _dao.deleteSources(invalidUrls);
+      await loadSources();
+    }
+  }
+
   // --- 書源遷移 (高度還原 Android migrateSource) ---
   Future<void> migrateSource(String oldUrl, String newUrl) async {
     final books = await _bookDao.getAll();
