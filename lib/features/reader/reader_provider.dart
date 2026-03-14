@@ -276,14 +276,19 @@ class ReaderProvider extends ChangeNotifier {
     _doPaginate();
   }
 
-  void setTheme(int i) async {
-    _themeIndex = i % AppTheme.readingThemes.length;
+  void setTheme(int i) {
+    _themeIndex = i.clamp(0, AppTheme.readingThemes.length - 1);
+    final theme = AppTheme.readingThemes[_themeIndex];
+    
+    // 套用主題內的排版細節 (對標 Android applyConfig)
+    _fontSize = theme.textSize;
+    _lineHeight = theme.lineSpacing;
+    _paragraphSpacing = theme.paragraphSpacing;
+    _letterSpacing = theme.letterSpacing;
+    _backgroundImage = theme.backgroundImage ?? "";
+    
     saveSetting('theme_index', _themeIndex);
-    final prefs = await SharedPreferences.getInstance();
-    final isNight = _themeIndex == 1;
-    _backgroundImage =
-        prefs.getString(isNight ? PreferKey.bgImageN : PreferKey.bgImage) ?? '';
-    notifyListeners();
+    _doPaginate();
   }
 
   void setBrightness(double v) {
