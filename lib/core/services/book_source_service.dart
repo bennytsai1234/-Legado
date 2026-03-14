@@ -333,32 +333,68 @@ class BookSourceService {
     String baseUrl, {
     required bool isSearch,
   }) {
+    // 1. 偵測是否直接進入詳情頁 (對標 Android bookUrlPattern)
+    if (isSearch && source.bookUrlPattern != null && source.bookUrlPattern!.isNotEmpty) {
+      try {
+        if (RegExp(source.bookUrlPattern!).hasMatch(baseUrl)) {
+          // TODO: 這裡應該調用 getBookInfo 的解析邏輯
+        }
+      } catch (_) {}
+    }
+
     final rule = AnalyzeRule(source: source).setContent(body, baseUrl: baseUrl);
     final dynamic listRule = isSearch ? source.ruleSearch : source.ruleExplore;
     if (listRule == null) return [];
 
-    final elements = rule.getElements(listRule.bookList ?? "");
+    String ruleList = listRule.bookList ?? "";
+    bool isReverse = false;
+    if (ruleList.startsWith("-")) {
+      isReverse = true;
+      ruleList = ruleList.substring(1);
+    } else if (ruleList.startsWith("+")) {
+      ruleList = ruleList.substring(1);
+    }
+
+    final elements = rule.getElements(ruleList);
     final books = <SearchBook>[];
 
     for (final element in elements) {
       final itemRule = AnalyzeRule(
         source: source,
       ).setContent(element, baseUrl: baseUrl);
+      
+      final name = _formatBookName(itemRule.getString(listRule.name ?? ""));
+      if (name.isEmpty) continue;
+
       books.add(
         SearchBook(
           bookUrl: itemRule.getString(listRule.bookUrl ?? "", isUrl: true),
-          name: itemRule.getString(listRule.name ?? ""),
-          author: itemRule.getString(listRule.author ?? ""),
+          name: name,
+          author: _formatBookAuthor(itemRule.getString(listRule.author ?? "")),
           kind: itemRule.getStringList(listRule.kind ?? "").join(','),
           coverUrl: itemRule.getString(listRule.coverUrl ?? "", isUrl: true),
           intro: itemRule.getString(listRule.intro ?? ""),
           latestChapterTitle: itemRule.getString(listRule.lastChapter ?? ""),
+          wordCount: _formatWordCount(itemRule.getString(listRule.wordCount ?? "")),
           origin: source.bookSourceUrl,
           originName: source.bookSourceName,
         ),
       );
     }
 
-    return books;
+    return isReverse ? books.reversed.toList() : books;
+  }
+
+  String _formatBookName(String name) => name.trim().replaceAll(RegExp(r'\s+'), ' ');
+  String _formatBookAuthor(String author) => author.trim().replaceAll(RegExp(r'\s+'), ' ');
+  
+  String _formatWordCount(String count) {
+    if (count.isEmpty) return "";
+    final numStr = count.replaceAll(RegExp(r'[^0-9.]'), '');
+    final val = double.tryParse(numStr);
+    if (val == null) return count;
+    if (count.contains('萬')) return "${val.toStringAsFixed(1)}萬字";
+    if (val > 10000) return "${(val / 10000).toStringAsFixed(1)}萬字";
+    return "${val.toInt()}字";
   }
 }

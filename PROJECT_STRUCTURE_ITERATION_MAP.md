@@ -25,8 +25,8 @@
 | **`ui/config`** | **進階 WebDAV**: 實作連通測試、子目錄/裝置名設定 | `lib/features/settings` | 🟢 100% |
 | **`ui/welcome`** | **啟動規範**: 實作隱私協議檢查、動態歡迎圖 | `lib/features/welcome` | 🟢 100% |
 | **`web`** | **HTTP API**: 實作書源/書架/進階 API | `lib/core/services/web_service`| 🟢 100% |
-| | **資產託管**: 實作 static assets 伺服框架 | `lib/core/services/web_service`| 🟡 50% |
-| | **WebSocket**: 實時搜尋/調試監聽 | (尚未實作) | ❌ Missing |
+| | **資產託管**: 實作 static assets 伺服框架 | `lib/core/services/web_service`| 🟢 90% |
+| | **WebSocket**: 實作實時搜尋/調試日誌推送 | `lib/core/services/web_service`| 🟢 100% |
 | **`help`** | **3D 仿真翻頁**: 視覺陰影與捲曲細化 | `lib/features/reader/engine` | 🟡 60% |
 | **`service`** | **鎖屏播放**: MediaControl 與通知欄交互 | `lib/core/services` | 🟡 40% |
 
