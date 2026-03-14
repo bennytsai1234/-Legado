@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:workmanager/workmanager.dart';
@@ -22,6 +23,9 @@ import 'features/rss/rss_source_provider.dart';
 import 'features/about/app_log_page.dart';
 import 'features/book_detail/change_cover_provider.dart';
 import 'features/association/intent_handler_service.dart';
+import 'features/browser/browser_page.dart';
+import 'features/browser/browser_params.dart';
+import 'core/services/source_verification_service.dart';
 import 'core/services/tts_service.dart';
 import 'core/services/webdav_service.dart';
 import 'core/services/crash_handler.dart';
@@ -220,6 +224,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   int _newChapterCount = 0;
   DateTime _lastTapTime = DateTime.now();
   DateTime? _lastBackTime;
+  StreamSubscription? _verificationSubscription;
 
   Future<bool> _onWillPop() async {
     if (_currentIndex != 0) {
@@ -256,6 +261,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       IntentHandlerService().init(context);
+      _initVerificationListener();
       _checkAppCrash();
       _checkLocalPassword();
       _checkBackupSync();
@@ -400,8 +406,30 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     }
   }
 
+  void _initVerificationListener() {
+    _verificationSubscription = SourceVerificationService().requestStream.listen((request) {
+      if (!mounted) return;
+      
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => BrowserPage(
+            params: BrowserParams(
+              url: request.url,
+              title: request.title,
+              sourceOrigin: request.sourceKey,
+              sourceVerificationEnable: true,
+              verificationRequest: request,
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
   @override
   void dispose() {
+    _verificationSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     IntentHandlerService().dispose();
     super.dispose();

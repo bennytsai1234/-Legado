@@ -78,9 +78,9 @@
 
 > 以下功能在 Android 版中存在，但在 iOS 端尚未實作或實作不完全，將作為下階段的優化目標。
 
-1. **[❌ Missing] 內置網頁瀏覽器 (`ui/browser`)**
-   - **描述**: Android 使用 `WebViewActivity` 進行登入授權、網頁內容除錯及動態 JS 注入。
-   - **iOS 對策**: 需實作一個功能完整的 `BrowserPage`，結合 `webview_flutter` 處理 Cookie 攔截與網頁抓取。
+1. **[✅ Matched] 內置網頁瀏覽器 (`ui/browser`)**
+   - **描述**: 實作了 `BrowserPage` 與 `BrowserProvider`，支援書源登入、JS 注入、Cookie 同步與 Cloudflare 挑戰偵測。
+   - **iOS 對策**: 已整合 `webview_flutter` 並與 `SourceVerificationService` 聯動。
 2. **[⚠️ Partial] 閱讀器：文字長按的進階選單**
    - **描述**: 雖然已實作「查詞」與「筆記」，但 Android 支援更豐富的操作（如：複製、搜尋、分享）。
 3. **[❌ Missing] 替換規則：調試功能**
