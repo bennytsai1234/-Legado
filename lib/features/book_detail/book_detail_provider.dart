@@ -79,8 +79,7 @@ class BookDetailProvider extends ChangeNotifier {
   }
 
   Future<void> _loadSource() async {
-    final sources = await _sourceDao.getAll();
-    _currentSource = sources.cast<BookSource?>().firstWhere((s) => s?.bookSourceUrl == _book.origin, orElse: () => null);
+    _currentSource = await _sourceDao.getByUrl(_book.origin);
   }
 
   Future<void> _loadChapters() async {

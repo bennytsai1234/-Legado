@@ -96,7 +96,7 @@ class SearchBook {
 }
 
 class AggregatedSearchBook {
-  final SearchBook book;
+  final dynamic book; // Can be Book or SearchBook
   final List<String> sources;
 
   AggregatedSearchBook({required this.book, required this.sources});

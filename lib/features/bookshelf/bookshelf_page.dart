@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:legado_reader/features/bookshelf/bookshelf_provider.dart';
@@ -7,7 +8,9 @@ import 'package:legado_reader/features/bookshelf/group_manage_page.dart';
 import 'package:legado_reader/core/models/book.dart';
 import 'package:legado_reader/features/bookshelf/widgets/bookshelf_grid_item.dart';
 import 'package:legado_reader/features/bookshelf/widgets/bookshelf_list_item.dart';
+import 'package:legado_reader/features/local_book/file_picker_page.dart';
 import 'package:legado_reader/features/local_book/local_book_provider.dart';
+import 'package:file_picker/file_picker.dart';
 
 class BookshelfPage extends StatefulWidget {
   const BookshelfPage({super.key});
@@ -171,7 +174,7 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
 
   Widget _buildMoreMenu(BuildContext context, BookshelfProvider provider) {
     return PopupMenuButton<String>(
-      onSelected: (value) {
+      onSelected: (value) async {
         switch (value) {
           case 'grid': provider.toggleViewMode(); break;
           case 'manage_group': Navigator.push(context, MaterialPageRoute(builder: (_) => const GroupManagePage())); break;
@@ -181,12 +184,28 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
               child: const SmartScanPage(),
             )));
             break;
+          case 'manual_import':
+            final result = await FilePicker.platform.pickFiles(
+              type: FileType.custom,
+              allowedExtensions: ['txt', 'epub'],
+              allowMultiple: true,
+            );
+            
+            if (result != null && result.files.isNotEmpty) {
+              for (var file in result.files) {
+                if (file.path != null && context.mounted) {
+                  await context.read<BookshelfProvider>().importLocalBookPath(file.path!);
+                }
+              }
+            }
+            break;
         }
       },
       itemBuilder: (context) => [
         PopupMenuItem(value: 'grid', child: Text(provider.isGridView ? '列表模式' : '網格模式')),
         const PopupMenuItem(value: 'manage_group', child: Text('分組管理')),
         const PopupMenuItem(value: 'smart_scan', child: Text('智能掃描')),
+        const PopupMenuItem(value: 'manual_import', child: Text('手動導入')),
       ],
     );
   }

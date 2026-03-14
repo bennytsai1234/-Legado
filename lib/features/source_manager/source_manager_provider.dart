@@ -53,7 +53,8 @@ class SourceManagerProvider with ChangeNotifier {
   Future<void> loadSources() async {
     _isLoading = true;
     notifyListeners();
-    _sources = await _dao.getAll();
+    // 使用精簡版載入列表，避免 CursorWindow 溢出 (Android 2MB 限制)
+    _sources = await _dao.getAllPart();
     _updateGroups();
     _isLoading = false;
     notifyListeners();
@@ -99,9 +100,15 @@ class SourceManagerProvider with ChangeNotifier {
   }
 
   Future<void> toggleEnabled(BookSource source) async {
-    source.enabled = !source.enabled;
-    await _dao.insertOrUpdate(source);
-    notifyListeners();
+    // 必須獲取完整書源，避免 getAllPart 載入的精簡數據覆蓋掉 JS 規則
+    final fullSource = await _dao.getByUrl(source.bookSourceUrl);
+    if (fullSource != null) {
+      fullSource.enabled = !fullSource.enabled;
+      await _dao.insertOrUpdate(fullSource);
+      // 同步更新本地列表狀態
+      source.enabled = fullSource.enabled;
+      notifyListeners();
+    }
   }
 
   Future<void> deleteSource(BookSource source) async {
@@ -117,8 +124,12 @@ class SourceManagerProvider with ChangeNotifier {
   }
 
   Future<void> exportSelected() async {
-    final selectedSources = _sources.where((s) => _selectedUrls.contains(s.bookSourceUrl)).toList();
-    final json = jsonEncode(selectedSources.map((s) => s.toJson()).toList());
+    final List<BookSource> selectedFullSources = [];
+    for (var url in _selectedUrls) {
+      final full = await _dao.getByUrl(url);
+      if (full != null) selectedFullSources.add(full);
+    }
+    final json = jsonEncode(selectedFullSources.map((s) => s.toJson()).toList());
     await Clipboard.setData(ClipboardData(text: json));
   }
 

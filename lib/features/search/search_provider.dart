@@ -49,7 +49,7 @@ class SearchProvider extends ChangeNotifier {
   }
 
   Future<void> _loadGroups() async {
-    final sources = await _sourceDao.getAll();
+    final sources = await _sourceDao.getAllPart();
     final Set<String> groups = {};
     for (var s in sources) {
       if (s.bookSourceGroup != null && s.bookSourceGroup!.isNotEmpty) {
@@ -151,9 +151,13 @@ class SearchProvider extends ChangeNotifier {
     _currentSource = source.bookSourceName;
     notifyListeners();
     try {
-      // 深度對標：單個書源搜尋超時控制 (預設 30 秒)
+      // 深度還原：搜尋時需要完整的書源規則 (ruleSearch 等)
+      // 如果是用 getEnabled() 載入的精簡版，這裡需要補齊數據
+      final fullSource = await _sourceDao.getByUrl(source.bookSourceUrl);
+      if (fullSource == null || _isCancelled) return;
+
       final List<SearchBook> books = await _service.searchBooks(
-        source,
+        fullSource,
         keyword,
       ).timeout(const Duration(seconds: 30));
       

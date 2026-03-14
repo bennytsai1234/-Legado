@@ -39,10 +39,10 @@ class ReaderMenuBottom extends StatelessWidget {
                 ),
                 Expanded(
                   child: Slider(
-                    value: provider.currentChapterIndex.toDouble(),
+                    value: provider.currentChapterIndex.toDouble().clamp(0, (provider.chapters.isEmpty ? 0 : provider.chapters.length - 1).toDouble()),
                     min: 0,
-                    max: (provider.chapters.length - 1).toDouble().clamp(0, double.infinity),
-                    divisions: (provider.chapters.length - 1).clamp(1, 9999),
+                    max: (provider.chapters.isEmpty ? 0 : provider.chapters.length - 1).toDouble(),
+                    divisions: provider.chapters.length > 1 ? provider.chapters.length - 1 : 1,
                     onChanged: (v) => provider.onScrubbing(v.toInt()),
                     onChangeEnd: (v) => provider.onScrubEnd(v.toInt()),
                   ),

@@ -25,8 +25,17 @@ class _FilePickerPageState extends State<FilePickerPage> {
   }
 
   Future<void> _initDefaultDir() async {
-    final dir = await getApplicationDocumentsDirectory();
-    _navigateTo(dir);
+    Directory? dir;
+    if (Platform.isAndroid) {
+      // 深度還原：Android 預設到外部儲存空間根目錄
+      dir = Directory('/storage/emulated/0');
+      if (!await dir.exists()) {
+        dir = await getExternalStorageDirectory();
+      }
+    } else {
+      dir = await getApplicationDocumentsDirectory();
+    }
+    _navigateTo(dir ?? Directory('/'));
   }
 
   Future<void> _navigateTo(Directory dir) async {

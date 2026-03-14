@@ -16,6 +16,7 @@ import 'package:legado_reader/core/models/rss_source.dart';
 import 'package:legado_reader/core/models/dict_rule.dart';
 import 'chinese_utils.dart';
 import 'webdav_service.dart';
+import 'package:legado_reader/shared/theme/app_theme.dart';
 
 /// DefaultData - 預設資料初始化
 /// 對應 Android: help/DefaultData.kt
@@ -25,6 +26,7 @@ class DefaultData {
 
   static Future<void> init() async {
     await _initLock.synchronized(() async {
+      await AppTheme.init();
       await _init();
     });
   }
@@ -85,7 +87,9 @@ class DefaultData {
     // B. 自動 WebDAV 同步 (對應 Android AppWebDav.downloadAllBookProgress)
     final webdavEnabled = prefs.getBool('webdav_enabled') ?? false;
     if (webdavEnabled) {
-      WebDAVService().restore(); // 異步執行同步還原
+      WebDAVService().isConfigured().then((configured) {
+        if (configured) WebDAVService().restore();
+      });
     }
   }
 

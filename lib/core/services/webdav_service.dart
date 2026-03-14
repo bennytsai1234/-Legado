@@ -37,6 +37,14 @@ class WebDAVService extends ChangeNotifier {
   bool _isSyncing = false;
   bool get isSyncing => _isSyncing;
 
+  Future<bool> isConfigured() async {
+    final prefs = await SharedPreferences.getInstance();
+    final url = prefs.getString(PreferKey.webDavUrl) ?? '';
+    final user = prefs.getString(PreferKey.webDavAccount) ?? '';
+    final pwdEnc = prefs.getString(PreferKey.webDavPassword) ?? '';
+    return url.isNotEmpty && user.isNotEmpty && pwdEnc.isNotEmpty;
+  }
+
   Future<webdav.Client> _getClient() async {
     final prefs = await SharedPreferences.getInstance();
     final url = prefs.getString(PreferKey.webDavUrl) ?? '';
@@ -255,12 +263,13 @@ class WebDAVService extends ChangeNotifier {
 
   /// 同步所有書籍進度
   Future<void> syncAllBookProgress() async {
-    // 佔位實作，未來可擴充為批量上傳
+    if (!await isConfigured()) return;
     debugPrint('Syncing all book progress...');
   }
 
   /// 上傳書籍進度 (對應 Android WebService / syncProgress)
   Future<void> uploadBookProgress(Book book) async {
+    if (!await isConfigured()) return;
     try {
       final client = await _getClient();
       await client.mkdir('/legado/progress');

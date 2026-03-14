@@ -25,10 +25,12 @@ class WidgetService {
       await HomeWidget.saveWidgetData<String>('recent_book_url', book.bookUrl);
 
       // 2. 通知原生側更新 Widget
-      await HomeWidget.updateWidget(
-        iOSName: iOSWidgetName,
-        androidName: 'AppWidgetProvider', // 預留給 Android
-      );
+      // 僅在 iOS 端執行，Android 端目前尚未實作 AppWidgetProvider 類別，避免報錯
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        await HomeWidget.updateWidget(
+          iOSName: iOSWidgetName,
+        );
+      }
       
       debugPrint('Widget data updated for: ${book.name}');
     } catch (e) {

@@ -11,22 +11,53 @@ class BookSourceDao {
 
   Future<Database> get _db async => await AppDatabase.database;
 
+  /// 獲取所有書源 (完整數據，謹慎使用)
   Future<List<BookSource>> getAll() async {
     final db = await _db;
     final List<Map<String, dynamic>> maps = await db.query('book_sources', orderBy: 'customOrder ASC');
     return List.generate(maps.length, (i) => BookSource.fromJson(maps[i]));
   }
 
-  Future<List<BookSource>> getAllPart() => getAll();
+  /// 獲取書源部分資訊 (僅用於列表顯示，防止 CursorWindow 溢出)
+  Future<List<BookSource>> getAllPart() async {
+    final db = await _db;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'book_sources',
+      columns: ['bookSourceUrl', 'bookSourceName', 'bookSourceGroup', 'bookSourceType', 'enabled', 'customOrder'],
+      orderBy: 'customOrder ASC',
+    );
+    return List.generate(maps.length, (i) {
+      // 僅填充部分欄位的 BookSource 物件
+      return BookSource(
+        bookSourceUrl: maps[i]['bookSourceUrl'],
+        bookSourceName: maps[i]['bookSourceName'],
+        bookSourceGroup: maps[i]['bookSourceGroup'],
+        bookSourceType: maps[i]['bookSourceType'],
+        enabled: maps[i]['enabled'] == 1,
+        customOrder: maps[i]['customOrder'],
+      );
+    });
+  }
 
+  /// 獲取所有已啟用的書源 (精簡版，降低記憶體消耗)
   Future<List<BookSource>> getEnabled() async {
     final db = await _db;
     final List<Map<String, dynamic>> maps = await db.query(
       'book_sources',
       where: 'enabled = 1',
+      columns: ['bookSourceUrl', 'bookSourceName', 'bookSourceGroup', 'bookSourceType', 'enabled', 'customOrder'],
       orderBy: 'customOrder ASC',
     );
-    return List.generate(maps.length, (i) => BookSource.fromJson(maps[i]));
+    return List.generate(maps.length, (i) {
+      return BookSource(
+        bookSourceUrl: maps[i]['bookSourceUrl'],
+        bookSourceName: maps[i]['bookSourceName'],
+        bookSourceGroup: maps[i]['bookSourceGroup'],
+        bookSourceType: maps[i]['bookSourceType'],
+        enabled: maps[i]['enabled'] == 1,
+        customOrder: maps[i]['customOrder'],
+      );
+    });
   }
 
   Future<BookSource?> getByUrl(String url) async {

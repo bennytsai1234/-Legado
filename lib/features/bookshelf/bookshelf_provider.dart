@@ -231,14 +231,28 @@ class BookshelfProvider with ChangeNotifier {
         final chaptersData = await parser.splitChapters();
         final book = Book(bookUrl: bookUrl, name: p.basenameWithoutExtension(path), author: '本地', origin: 'local', originName: '本地', isInBookshelf: true, type: 0);
         await _bookDao.insertOrUpdate(book);
+        
         final List<BookChapter> bookChapters = [];
         final List<Map<String, dynamic>> bookContents = [];
+        const int batchSize = 10; // 小批量寫入，防止 CursorWindow 溢出
+        
         for (int i = 0; i < chaptersData.length; i++) {
           bookChapters.add(BookChapter(url: "$bookUrl#$i", title: chaptersData[i]['title'] ?? "第 $i 章", bookUrl: bookUrl, index: i));
           bookContents.add({'bookUrl': bookUrl, 'chapterIndex': i, 'content': chaptersData[i]['content'] ?? ""});
+          
+          if (bookChapters.length >= batchSize) {
+            await _chapterDao.insertChapters(List.from(bookChapters));
+            await _chapterDao.insertContents(List.from(bookContents));
+            bookChapters.clear();
+            bookContents.clear();
+            await Future.delayed(Duration.zero); // 釋放主執行緒
+          }
         }
-        await _chapterDao.insertChapters(bookChapters);
-        await _chapterDao.insertContents(bookContents);
+        
+        if (bookChapters.isNotEmpty) {
+          await _chapterDao.insertChapters(bookChapters);
+          await _chapterDao.insertContents(bookContents);
+        }
       } else if (ext == 'epub') {
         final parser = EpubParser(file);
         await parser.load();

@@ -22,7 +22,7 @@ class BookDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => BookDetailProvider(searchBook ?? AggregatedSearchBook(book: searchBook?.book ?? searchBook!.book, sources: [])),
+      create: (_) => BookDetailProvider(searchBook ?? AggregatedSearchBook(book: book!, sources: [])),
       child: Consumer<BookDetailProvider>(
         builder: (context, provider, child) {
           // 如果是從書架進入，手動同步 book

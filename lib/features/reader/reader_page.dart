@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -36,16 +37,31 @@ class _ReaderPageState extends State<ReaderPage> {
   String _selectedText = "";
   bool? _lastShowControls;
 
+  StreamSubscription? _jumpSubscription;
+
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: widget.chapterPos);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    
+    // 監聽跳頁事件
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = context.read<ReaderProvider>();
+      _jumpSubscription = provider.jumpPageStream.listen((page) {
+        final hasPrev = provider.currentChapterIndex > 0;
+        final targetPage = page + (hasPrev ? 1 : 0);
+        if (_pageController.hasClients && _pageController.page?.round() != targetPage) {
+          _pageController.jumpToPage(targetPage);
+        }
+      });
+    });
   }
 
   @override
   void dispose() {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    _jumpSubscription?.cancel();
     _pageController.dispose();
     super.dispose();
   }
@@ -113,6 +129,7 @@ class _ReaderPageState extends State<ReaderPage> {
 
     if (area != -1) {
       final action = provider.clickActions[area];
+      debugPrint("執行點擊動作: 區域 $area, 動作碼 $action");
       _executeAction(context, provider, action);
     }
   }
@@ -131,24 +148,29 @@ class _ReaderPageState extends State<ReaderPage> {
             drawer: ReaderChaptersDrawer(provider: provider),
             body: Stack(
               children: [
-                GestureDetector(
-                  onTapUp: (details) {
-                    if (provider.showControls) {
-                      provider.toggleControls();
-                      return;
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    if (constraints.maxWidth > 0 && constraints.maxHeight > 0) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        provider.updateViewSize(Size(constraints.maxWidth, constraints.maxHeight));
+                      });
                     }
-                    final RenderBox box = context.findRenderObject() as RenderBox;
-                    final offset = box.globalToLocal(details.globalPosition);
-                    _handleTap(offset, box.size, provider);
+                    return _buildContent(provider);
                   },
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      if (constraints.maxWidth > 0 && constraints.maxHeight > 0) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          provider.updateViewSize(Size(constraints.maxWidth, constraints.maxHeight));
-                        });
+                ),
+                // 點擊事件覆蓋層：放置在內容上方，選單下方。確保事件優先被捕捉。
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTapUp: (details) {
+                      if (provider.showControls) {
+                        provider.toggleControls();
+                        return;
                       }
-                      return _buildContent(provider);
+                      final RenderBox? box = context.findRenderObject() as RenderBox?;
+                      if (box != null) {
+                        _handleTap(details.localPosition, box.size, provider);
+                      }
                     },
                   ),
                 ),
@@ -168,6 +190,20 @@ class _ReaderPageState extends State<ReaderPage> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildVirtualPage(ReaderProvider provider, String text) {
+    final theme = provider.currentTheme;
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 16),
+          Text(text, style: TextStyle(color: theme.textColor.withValues(alpha: 0.5))),
+        ],
       ),
     );
   }
@@ -253,9 +289,35 @@ class _ReaderPageState extends State<ReaderPage> {
               )
             : PageView.builder(
                 controller: _pageController,
-                itemCount: provider.pages.length,
-                onPageChanged: provider.onPageChanged,
-                itemBuilder: (context, index) => PageViewWidget(page: provider.pages[index], contentStyle: contentStyle, titleStyle: titleStyle),
+                itemCount: (provider.currentChapterIndex > 0 ? 1 : 0) + 
+                           provider.pages.length + 
+                           (provider.currentChapterIndex < provider.chapters.length - 1 ? 1 : 0),
+                onPageChanged: (index) {
+                  final hasPrev = provider.currentChapterIndex > 0;
+                  final hasNext = provider.currentChapterIndex < provider.chapters.length - 1;
+                  
+                  if (hasPrev && index == 0) {
+                    provider.prevChapter();
+                  } else if (hasNext && index == (hasPrev ? 1 : 0) + provider.pages.length) {
+                    provider.nextChapter();
+                  } else {
+                    final actualIdx = index - (hasPrev ? 1 : 0);
+                    if (actualIdx >= 0 && actualIdx < provider.pages.length) {
+                      provider.onPageChanged(actualIdx);
+                    }
+                  }
+                },
+                itemBuilder: (context, index) {
+                  final hasPrev = provider.currentChapterIndex > 0;
+                  if (hasPrev && index == 0) {
+                    return _buildVirtualPage(provider, "正在載入上一章...");
+                  }
+                  final actualIdx = index - (hasPrev ? 1 : 0);
+                  if (actualIdx == provider.pages.length) {
+                    return _buildVirtualPage(provider, "正在載入下一章...");
+                  }
+                  return PageViewWidget(page: provider.pages[actualIdx], contentStyle: contentStyle, titleStyle: titleStyle);
+                },
               ),
         ),
       ],
