@@ -1,8 +1,8 @@
 import 'source/book_source_base.dart';
 import 'source/book_source_rules.dart';
-import 'source/book_source_logic.dart';
 import 'source/book_source_serialization.dart';
 
+export 'source/book_source_base.dart';
 export 'source/book_source_rules.dart';
 export 'source/book_source_logic.dart';
 
@@ -11,37 +11,68 @@ export 'source/book_source_logic.dart';
 /// 對應 Android: data/entities/BookSource.kt
 class BookSource extends BookSourceBase {
   BookSource({
-    super.bookSourceUrl = "",
-    super.bookSourceName = "",
-    super.bookSourceGroup,
-    super.bookSourceType = 0,
-    super.bookUrlPattern,
-    super.customOrder = 0,
-    super.enabled = true,
-    super.enabledExplore = true,
-    super.jsLib,
-    super.enabledCookieJar = true,
-    super.concurrentRate,
-    super.header,
-    super.loginUrl,
-    super.loginUi,
-    super.loginCheckJs,
-    super.coverDecodeJs,
-    super.bookSourceComment,
-    super.variableComment,
-    super.lastUpdateTime = 0,
-    super.respondTime = 180000,
-    super.weight = 0,
-    super.exploreUrl,
-    super.exploreScreen,
-    super.ruleExplore,
-    super.searchUrl,
-    super.ruleSearch,
-    super.ruleBookInfo,
-    super.ruleToc,
-    super.ruleContent,
-    super.ruleReview,
-  });
+    String bookSourceUrl = "",
+    String bookSourceName = "",
+    String? bookSourceGroup,
+    int bookSourceType = 0,
+    String? bookUrlPattern,
+    int customOrder = 0,
+    bool enabled = true,
+    bool enabledExplore = true,
+    String? jsLib,
+    bool enabledCookieJar = true,
+    String? concurrentRate,
+    String? header,
+    String? loginUrl,
+    String? loginUi,
+    String? loginCheckJs,
+    String? coverDecodeJs,
+    String? bookSourceComment,
+    String? variableComment,
+    int lastUpdateTime = 0,
+    int respondTime = 180000,
+    int weight = 0,
+    String? exploreUrl,
+    String? exploreScreen,
+    ExploreRule? ruleExplore,
+    String? searchUrl,
+    SearchRule? ruleSearch,
+    BookInfoRule? ruleBookInfo,
+    TocRule? ruleToc,
+    ContentRule? ruleContent,
+    ReviewRule? ruleReview,
+  }) {
+    this.bookSourceUrl = bookSourceUrl;
+    this.bookSourceName = bookSourceName;
+    this.bookSourceGroup = bookSourceGroup;
+    this.bookSourceType = bookSourceType;
+    this.bookUrlPattern = bookUrlPattern;
+    this.customOrder = customOrder;
+    this.enabled = enabled;
+    this.enabledExplore = enabledExplore;
+    this.jsLib = jsLib;
+    this.enabledCookieJar = enabledCookieJar;
+    this.concurrentRate = concurrentRate;
+    this.header = header;
+    this.loginUrl = loginUrl;
+    this.loginUi = loginUi;
+    this.loginCheckJs = loginCheckJs;
+    this.coverDecodeJs = coverDecodeJs;
+    this.bookSourceComment = bookSourceComment;
+    this.variableComment = variableComment;
+    this.lastUpdateTime = lastUpdateTime;
+    this.respondTime = respondTime;
+    this.weight = weight;
+    this.exploreUrl = exploreUrl;
+    this.exploreScreen = exploreScreen;
+    this.ruleExplore = ruleExplore;
+    this.searchUrl = searchUrl;
+    this.ruleSearch = ruleSearch;
+    this.ruleBookInfo = ruleBookInfo;
+    this.ruleToc = ruleToc;
+    this.ruleContent = ruleContent;
+    this.ruleReview = ruleReview;
+  }
 
   factory BookSource.fromJson(Map<String, dynamic> json) {
     return BookSource(

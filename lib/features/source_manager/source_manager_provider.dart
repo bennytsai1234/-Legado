@@ -22,7 +22,7 @@ class SourceManagerProvider with ChangeNotifier {
     } else {
       list.sort((a, b) => a.customOrder.compareTo(b.customOrder));
     }
-    return list;
+    return list.cast<BookSource>();
   }
 
   bool _isLoading = false;

@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:legado_reader/core/models/book.dart';
 import 'package:legado_reader/core/models/chapter.dart';
-import 'package:legado_reader/core/models/book_source.dart';
 import 'package:legado_reader/core/services/book_source_service.dart';
 import 'package:legado_reader/core/database/dao/book_source_dao.dart';
 import 'package:legado_reader/core/database/dao/chapter_dao.dart';
@@ -71,30 +70,47 @@ class _MangaReaderPageState extends State<MangaReaderPage> {
       _scrollTimer = Timer.periodic(const Duration(milliseconds: 30), (t) {
         if (_scrollCtrl.hasClients) {
           if (_scrollCtrl.offset >= _scrollCtrl.position.maxScrollExtent) { _stopAutoScroll(); if (_currentIndex < _chapters.length - 1) _loadChapter(_currentIndex + 1); }
-          else _scrollCtrl.jumpTo(_scrollCtrl.offset + 2.0);
+          else {
+            _scrollCtrl.jumpTo(_scrollCtrl.offset + 2.0);
+          }
         }
       });
-    } else _scrollTimer?.cancel();
+    } else {
+      _scrollTimer?.cancel();
+    }
   }
 
   void _stopAutoScroll() { if (_isAutoScrolling) { setState(() => _isAutoScrolling = false); _scrollTimer?.cancel(); } }
 
   void _handleTap(TapUpDetails d, double w) {
     final x = d.globalPosition.dx;
-    if (x < w / 3) (_isReverse && _readingMode == 1) ? _next() : _prev();
-    else if (x > w * 2 / 3) (_isReverse && _readingMode == 1) ? _prev() : _next();
+    if (x < w / 3) {
+      (_isReverse && _readingMode == 1) ? _next() : _prev();
+    } else if (x > w * 2 / 3) (_isReverse && _readingMode == 1) ? _prev() : _next();
     else setState(() => _showControls = !_showControls);
   }
 
-  void _next() { if (_readingMode == 1) _pageCtrl.nextPage(duration: const Duration(milliseconds: 200), curve: Curves.linear); else _scrollCtrl.animateTo(_scrollCtrl.offset + 500, duration: const Duration(milliseconds: 200), curve: Curves.linear); }
-  void _prev() { if (_readingMode == 1) _pageCtrl.previousPage(duration: const Duration(milliseconds: 200), curve: Curves.linear); else _scrollCtrl.animateTo(_scrollCtrl.offset - 500, duration: const Duration(milliseconds: 200), curve: Curves.linear); }
+  void _next() { if (_readingMode == 1) {
+    _pageCtrl.nextPage(duration: const Duration(milliseconds: 200), curve: Curves.linear);
+  } else {
+    _scrollCtrl.animateTo(_scrollCtrl.offset + 500, duration: const Duration(milliseconds: 200), curve: Curves.linear);
+  } }
+  void _prev() { if (_readingMode == 1) {
+    _pageCtrl.previousPage(duration: const Duration(milliseconds: 200), curve: Curves.linear);
+  } else {
+    _scrollCtrl.animateTo(_scrollCtrl.offset - 500, duration: const Duration(milliseconds: 200), curve: Curves.linear);
+  } }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(backgroundColor: Colors.black, body: LayoutBuilder(builder: (ctx, constraints) => Stack(children: [
       GestureDetector(
         onTapUp: (d) => _handleTap(d, constraints.maxWidth),
-        onDoubleTapDown: (d) { if (_transCtrl.value != Matrix4.identity()) _transCtrl.value = Matrix4.identity(); else _transCtrl.value = Matrix4.identity()..translate(-d.localPosition.dx, -d.localPosition.dy)..scale(2.0); },
+        onDoubleTapDown: (d) { if (_transCtrl.value != Matrix4.identity()) {
+          _transCtrl.value = Matrix4.identity();
+        } else {
+          _transCtrl.value = Matrix4.identity()..translate(-d.localPosition.dx, -d.localPosition.dy)..scale(2.0);
+        } },
         child: _isLoading ? const Center(child: CircularProgressIndicator(color: Colors.white)) : InteractiveViewer(
           transformationController: _transCtrl, minScale: 1.0, maxScale: 5.0,
           child: _readingMode == 1 ? PageView.builder(controller: _pageCtrl, reverse: _isReverse, itemCount: _urls.length, onPageChanged: (i) => setState(() => _currentPage = i), itemBuilder: (c, i) => MangaImageView(imageUrl: _urls[i], readingMode: _readingMode))

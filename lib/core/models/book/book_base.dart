@@ -1,4 +1,3 @@
-export '../constant/book_type.dart';
 
 /// Book - 基礎書籍模型
 /// 對應 Android: data/entities/Book.kt

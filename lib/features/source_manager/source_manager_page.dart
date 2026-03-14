@@ -63,7 +63,11 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
   }
 
   Widget _buildItem(SourceManagerProvider p, BookSource s) => SourceItemTile(key: ValueKey(s.bookSourceUrl), source: s, provider: p, isSelected: p.selectedUrls.contains(s.bookSourceUrl), 
-    onTap: () { if (p.isBatchMode) p.toggleSelect(s.bookSourceUrl); else Navigator.push(context, MaterialPageRoute(builder: (_) => SourceEditorPage(source: s))); }, 
+    onTap: () { if (p.isBatchMode) {
+      p.toggleSelect(s.bookSourceUrl);
+    } else {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => SourceEditorPage(source: s)));
+    } }, 
     onLongPress: () { if (!p.isBatchMode) _showSourceMenu(context, p, s); }, onEnabledChanged: (v) => p.toggleEnabled(s));
 
   void _showSourceMenu(BuildContext context, SourceManagerProvider p, BookSource s) {
@@ -78,7 +82,9 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
     final ctrl = TextEditingController();
     showDialog(context: context, builder: (ctx) => AlertDialog(title: Text(isUrl ? '網路匯入' : '文本匯入'), content: TextField(controller: ctrl, decoration: InputDecoration(hintText: isUrl ? '請輸入 URL' : '請貼上 JSON'), maxLines: 5), actions: [
       TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-      ElevatedButton(onPressed: () async { final p = context.read<SourceManagerProvider>(); final input = ctrl.text.trim(); if (input.isNotEmpty) { int count = isUrl ? await p.importFromUrl(input) : await p.importFromText(input); if (context.mounted) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('成功匯入 $count 個書源'))); Navigator.pop(ctx); } } else Navigator.pop(ctx); }, child: const Text('匯入')),
+      ElevatedButton(onPressed: () async { final p = context.read<SourceManagerProvider>(); final input = ctrl.text.trim(); if (input.isNotEmpty) { int count = isUrl ? await p.importFromUrl(input) : await p.importFromText(input); if (context.mounted) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('成功匯入 $count 個書源'))); Navigator.pop(ctx); } } else {
+        Navigator.pop(ctx);
+      } }, child: const Text('匯入')),
     ]));
   }
 

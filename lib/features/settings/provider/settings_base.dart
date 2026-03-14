@@ -8,8 +8,9 @@ abstract class SettingsProviderBase extends ChangeNotifier {
 
   Future<void> save(String key, dynamic value) async {
     final prefs = await SharedPreferences.getInstance();
-    if (value is bool) await prefs.setBool(key, value);
-    else if (value is double) await prefs.setDouble(key, value);
+    if (value is bool) {
+      await prefs.setBool(key, value);
+    } else if (value is double) await prefs.setDouble(key, value);
     else if (value is int) await prefs.setInt(key, value);
     else if (value is String) await prefs.setString(key, value);
   }
@@ -28,4 +29,6 @@ abstract class SettingsProviderBase extends ChangeNotifier {
     if (parts.length == 2) return Locale(parts[0], parts[1]);
     return Locale(lang);
   }
+
+  void update() => update();
 }

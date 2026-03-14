@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:typed_data';
 import 'encode/encode_utils_base.dart';
 import 'encode/encode_utils_hash.dart';

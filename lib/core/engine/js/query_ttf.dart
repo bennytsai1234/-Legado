@@ -48,7 +48,7 @@ class QueryTTF extends QueryTTFBase {
 
   // 靜態輔助方法 (保持相容性)
   static bool isBlank(int unicode) {
-    return const _BlankChecker().isBlankUnicode(unicode);
+    return _BlankChecker().isBlankUnicode(unicode);
   }
 }
 

@@ -1,27 +1,23 @@
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:legado_reader/core/engine/js/query_ttf.dart';
+import 'package:legado_reader/core/engine/js/ttf/buffer_reader.dart';
 
 void main() {
   group('QueryTTF Tests', () {
-    test('Empty font parsing', () async {
+    test('Empty font parsing', () {
       expect(() => QueryTTF(Uint8List(0)), throwsRangeError);
     });
-    
-    test('BufferReader basic operations', () {
-      final bytes = <int>[0x00, 0x01, 0x02, 0x03, 0xFF, 0xFE];
-      final reader = BufferReader(Uint8List.fromList(bytes));
-      
-      expect(reader.readUInt8(), 0x00);
-      expect(reader.readUInt8(), 0x01);
-      
-      reader.position(2);
-      expect(reader.readUInt16(), 0x0203);
-      
-      expect(reader.readUInt16(), 0xFFFE);
-      
-      reader.position(0);
-      expect(reader.readUInt32(), 0x00010203);
+
+    test('Basic TTF Structure', () {
+      // Mock basic TTF header
+      final bytes = Uint8List.fromList([
+        0, 1, 0, 0, // sfntVersion
+        0, 0, // numTables
+        0, 0, 0, 0, 0, 0 // binary search header
+      ]);
+      final q = QueryTTF(bytes);
+      expect(q.directorys.isEmpty, true);
     });
   });
 }

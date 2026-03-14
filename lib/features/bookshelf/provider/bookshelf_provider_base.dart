@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:legado_reader/core/database/dao/book_dao.dart';
 import 'package:legado_reader/core/database/dao/book_group_dao.dart';

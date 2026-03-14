@@ -120,10 +120,11 @@ class _GroupManagePageState extends State<GroupManagePage> {
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
             ElevatedButton(onPressed: () {
               if (ctrl.text.isNotEmpty) {
-                provider.createGroup(ctrl.text.trim(), coverPath: coverPath);
+                provider.createGroup(ctrl.text.trim());
                 Navigator.pop(ctx);
-              }
-            }, child: const Text('新增')),
+                }
+                }, child: const Text('新增')),
+
           ],
         ),
       ),
@@ -165,12 +166,15 @@ class _GroupManagePageState extends State<GroupManagePage> {
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-            ElevatedButton(onPressed: () {
-              if (ctrl.text.isNotEmpty) {
-                provider.renameGroup(group.groupId, ctrl.text.trim(), coverPath: coverPath);
-                Navigator.pop(ctx);
-              }
-            }, child: const Text('確定')),
+            ElevatedButton(
+              onPressed: () {
+                if (ctrl.text.isNotEmpty) {
+                  provider.renameGroup(group.groupId, ctrl.text.trim());
+                  Navigator.pop(ctx);
+                }
+              },
+              child: const Text('確定'),
+            ),
           ],
         ),
       ),

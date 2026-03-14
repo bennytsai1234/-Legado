@@ -4,8 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:legado_reader/core/models/api_response.dart';
 import 'package:legado_reader/core/models/book.dart';
 import 'package:legado_reader/core/models/book_source.dart';
-import 'package:legado_reader/core/models/replace_rule.dart';
-import 'package:legado_reader/core/models/rss_source.dart';
 import 'web_service_base.dart';
 import 'web_service_controllers.dart';
 import 'web_service_utils.dart';

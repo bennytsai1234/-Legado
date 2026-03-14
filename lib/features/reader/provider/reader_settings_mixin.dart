@@ -33,13 +33,18 @@ mixin ReaderSettingsMixin on ReaderProviderBase {
   Future<void> saveSetting(String k, dynamic v) async {
     final p = await SharedPreferences.getInstance();
     final fk = 'reader_$k';
-    if (v is double) await p.setDouble(fk, v);
-    else if (v is int) await p.setInt(fk, v);
+    if (v is double) {
+      await p.setDouble(fk, v);
+    } else if (v is int) await p.setInt(fk, v);
     else if (v is bool) await p.setBool(fk, v);
     else if (v is String) await p.setString(fk, v);
   }
 
   void setFontSize(double s) { fontSize = s; saveSetting('font_size', s); clearReaderCache(); (this as dynamic).doPaginate(); }
+  void setLineHeight(double v) { lineHeight = v; saveSetting('line_height', v); clearReaderCache(); (this as dynamic).doPaginate(); }
+  void setTextFullJustify(bool v) { textFullJustify = v; saveSetting('text_full_justify', v); clearReaderCache(); (this as dynamic).doPaginate(); }
+  void setTextIndent(int v) { textIndent = v; saveSetting('text_indent', v); clearReaderCache(); (this as dynamic).doPaginate(); }
+  void setPageTurnMode(int v) { pageTurnMode = v; saveSetting('page_turn_mode', v); notifyListeners(); }
   void setTheme(int i) { themeIndex = i; saveSetting('theme_index', i); clearReaderCache(); (this as dynamic).doPaginate(); }
   void setBrightness(double v) { brightness = v; saveSetting('brightness', v); notifyListeners(); }
   

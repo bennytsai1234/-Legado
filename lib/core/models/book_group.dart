@@ -9,6 +9,10 @@ class BookGroup {
   bool show;
   int bookSort;
 
+  int get id => groupId;
+  String get name => groupName;
+  set name(String v) => groupName = v;
+
   static const int idRoot = -100;
   static const int idAll = -1;
   static const int idLocal = -2;

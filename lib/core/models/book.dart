@@ -1,7 +1,5 @@
 import 'dart:convert';
 import 'book/book_base.dart';
-import 'book/book_extensions.dart';
-import 'book/book_logic.dart';
 import 'book/book_serialization.dart';
 
 export 'book/book_base.dart';

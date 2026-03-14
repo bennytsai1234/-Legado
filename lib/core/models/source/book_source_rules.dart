@@ -23,15 +23,23 @@ class BookInfoRule {
 
 class TocRule {
   String? init, chapterList, chapterName, chapterUrl, isVolume, isVip, isPay, updateTime, nextTocUrl, preUpdateJs;
+  String? get nextPage => nextTocUrl;
+  set nextPage(String? v) => nextTocUrl = v;
+
   TocRule({this.init, this.chapterList, this.chapterName, this.chapterUrl, this.isVolume, this.isVip, this.isPay, this.updateTime, this.nextTocUrl, this.preUpdateJs});
-  factory TocRule.fromJson(Map<String, dynamic> json) => TocRule(init: json['init'], chapterList: json['chapterList'], chapterName: json['chapterName'], chapterUrl: json['chapterUrl'], isVolume: json['isVolume'], isVip: json['isVip'], isPay: json['isPay'], updateTime: json['updateTime'], nextTocUrl: json['nextTocUrl'], preUpdateJs: json['preUpdateJs']);
+  factory TocRule.fromJson(Map<String, dynamic> json) => TocRule(init: json['init'], chapterList: json['chapterList'], chapterName: json['chapterName'], chapterUrl: json['chapterUrl'], isVolume: json['isVolume'], isVip: json['isVip'], isPay: json['isPay'], updateTime: json['updateTime'], nextTocUrl: json['nextTocUrl'] ?? json['nextPage'], preUpdateJs: json['preUpdateJs']);
   Map<String, dynamic> toJson() => {'init': init, 'chapterList': chapterList, 'chapterName': chapterName, 'chapterUrl': chapterUrl, 'isVolume': isVolume, 'isVip': isVip, 'isPay': isPay, 'updateTime': updateTime, 'nextTocUrl': nextTocUrl, 'preUpdateJs': preUpdateJs};
 }
 
 class ContentRule {
   String? init, content, nextContentUrl, webJs, sourceRegex, replaceRegex, imageStyle, imageDecode, payAction;
+  String? get nextPage => nextContentUrl;
+  set nextPage(String? v) => nextContentUrl = v;
+  String? get replace => replaceRegex;
+  set replace(String? v) => replaceRegex = v;
+
   ContentRule({this.init, this.content, this.nextContentUrl, this.webJs, this.sourceRegex, this.replaceRegex, this.imageStyle, this.imageDecode, this.payAction});
-  factory ContentRule.fromJson(Map<String, dynamic> json) => ContentRule(init: json['init'], content: json['content'], nextContentUrl: json['nextContentUrl'], webJs: json['webJs'], sourceRegex: json['sourceRegex'], replaceRegex: json['replaceRegex'], imageStyle: json['imageStyle'], imageDecode: json['imageDecode'], payAction: json['payAction']);
+  factory ContentRule.fromJson(Map<String, dynamic> json) => ContentRule(init: json['init'], content: json['content'], nextContentUrl: json['nextContentUrl'] ?? json['nextPage'], webJs: json['webJs'], sourceRegex: json['sourceRegex'], replaceRegex: json['replaceRegex'] ?? json['replace'], imageStyle: json['imageStyle'], imageDecode: json['imageDecode'], payAction: json['payAction']);
   Map<String, dynamic> toJson() => {'init': init, 'content': content, 'nextContentUrl': nextContentUrl, 'webJs': webJs, 'sourceRegex': sourceRegex, 'replaceRegex': replaceRegex, 'imageStyle': imageStyle, 'imageDecode': imageDecode, 'payAction': payAction};
 }
 

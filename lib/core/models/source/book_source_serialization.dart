@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'book_source_base.dart';
-import 'book_source_rules.dart';
 
 /// BookSource 的序列化與解析擴展
 extension BookSourceSerialization on BookSourceBase {

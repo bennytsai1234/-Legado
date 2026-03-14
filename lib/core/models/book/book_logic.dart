@@ -1,11 +1,10 @@
 import 'dart:convert';
 import 'book_base.dart';
-import 'book_serialization.dart';
 
 /// Book 業務邏輯擴展
 extension BookLogic on BookBase {
   void setVariable(String key, String value) {
-    final Map<String, String> map;
+    Map<String, String> map;
     if (variable != null && variable!.isNotEmpty) {
       try {
         final decoded = jsonDecode(variable!);

@@ -1,8 +1,6 @@
 import 'dart:convert';
-import 'package:flutter_js/flutter_js.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:fast_gbk/fast_gbk.dart';
-import 'package:intl/intl.dart';
 import '../js_extensions.dart';
 import 'package:legado_reader/core/services/chinese_utils.dart';
 

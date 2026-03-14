@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_js/flutter_js.dart';
 import 'package:flutter/foundation.dart';
-import 'js_extensions.dart' hide debugPrint;
+import 'js_extensions.dart';
 
 /// JsEngine - JavaScript 執行引擎
 /// 對應 Android: Rhino JS Engine (modules/rhino)

@@ -39,4 +39,15 @@ mixin BookshelfUpdateMixin on BookshelfProviderBase {
     (this as dynamic).loadBooks();
     AppEventBus().fire(AppEvent('bookshelfRefreshEnd'));
   }
+
+  Future<void> importBookshelfFromUrl(String url) async {
+    isLoading = true; notifyListeners();
+    try {
+      final response = await service.importBookshelf(url);
+      if (response.isNotEmpty) {
+        await bookDao.insertOrUpdateAll(response);
+        (this as dynamic).loadBooks();
+      }
+    } finally { isLoading = false; notifyListeners(); }
+  }
 }

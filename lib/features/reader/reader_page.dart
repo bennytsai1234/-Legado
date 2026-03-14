@@ -7,8 +7,6 @@ import 'engine/page_view_widget.dart';
 import 'package:legado_reader/core/models/book.dart';
 import 'package:legado_reader/features/settings/settings_page.dart';
 import 'package:legado_reader/features/replace_rule/replace_rule_page.dart';
-import 'widgets/reader_menu_top.dart';
-import 'widgets/reader_menu_bottom.dart';
 import 'widgets/reader_brightness_bar.dart';
 import 'widgets/reader_chapters_drawer.dart';
 import 'widgets/reader_settings_sheets.dart';
@@ -89,7 +87,9 @@ class _ReaderPageState extends State<ReaderPage> {
     final cs = TextStyle(fontSize: p.fontSize, height: p.lineHeight, color: p.currentTheme.textColor, letterSpacing: p.letterSpacing);
     return PageView.builder(controller: _pageCtrl, itemCount: (p.currentChapterIndex > 0 ? 1 : 0) + p.pages.length + (p.currentChapterIndex < p.chapters.length - 1 ? 1 : 0), onPageChanged: (i) {
       final h = p.currentChapterIndex > 0;
-      if (h && i == 0) p.prevChapter(); else if (i == (h ? 1 : 0) + p.pages.length) p.nextChapter(); else p.onPageChanged(i - (h ? 1 : 0));
+      if (h && i == 0) {
+        p.prevChapter();
+      } else if (i == (h ? 1 : 0) + p.pages.length) p.nextChapter(); else p.onPageChanged(i - (h ? 1 : 0));
     }, itemBuilder: (ctx, i) {
       final h = p.currentChapterIndex > 0;
       if (h && i == 0) return _virtual(p, "載入中...");

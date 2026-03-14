@@ -40,8 +40,9 @@ class SourceManagerMenus {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert),
       onSelected: (value) {
-        if (value == 'group_by_domain') provider.toggleGroupByDomain();
-        else if (value.startsWith('sort_')) provider.setSortMode(int.parse(value.substring(5)));
+        if (value == 'group_by_domain') {
+          provider.toggleGroupByDomain();
+        } else if (value.startsWith('sort_')) provider.setSortMode(int.parse(value.substring(5)));
         else if (value == 'check_all') provider.checkAllSources();
         else if (value == 'clear_invalid') onClearInvalid(provider);
       },

@@ -1,6 +1,8 @@
 import 'analyze_rule_base.dart';
 import 'analyze_rule_support.dart';
 import '../parsers/analyze_by_regex.dart';
+import '../parsers/analyze_by_css.dart';
+import '../parsers/css/analyze_by_css_core.dart';
 
 /// AnalyzeRule 的核心解析擴展
 extension AnalyzeRuleCore on AnalyzeRuleBase {

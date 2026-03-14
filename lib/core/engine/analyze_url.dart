@@ -1,7 +1,5 @@
 import 'analyze_url/analyze_url_base.dart';
 import 'analyze_url/analyze_url_parser.dart';
-import 'analyze_url/analyze_url_fetcher.dart';
-import 'analyze_url/analyze_url_utils.dart';
 
 export 'analyze_url/analyze_url_fetcher.dart';
 export 'analyze_url/analyze_url_utils.dart';

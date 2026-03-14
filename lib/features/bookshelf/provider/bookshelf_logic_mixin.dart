@@ -63,4 +63,31 @@ mixin BookshelfLogicMixin on BookshelfProviderBase {
     isBatchMode = false; selectedBookUrls.clear();
     (this as dynamic).loadBooks();
   }
+
+  Future<void> reorderGroups(int oldIndex, int newIndex) async {
+    final item = groups.removeAt(oldIndex);
+    groups.insert(newIndex, item);
+    await groupDao.updateOrder(groups);
+    notifyListeners();
+  }
+
+  Future<void> updateGroupVisibility(int groupId, bool visible) async {
+    final group = groups.cast<BookGroup?>().firstWhere((g) => g?.id == groupId, orElse: () => null);
+    if (group != null) { group.show = visible; await groupDao.update(group); notifyListeners(); }
+  }
+
+  Future<void> createGroup(String name) async {
+    await groupDao.insert(BookGroup(groupId: 0, groupName: name, order: groups.length));
+    await loadGroups();
+  }
+
+  Future<void> renameGroup(int id, String name) async {
+    final group = groups.cast<BookGroup?>().firstWhere((g) => g?.id == id, orElse: () => null);
+    if (group != null) { group.name = name; await groupDao.update(group); notifyListeners(); }
+  }
+
+  Future<void> deleteGroup(int id) async {
+    await groupDao.deleteById(id);
+    await loadGroups();
+  }
 }

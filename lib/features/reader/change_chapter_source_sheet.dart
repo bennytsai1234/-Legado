@@ -123,7 +123,7 @@ class _ChangeChapterSourceSheetState extends State<ChangeChapterSourceSheet> {
         if (mounted) {
           Navigator.pop(context); // Pop loading
           if (tempBook.type != widget.book.type) {
-            _showMigrationDialog(context, widget.book.migrateTo(tempBook, chapters));
+            _showMigrationDialog(context, widget.book.migrateTo(tempBook, chapters) as Book);
           } else {
             context.read<ReaderProvider>().replaceChapterSource(widget.chapterIndex, source, content);
             Navigator.pop(context); // Pop sheet

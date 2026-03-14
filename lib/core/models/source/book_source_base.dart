@@ -12,15 +12,19 @@ abstract class BookSourceBase implements BaseSource {
   bool enabled = true; // 是否啟用
   bool enabledExplore = true; // 啟用發現
   String? icon; // 書源圖標
+  String? get bookSourceIcon => icon;
+  set bookSourceIcon(String? v) => icon = v;
 
   @override String? jsLib;
   @override bool enabledCookieJar = true;
   @override String? concurrentRate;
   @override String? header;
-  @override String? loginUrl;
+  @override
+  String? loginUrl;
   @override String? loginUi;
-  @override String? loginCheckJs;
-  @override String? coverDecodeJs;
+  String? loginCheckJs;
+  String? coverDecodeJs;
+
 
   String? bookSourceComment; // 註釋
   String? variableComment; // 變量說明
@@ -37,6 +41,21 @@ abstract class BookSourceBase implements BaseSource {
   TocRule? ruleToc;
   ContentRule? ruleContent;
   ReviewRule? ruleReview;
+
+  // --- 規則別名補全 ---
+  SearchRule? get ruleSearchV2 => ruleSearch;
+  ExploreRule? get ruleExploreV2 => ruleExplore;
+  BookInfoRule? get ruleBookInfoV2 => ruleBookInfo;
+  TocRule? get ruleTocV2 => ruleToc;
+  ContentRule? get ruleContentV2 => ruleContent;
+
+  String? get ruleBookName => ruleSearch?.name;
+  String? get ruleBookAuthor => ruleSearch?.author;
+  String? get ruleBookKind => ruleSearch?.kind;
+  String? get ruleBookLastChapter => ruleSearch?.lastChapter;
+  String? get ruleBookCoverUrl => ruleSearch?.coverUrl;
+  String? get ruleBookIntro => ruleSearch?.intro;
+  String? get ruleBookUrl => ruleSearch?.bookUrl;
 
   @override String getTag() => bookSourceName;
   @override String getKey() => bookSourceUrl;

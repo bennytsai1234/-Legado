@@ -4,7 +4,6 @@ import '../parsers/analyze_by_css.dart';
 import '../parsers/analyze_by_json_path.dart';
 import '../parsers/analyze_by_xpath.dart';
 import '../js/js_engine.dart';
-import 'package:legado_reader/core/models/book_source.dart';
 import 'package:legado_reader/core/models/rule_data_interface.dart';
 
 // 導入同目錄下的其它部分
@@ -44,4 +43,6 @@ abstract class AnalyzeRuleBase {
 
   void put(String key, String? value) { ruleData?.putVariable(key, value); }
   String get(String key) { return ruleData?.getVariable(key) ?? ""; }
+
+  dynamic evalJS(String jsStr, dynamic result);
 }

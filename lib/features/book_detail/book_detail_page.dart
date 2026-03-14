@@ -29,7 +29,7 @@ class BookDetailPage extends StatelessWidget {
         builder: (context, provider, child) {
           final currentBook = provider.book;
           return Scaffold(
-            app_bar: _buildAppBar(context, provider),
+            appBar: _buildAppBar(context, provider),
             body: provider.isLoading ? const Center(child: CircularProgressIndicator()) : CustomScrollView(slivers: [
               SliverToBoxAdapter(child: BookInfoHeader(book: currentBook, provider: provider, showPhotoView: _showPhotoView, onEdit: () => _showEditBookInfoDialog(context, provider), showSourceOptions: _showSourceOptions, navigateToReader: _navigateToReader, showChangeSource: _showChangeSourceDialog)),
               SliverToBoxAdapter(child: BookInfoIntro(book: currentBook)),
@@ -59,8 +59,9 @@ class BookDetailPage extends StatelessWidget {
   }
 
   void _handleMenuSelection(BuildContext context, BookDetailProvider provider, String val) {
-    if (val == 'export') ExportBookService().exportToTxt(provider.book);
-    else if (val == 'clear_cache') { provider.clearCache(); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已清理快取'))); }
+    if (val == 'export') {
+      ExportBookService().exportToTxt(provider.book);
+    } else if (val == 'clear_cache') { provider.clearCache(); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已清理快取'))); }
     else if (val == 'preload') _showPreloadDialog(context, provider);
     else if (val == 'edit') _showEditBookInfoDialog(context, provider);
     else if (val == 'change_cover') _showChangeCoverSheet(context, provider);
@@ -95,9 +96,4 @@ class BookDetailPage extends StatelessWidget {
   }
 
   void _showChangeCoverSheet(BuildContext context, BookDetailProvider p) => showModalBottomSheet(context: context, isScrollControlled: true, builder: (ctx) => ChangeCoverSheet(bookName: p.book.name, author: p.book.author));
-}
-
-// 修正 appBar 欄位名稱
-extension on Scaffold {
-  set app_bar(PreferredSizeWidget? value) { /* Handle if necessary, normally passed in constructor */ }
 }

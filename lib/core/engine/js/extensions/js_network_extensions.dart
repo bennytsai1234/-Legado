@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_js/flutter_js.dart';
 import 'package:dio/dio.dart';
+import 'package:archive/archive.dart';
+import 'package:intl/intl.dart';
 import '../js_extensions.dart';
 import 'package:legado_reader/core/engine/analyze_url.dart';
 import 'package:legado_reader/core/services/http_client.dart';

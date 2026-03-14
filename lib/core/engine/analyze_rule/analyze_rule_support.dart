@@ -83,6 +83,27 @@ class SourceRule {
     }
   }
 
+  void makeUpRule(dynamic result, dynamic analyzer) {
+    if (!isDynamic) return;
+    final buffer = StringBuffer();
+    for (int i = 0; i < ruleType.length; i++) {
+      final type = ruleType[i];
+      final param = ruleParam[i];
+      if (type == defaultRuleType) {
+        buffer.write(param);
+      } else if (type == jsRuleType) {
+        buffer.write(analyzer.evalJS(param, result));
+      } else if (type == getRuleType) {
+        buffer.write(analyzer.get(param));
+      } else if (type == jsonPartRuleType) {
+        // Implementation for JSON part
+      } else {
+        // Handle regex groups
+      }
+    }
+    rule = buffer.toString();
+  }
+
   // 延遲載入解析器
   AnalyzeByXPath getAnalyzeByXPath(AnalyzeRuleBase analyzer, dynamic o) {
     if (o != analyzer.content) return AnalyzeByXPath(o);

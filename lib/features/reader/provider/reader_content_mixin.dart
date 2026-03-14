@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'reader_provider_base.dart';
 import 'reader_settings_mixin.dart';
+import 'package:legado_reader/features/reader/engine/text_page.dart';
 import 'package:legado_reader/features/reader/engine/chapter_provider.dart';
 import 'package:legado_reader/core/engine/reader/content_processor.dart' as engine;
 import 'package:legado_reader/shared/theme/app_theme.dart';
@@ -37,7 +38,7 @@ mixin ReaderContentMixin on ReaderProviderBase, ReaderSettingsMixin {
     isLoading = true; notifyListeners();
     try {
       final res = await fetchChapterData(i);
-      content = res.content; pages = res.pages;
+      content = res.content; pages = res.pages.cast<TextPage>();
       chapterCache[i] = pages; chapterContentCache[i] = content;
       currentChapterIndex = i;
       currentPageIndex = fromEnd ? (pages.length - 1).clamp(0, 999) : 0;
@@ -64,4 +65,25 @@ mixin ReaderContentMixin on ReaderProviderBase, ReaderSettingsMixin {
     // Placeholder for actual pagination to keep mixin clean
     return (content: c, pages: []); 
   }
+
+  void nextPage() {
+    if (currentPageIndex < pages.length - 1) {
+      currentPageIndex++; notifyListeners();
+      jumpPageController.add(currentPageIndex);
+    } else {
+      nextChapter();
+    }
+  }
+
+  void prevPage() {
+    if (currentPageIndex > 0) {
+      currentPageIndex--; notifyListeners();
+      jumpPageController.add(currentPageIndex);
+    } else {
+      prevChapter();
+    }
+  }
+
+  Future<void> nextChapter() async { if (currentChapterIndex < chapters.length - 1) await loadChapter(currentChapterIndex + 1); }
+  Future<void> prevChapter() async { if (currentChapterIndex > 0) await loadChapter(currentChapterIndex - 1, fromEnd: true); }
 }

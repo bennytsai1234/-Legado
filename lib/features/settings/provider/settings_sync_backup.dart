@@ -18,7 +18,7 @@ extension SettingsSyncBackup on SettingsProviderBase {
     await save(PreferKey.webDavAccount, user);
     await save(PreferKey.webDavPassword, password);
     await save('webdav_enabled', provider.webdavEnabled);
-    notifyListeners();
+    update();
   }
 
   Future<String?> backupDatabase() async {

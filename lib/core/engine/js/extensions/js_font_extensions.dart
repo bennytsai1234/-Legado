@@ -1,7 +1,5 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_js/flutter_js.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import '../js_extensions_base.dart';

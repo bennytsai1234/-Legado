@@ -31,8 +31,8 @@ class _DebugPageState extends State<DebugPage> {
   }
 
   void _initLogs() {
-    AnalyzeRule.debugLogController ??= StreamController<String>.broadcast();
-    _logSub = AnalyzeRule.debugLogController!.stream.listen((log) {
+    AnalyzeRuleBase.debugLogController ??= StreamController<String>.broadcast();
+    _logSub = AnalyzeRuleBase.debugLogController!.stream.listen((log) {
       if (mounted) {
         setState(() {
           _logs.add(log);
@@ -52,7 +52,7 @@ class _DebugPageState extends State<DebugPage> {
 
     final service = BookSourceService();
     final source = widget.source;
-    AnalyzeRule.debugLogController ??= StreamController<String>.broadcast();
+    AnalyzeRuleBase.debugLogController ??= StreamController<String>.broadcast();
 
     try {
       if (key.startsWith('http')) {

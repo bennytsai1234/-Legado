@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:sqflite/sqflite.dart';
 import 'package:legado_reader/core/models/book.dart';
 import 'package:legado_reader/core/database/app_database.dart';
+import 'package:legado_reader/core/constant/book_type.dart';
 
 /// BookDao - 書籍資料存取對象
 /// 對應 Android: data/dao/BookDao.kt
@@ -81,6 +82,16 @@ class BookDao {
       book.toJson(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    _notify();
+  }
+
+  Future<void> insertOrUpdateAll(List<Book> books) async {
+    final db = await _db;
+    final batch = db.batch();
+    for (var book in books) {
+      batch.insert(tableName, book.toJson(), conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    await batch.commit(noResult: true);
     _notify();
   }
 

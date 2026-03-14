@@ -9,6 +9,7 @@ import 'package:legado_reader/core/engine/web_book/book_info_parser.dart';
 import 'package:legado_reader/core/engine/web_book/chapter_list_parser.dart';
 import 'package:legado_reader/core/engine/web_book/content_parser.dart';
 import 'package:legado_reader/core/engine/analyze_rule.dart';
+import 'package:legado_reader/core/services/http_client.dart';
 
 
 /// BookSourceService - 書源服務 (對標 Android model/webBook/WebBook.kt)
@@ -120,5 +121,15 @@ class BookSourceService {
       }
     }
     return results;
+  }
+
+  Future<List<Book>> importBookshelf(String url) async {
+    try {
+      final response = await HttpClient().client.get(url);
+      if (response.data is List) {
+        return (response.data as List).map((e) => Book.fromJson(e)).toList();
+      }
+    } catch (_) {}
+    return [];
   }
 }

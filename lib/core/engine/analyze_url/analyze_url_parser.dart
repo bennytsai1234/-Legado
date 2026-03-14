@@ -68,7 +68,11 @@ extension AnalyzeUrlParser on AnalyzeUrlBase {
         if (options.containsKey('method')) method = options['method'].toString().toUpperCase();
         if (options.containsKey('headers')) {
           (options['headers'] as Map<String, dynamic>).forEach((k, v) {
-            if (k == 'proxy') proxy = v.toString(); else headerMap[k] = v.toString();
+            if (k == 'proxy') {
+              proxy = v.toString();
+            } else {
+              headerMap[k] = v.toString();
+            }
           });
         }
         if (options.containsKey('body')) {

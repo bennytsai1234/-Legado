@@ -1,4 +1,4 @@
-import 'package:legado_reader/core/constant/book_type.dart';
+import 'package:legado_reader/core/constant/source_type.dart';
 import 'package:legado_reader/core/services/source_verification_service.dart';
 
 class BrowserParams {
