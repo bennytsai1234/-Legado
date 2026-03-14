@@ -112,6 +112,7 @@ flutter:
     - assets/
     - assets/default_sources/
     - assets/fonts/
+    - assets/web/
 
   # fonts:
   #   - family: CustomFont

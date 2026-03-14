@@ -2,10 +2,36 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'app_log_service.dart';
 
+import 'package:fast_gbk/fast_gbk.dart';
+
 /// EncodingDetect - 簡易編碼偵測工具
 /// 針對中文書源優化，支援 UTF-8 (含 BOM) 與 GBK 識別
 class EncodingDetect {
-  /// 針對 HTML 內容偵測編碼 (對標 EncodingDetect.kt)
+  /// 執行安全解碼，避免崩潰 (對標 Android EncodingDetect.getEncode)
+  static String decode(Uint8List bytes) {
+    if (bytes.isEmpty) return "";
+    
+    final charset = getEncode(bytes).toUpperCase();
+    
+    try {
+      if (charset == "UTF-8") {
+        return utf8.decode(bytes, allowMalformed: true);
+      } else if (charset == "GBK" || charset == "GB2312" || charset == "GB18030") {
+        // 使用 fast_gbk 進行寬鬆解碼 (allowMalformed 目前在 fast_gbk 較難直接支援，
+        // 但我們可以透過 try-catch 回退到 utf8 malformed)
+        try {
+          return gbk.decode(bytes);
+        } catch (_) {
+          return utf8.decode(bytes, allowMalformed: true);
+        }
+      }
+      return utf8.decode(bytes, allowMalformed: true);
+    } catch (e) {
+      return utf8.decode(bytes, allowMalformed: true);
+    }
+  }
+
+  /// 針對 HTML 內容偵測編碼
   static String getHtmlEncode(Uint8List bytes) {
     try {
       final content = utf8.decode(bytes.sublist(0, bytes.length > 8000 ? 8000 : bytes.length), allowMalformed: true);

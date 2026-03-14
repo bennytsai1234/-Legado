@@ -367,3 +367,56 @@
     - **Android**: 針對列表中的第一項 (index 0) 輸出極其詳盡的解析日誌 (┌獲取書名 -> └結果)。
     - **iOS/Flutter**: 目前 Debug 日誌僅輸出「解析成功」與「書籍總數」，缺乏欄位層級的逐步解析追蹤。
 - **對位總結**: 解析鏈路對位率 **80%**。格式化細節與 Debug 深度是核心差異。
+
+### 📍 ui/book/read/ReadMenu (閱讀選單交互對位)
+
+#### 1. `ReadMenu.kt` vs lib/features/reader/reader_page.dart
+- **沉浸式選單 (Immersive Menu)**:
+    - **Android**: 具備 `immersiveMenu` 邏輯，選單的背景色與文字色會自動跟隨當前頁面的閱讀主題進行動態調整。
+    - **iOS/Flutter**: 選單目前使用固定的 `Colors.black87`，缺乏隨主題變色的「變色龍」效果。
+- **進度條行為控制**:
+    - **Android**: 支援透過 `progressBarBehavior` 切換進度條是控制「單章內翻頁」還是「全書章節跳轉」。
+    - **iOS/Flutter**: 目前進度條固定為「章節切換」，缺乏單章內精確頁面跳轉的模式切換。
+- **亮度調節細節**:
+    - **Android**: 支援「系統自動亮度」與「App 獨立亮度」切換，並具備左/右側位置調整。
+    - **iOS/Flutter**: 已補齊基礎亮度調節，但缺乏「自動亮度」開關的 UI 對位。
+- **書源快捷選單**:
+    - **Android**: 點擊書源標籤可彈出 `sourceMenu`，直接進行登入、支付、編輯或禁用書源的操作。
+    - **iOS/Flutter**: 已補齊來源標籤交互，功能對位率 **80%**。
+- **動畫與 UI 協同**:
+    - **Android**: 使用 `SystemUiMode.immersiveSticky` 並在選單顯示時動態呼叫 `upSystemUiVisibility`。
+    - **iOS/Flutter**: 已補齊 `SystemChrome` 聯動邏輯，功能對位率 **100%**。
+
+### 📍 ui/book/read/page (渲染與交互核心)
+
+#### 1. `ReadView.kt` vs lib/features/reader/engine/page_view_widget.dart
+- **翻頁引擎架構**:
+    - **Android**: 使用 `PageDelegate` 抽象層，動態切換仿真、覆蓋、滾動等多種動畫實作類別。
+    - **iOS/Flutter**: 透過 `ReaderProvider` 的 `pageTurnMode` 在 `ReaderPage` 層級切換組件 (如 `PageView` 或 `SimulationPageView`)。
+- **精準手勢監控**:
+    - **Android**: 實作了複雜的 `onTouchEvent`，區分單擊、雙擊、長按與滑動，並支援 `pageSlop` (滑動閾值) 自定義。
+    - **iOS/Flutter**: 採用 Flutter 原生 `GestureDetector`。目前已補齊九宮格點擊對位，但在「滑動靈敏度」調節上缺乏對位。
+- **文字選取深度**:
+    - **Android**: 透過 `BreakIterator` 結合座標計算，實作了精確的「按詞選取」與「自動擴展至段落」邏輯。
+    - **iOS/Flutter**: 使用 Flutter 原生 `SelectionArea`。選取精確度由框架保證，但缺乏 Android 那種「自定義邊界擴展」的細節控制。
+- **背景與電量連動**:
+    - **Android**: 定期接收系統廣播並呼叫 `upBattery`、`upTime` 更新頁面頁眉頁腳。
+    - **iOS/Flutter**: 目前時間透過 `Timer` 定時刷新，電量顯示在 iOS 端需要額外的 Platform Channel 支援 (目前為模擬或缺失)。
+- **對位總結**: 核心渲染與點擊區域對位率 **95%**。動畫平滑度與選取行為微調是主要體驗差異點。
+
+### 📍 help/js (JS 引擎擴充對位)
+
+#### 1. `JsExtensions.kt` vs lib/core/engine/js/js_extensions.dart
+- **網路請求能力**:
+    - **Android**: 支援 `ajax` (回傳 Body)、`connect` (回傳對象)、`ajaxAll` (併發請求)。
+    - **iOS/Flutter**: 已補齊核心 `ajax`，但缺乏針對大規模併發請求 `ajaxAll` 的高效調度對位。
+- **檔案與壓縮支援**:
+    - **Android**: 整合了 `ZipInputStream` 與 `LibArchiveUtils`，支援 JS 直接解壓 zip/rar/7z 檔案。
+    - **iOS/Flutter**: 目前 JS 環境缺乏本地檔案系統的深度存取與解壓 API，這在處理「壓縮包書源」時會出現缺口。
+- **高級字體反查 (Font Decryption)**:
+    - **Android**: 提供 `queryTTF` 與 `replaceFont`，能解析字體檔案輪廓並進行 Unicode 映射，破解字體加密。
+    - **iOS/Flutter**: 目前完全缺失此模組。針對字體加密型網站，Flutter 端暫無解析與替換能力。
+- **背景渲染 (WebView)**:
+    - **Android**: 提供同步的 `webView()` 方法，透過背景 WebView 執行 JS 後獲取源代碼。
+    - **iOS/Flutter**: 已實作 `backstage_webview.dart`，但 JS 引擎與 UI WebView 的非同步橋接效率低於 Android 原生。
+- **對位總結**: 基礎工具對位率 **75%**。壓縮包解壓與字體解密是高階功能的重大缺口。
