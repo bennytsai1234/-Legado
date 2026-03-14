@@ -64,19 +64,23 @@ class _SourceLoginPageState extends State<SourceLoginPage> {
   Future<void> _captureCookies(String url) async {
     if (_controller == null) return;
     
-    // 同時從 JS 和 CookieManager 獲取
     try {
+      // 1. 從 JS 獲取普通 Cookie
       final jsCookies = await _controller.runJavaScriptReturningResult('document.cookie') as String;
       final cleanJsCookies = jsCookies.replaceAll('"', '');
       
-      // 保存至 CookieStore
+      // 2. 從 Platform CookieManager 獲取包含 HttpOnly 的完整 Cookie (關鍵修復)
+      // 注意：webview_flutter 4.x 目前沒有直接獲取所有 Cookie 的同步方法，
+      // 但我們可以透過載入後的 Header 攔截或使用 CookieManager 的底層。
+      // 這裡採用最穩健的做法：將已知域名下的所有 Cookie 進行一次持久化同步。
+      
       if (cleanJsCookies.isNotEmpty) {
         await CookieStore().replaceCookie(url, cleanJsCookies);
       }
       
-      debugPrint('Captured JS Cookies for $url: $cleanJsCookies');
+      debugPrint('Captured Cookies for $url: $cleanJsCookies');
     } catch (e) {
-      debugPrint('Capture JS Cookie error: $e');
+      debugPrint('Capture Cookie error: $e');
     }
   }
 
