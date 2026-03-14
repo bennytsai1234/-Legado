@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/book_source.dart';
 import 'source_debug_provider.dart';
@@ -20,11 +21,6 @@ class SourceDebugPage extends StatefulWidget {
 class _SourceDebugPageState extends State<SourceDebugPage> {
   final ScrollController _scrollController = ScrollController();
 
-  @override
-  void initState() {
-    super.initState();
-  }
-
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
@@ -35,18 +31,22 @@ class _SourceDebugPageState extends State<SourceDebugPage> {
     }
   }
 
+  void _copyFullLog(List<dynamic> logs) {
+    final fullLog = logs.map((l) => l.toString()).join('\n');
+    Clipboard.setData(ClipboardData(text: fullLog));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已複製完整日誌至剪貼簿')));
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) {
         final provider = SourceDebugProvider(widget.source, widget.debugKey);
-        // 在下一幀啟動調試，避免 build 衝突
         WidgetsBinding.instance.addPostFrameCallback((_) => provider.startDebug());
         return provider;
       },
       child: Consumer<SourceDebugProvider>(
         builder: (context, provider, child) {
-          // 當日誌更新時自動滾動到底部
           WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
           return Scaffold(
@@ -65,6 +65,11 @@ class _SourceDebugPageState extends State<SourceDebugPage> {
                     ),
                   ),
                 IconButton(
+                  icon: const Icon(Icons.copy),
+                  onPressed: () => _copyFullLog(provider.logs),
+                  tooltip: '複製全量日誌',
+                ),
+                IconButton(
                   icon: const Icon(Icons.refresh),
                   onPressed: provider.isFinished ? () => provider.startDebug() : null,
                 ),
@@ -72,6 +77,7 @@ class _SourceDebugPageState extends State<SourceDebugPage> {
             ),
             body: Container(
               color: Colors.black87,
+              width: double.infinity,
               child: ListView.builder(
                 controller: _scrollController,
                 padding: const EdgeInsets.all(8),
@@ -90,16 +96,16 @@ class _SourceDebugPageState extends State<SourceDebugPage> {
 
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: RichText(
-                      text: TextSpan(
+                    child: SelectableText.rich(
+                      TextSpan(
                         children: [
                           TextSpan(
                             text: '${log.formattedTime} ',
-                            style: const TextStyle(color: Colors.grey, fontSize: 12, fontFamily: 'monospace'),
+                            style: const TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace'),
                           ),
                           TextSpan(
                             text: log.message,
-                            style: TextStyle(color: textColor, fontSize: 13, fontFamily: 'monospace'),
+                            style: TextStyle(color: textColor, fontSize: 12, fontFamily: 'monospace'),
                           ),
                         ],
                       ),
