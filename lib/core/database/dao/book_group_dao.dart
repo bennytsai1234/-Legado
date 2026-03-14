@@ -147,6 +147,15 @@ class BookGroupDao {
     );
   }
 
+  Future<void> updateOrder(List<BookGroup> list) async {
+    final db = await AppDatabase.database;
+    final batch = db.batch();
+    for (int i = 0; i < list.length; i++) {
+      batch.update(tableName, {'order': i}, where: 'groupId = ?', whereArgs: [list[i].groupId]);
+    }
+    await batch.commit(noResult: true);
+  }
+
   Future<void> delete(BookGroup bookGroup) async => deleteById(bookGroup.groupId);
 
   Future<void> deleteById(int id) async {

@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'bookshelf_provider.dart';
-import '../book_detail/book_detail_page.dart';
-import '../local_book/smart_scan_page.dart';
-import '../local_book/file_picker_page.dart';
-import '../local_book/local_book_provider.dart';
-import 'group_manage_page.dart';
-import '../../core/models/book.dart';
-import '../../core/models/search_book.dart';
-import '../../core/widgets/book_cover_widget.dart';
+import 'package:legado_reader/features/bookshelf/bookshelf_provider.dart';
+import 'package:legado_reader/features/book_detail/book_detail_page.dart';
+import 'package:legado_reader/features/local_book/smart_scan_page.dart';
+import 'package:legado_reader/features/bookshelf/group_manage_page.dart';
+import 'package:legado_reader/core/models/book.dart';
+import 'package:legado_reader/features/bookshelf/widgets/bookshelf_grid_item.dart';
+import 'package:legado_reader/features/bookshelf/widgets/bookshelf_list_item.dart';
+import 'package:legado_reader/features/local_book/local_book_provider.dart';
 
 class BookshelfPage extends StatefulWidget {
   const BookshelfPage({super.key});
@@ -19,8 +18,6 @@ class BookshelfPage extends StatefulWidget {
 
 class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProviderStateMixin {
   final Map<String, GlobalKey> _itemKeys = {};
-  String? _dragStartUrl;
-  Set<String> _initialSelected = {};
   
   bool _isSearching = false;
   final TextEditingController _searchCtrl = TextEditingController();
@@ -30,49 +27,6 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
-  }
-
-  void _handleDragUpdate(Offset localPosition, List<Book> groupBooks, BookshelfProvider provider) {
-    if (!provider.isBatchMode) return;
-
-    String? hoveredUrl;
-    for (var book in groupBooks) {
-      final key = _itemKeys[book.bookUrl];
-      if (key == null || key.currentContext == null) continue;
-
-      final box = key.currentContext!.findRenderObject() as RenderBox;
-      final size = box.size;
-      
-      // 使用 HitTest 邏輯判斷手指是否在該 Item 範圍內
-      final globalPos = (context.findRenderObject() as RenderBox).localToGlobal(localPosition);
-      final localInBox = box.globalToLocal(globalPos);
-      if (localInBox.dx >= 0 && localInBox.dx <= size.width && localInBox.dy >= 0 && localInBox.dy <= size.height) {
-        hoveredUrl = book.bookUrl;
-        break;
-      }
-    }
-
-    if (hoveredUrl != null && _dragStartUrl != null) {
-      final startIndex = groupBooks.indexWhere((b) => b.bookUrl == _dragStartUrl);
-      final currentIndex = groupBooks.indexWhere((b) => b.bookUrl == hoveredUrl);
-      
-      if (startIndex != -1 && currentIndex != -1) {
-        final start = startIndex < currentIndex ? startIndex : currentIndex;
-        final end = startIndex < currentIndex ? currentIndex : startIndex;
-        
-        final bool shouldSelect = !_initialSelected.contains(_dragStartUrl);
-        
-        for (int i = 0; i < groupBooks.length; i++) {
-          final url = groupBooks[i].bookUrl;
-          if (i >= start && i <= end) {
-            provider.setSelected(url, shouldSelect);
-          } else {
-            // 恢復至拖拽前的狀態
-            provider.setSelected(url, _initialSelected.contains(url));
-          }
-        }
-      }
-    }
   }
 
   @override
@@ -116,149 +70,124 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
               bottom: provider.groups.isEmpty ? null : TabBar(
                 isScrollable: true,
                 tabs: provider.groups.map((g) => Tab(text: g.groupName)).toList(),
-                onTap: (index) {
-                  provider.setGroup(provider.groups[index].groupId);
-                },
               ),
             ),
-            body: Column(
-              children: [
-                if (provider.isBatchMode) _buildBatchToolbar(provider),
-                Expanded(
-                  child: provider.groups.isEmpty 
-                    ? const Center(child: CircularProgressIndicator())
+            body: provider.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : provider.groups.isEmpty
+                    ? const Center(child: Text('書架空空如也，去發現看看吧'))
                     : TabBarView(
                         children: provider.groups.map((group) {
                           final groupBooks = provider.books.where((b) {
-                            // 1. 分組過濾
-                            bool matchGroup = true;
-                            if (group.groupId == -1) {
-                              matchGroup = true;
-                            } else if (group.groupId == 0) {
-                              matchGroup = b.group == 0;
-                            } else {
-                              matchGroup = b.group == group.groupId;
-                            }
-
+                            bool matchGroup = (group.groupId == -1) || 
+                                            (group.groupId == 0 ? b.group == 0 : b.group == group.groupId);
                             if (!matchGroup) return false;
-
-                            // 2. 搜尋過濾
                             if (_searchQuery.isNotEmpty) {
                               final q = _searchQuery.toLowerCase();
-                              return b.name.toLowerCase().contains(q) || 
-                                     b.author.toLowerCase().contains(q);
+                              return b.name.toLowerCase().contains(q) || b.author.toLowerCase().contains(q);
                             }
-
                             return true;
                           }).toList();
 
-                          if (groupBooks.isEmpty) {
-                            return const Center(child: Text('書架空空如也，去搜書吧'));
-                          }
-
                           return RefreshIndicator(
-                            onRefresh: () => provider.refreshBookshelf(),
-                            child: GestureDetector(
-                              onPanStart: (details) {
-                                if (provider.isBatchMode) {
-                                  _initialSelected = Set.from(provider.selectedBookUrls);
-                                  // 這裡簡單處理：透過觸發位置找 startUrl 邏輯較複雜，
-                                  // 我們在 GridItem/ListItem 的 LongPress 中已經開啟了 BatchMode。
-                                }
-                              },
-                              onPanUpdate: (details) => _handleDragUpdate(details.localPosition, groupBooks, provider),
-                              child: provider.isGridLayout
-                                  ? _buildGridView(provider, groupBooks)
-                                  : _buildListView(provider, groupBooks),
-                            ),
+                            onRefresh: provider.refreshBookshelf,
+                            child: provider.isGridView 
+                                ? _buildGridView(provider, groupBooks) 
+                                : _buildListView(provider, groupBooks),
                           );
                         }).toList(),
                       ),
-                ),
-              ],
-            ),
+            bottomNavigationBar: provider.isBatchMode ? _buildBatchToolbar(context, provider) : null,
           ),
         );
       },
     );
   }
 
+  Widget _buildGridView(BookshelfProvider provider, List<Book> books) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(12),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 0.65,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: books.length,
+      itemBuilder: (context, index) {
+        final book = books[index];
+        final key = _itemKeys.putIfAbsent(book.bookUrl, () => GlobalKey());
+        return BookshelfGridItem(
+          key: key,
+          book: book,
+          isBatchMode: provider.isBatchMode,
+          isSelected: provider.selectedBookUrls.contains(book.bookUrl),
+          showLastUpdate: provider.showLastUpdate,
+          onTap: () => _onBookTap(context, provider, book),
+          onLongPress: () => provider.toggleBatchMode(initialSelectedUrl: book.bookUrl),
+        );
+      },
+    );
+  }
+
+  Widget _buildListView(BookshelfProvider provider, List<Book> books) {
+    return ListView.separated(
+      itemCount: books.length,
+      separatorBuilder: (context, index) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        final book = books[index];
+        return BookshelfListItem(
+          book: book,
+          isBatchMode: provider.isBatchMode,
+          isSelected: provider.selectedBookUrls.contains(book.bookUrl),
+          onTap: () => _onBookTap(context, provider, book),
+          onLongPress: () => provider.toggleBatchMode(initialSelectedUrl: book.bookUrl),
+        );
+      },
+    );
+  }
+
+  void _onBookTap(BuildContext context, BookshelfProvider provider, Book book) {
+    if (provider.isBatchMode) {
+      provider.toggleSelect(book.bookUrl);
+    } else {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => BookDetailPage(book: book)));
+    }
+  }
+
+  Widget _buildBatchToolbar(BuildContext context, BookshelfProvider provider) {
+    return BottomAppBar(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          IconButton(icon: const Icon(Icons.group_add_outlined), onPressed: () => _showMoveGroupDialog(context, provider)),
+          IconButton(icon: const Icon(Icons.delete_outline), onPressed: () => provider.deleteSelected()),
+          IconButton(icon: const Icon(Icons.done_all), onPressed: provider.selectAll),
+          IconButton(icon: const Icon(Icons.close), onPressed: provider.toggleBatchMode),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMoreMenu(BuildContext context, BookshelfProvider provider) {
     return PopupMenuButton<String>(
-      icon: const Icon(Icons.more_vert),
-      onSelected: (value) async {
+      onSelected: (value) {
         switch (value) {
-          case 'import_local':
-            provider.importLocalBook();
-            break;
-          case 'smart_scan':
+          case 'grid': provider.toggleViewMode(); break;
+          case 'manage_group': Navigator.push(context, MaterialPageRoute(builder: (_) => const GroupManagePage())); break;
+          case 'smart_scan': 
             Navigator.push(context, MaterialPageRoute(builder: (context) => ChangeNotifierProvider(
               create: (_) => LocalBookProvider(),
               child: const SmartScanPage(),
             )));
             break;
-          case 'file_picker':
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const FilePickerPage()));
-            break;
-          case 'import_url':
-            _showImportUrlDialog(context, provider);
-            break;
-          case 'export':
-            provider.exportBookshelf();
-            break;
-          case 'layout_config':
-            _showLayoutConfigDialog(context, provider);
-            break;
-          case 'manage_groups':
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const GroupManagePage()));
-            break;
-          case 'toggle_layout':
-            provider.toggleLayout();
-            break;
         }
       },
       itemBuilder: (context) => [
-        PopupMenuItem(
-          value: 'toggle_layout', 
-          child: Row(children: [
-            Icon(provider.isGridLayout ? Icons.list : Icons.grid_view, size: 20),
-            const SizedBox(width: 10),
-            Text(provider.isGridLayout ? '切換列表' : '切換網格')
-          ])
-        ),
-        const PopupMenuDivider(),
-        const PopupMenuItem(value: 'import_local', child: Text('匯入本機書籍')),
-        const PopupMenuItem(value: 'smart_scan', child: Text('智慧掃描目錄')),
-        const PopupMenuItem(value: 'file_picker', child: Text('手動瀏覽檔案')),
-        const PopupMenuItem(value: 'import_url', child: Text('從 URL 匯入')),
-        const PopupMenuItem(value: 'export', child: Text('導出書架 (JSON)')),
-        const PopupMenuDivider(),
-        const PopupMenuItem(value: 'manage_groups', child: Text('管理分組')),
-        const PopupMenuItem(value: 'layout_config', child: Text('版面設定')),
+        PopupMenuItem(value: 'grid', child: Text(provider.isGridView ? '列表模式' : '網格模式')),
+        const PopupMenuItem(value: 'manage_group', child: Text('分組管理')),
+        const PopupMenuItem(value: 'smart_scan', child: Text('智能掃描')),
       ],
-    );
-  }
-
-  Widget _buildBatchToolbar(BookshelfProvider provider) {
-    return Container(
-      color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text('已選擇 ${provider.selectedBookUrls.length} 本'),
-          Row(
-            children: [
-              TextButton(onPressed: provider.clearSelected, child: const Text('取消')),
-              TextButton(onPressed: () => _showMoveGroupDialog(context, provider), child: const Text('移動')),
-              TextButton(
-                onPressed: provider.deleteSelected, 
-                child: const Text('刪除', style: TextStyle(color: Colors.red))
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 
@@ -274,7 +203,7 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
             itemCount: provider.groups.length,
             itemBuilder: (context, index) {
               final group = provider.groups[index];
-              if (group.groupId == -1) return const SizedBox.shrink(); // 跳過 '全部'
+              if (group.groupId == -1) return const SizedBox.shrink();
               return ListTile(
                 title: Text(group.groupName),
                 onTap: () {
@@ -285,174 +214,7 @@ class _BookshelfPageState extends State<BookshelfPage> with SingleTickerProvider
             },
           ),
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGridView(BookshelfProvider provider, List<Book> books) {
-    return GridView.builder(
-      padding: const EdgeInsets.all(12),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 0.65,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 16,
-      ),
-      itemCount: books.length,
-      itemBuilder: (context, index) => _buildGridItem(provider, books[index]),
-    );
-  }
-
-  Widget _buildGridItem(BookshelfProvider provider, Book book) {
-    final isSelected = provider.selectedBookUrls.contains(book.bookUrl);
-    _itemKeys.putIfAbsent(book.bookUrl, () => GlobalKey());
-    
-    return GestureDetector(
-      key: _itemKeys[book.bookUrl],
-      onLongPress: () => provider.toggleBatchMode(book.bookUrl),
-      onTap: () {
-        if (provider.isBatchMode) {
-          provider.toggleSelect(book.bookUrl);
-        } else {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => BookDetailPage(searchBook: AggregatedSearchBook(book: SearchBook(bookUrl: book.bookUrl, name: book.name, author: book.author, coverUrl: book.coverUrl, intro: book.intro, origin: book.origin, originName: book.originName, type: book.type), sources: [book.originName]))));
-        }
-      },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey.withValues(alpha: 0.1),
-                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2))],
-                    ),
-                    child: BookCoverWidget(
-                      coverUrl: book.coverUrl,
-                      bookName: book.name,
-                      author: book.author,
-                      width: double.infinity,
-                      height: double.infinity,
-                    ),
-                  ),
-                ),
-                if (provider.isBatchMode)
-                  Positioned(
-                    right: 4, top: 4,
-                    child: Icon(
-                      isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-                      color: isSelected ? Colors.blue : Colors.white70,
-                    ),
-                  ),
-                if (book.lastCheckCount > 0 && !provider.isBatchMode && provider.showUnread)
-                  Positioned(
-                    right: 0, top: 0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                      decoration: const BoxDecoration(color: Colors.red, borderRadius: BorderRadius.only(bottomLeft: Radius.circular(4))),
-                      child: Text('${book.lastCheckCount}', style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            book.name,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildListView(BookshelfProvider provider, List<Book> books) {
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: books.length,
-      separatorBuilder: (context, index) => const Divider(height: 1, indent: 80),
-      itemBuilder: (context, index) => _buildListItem(provider, books[index]),
-    );
-  }
-
-  Widget _buildListItem(BookshelfProvider provider, Book book) {
-    final isSelected = provider.selectedBookUrls.contains(book.bookUrl);
-    _itemKeys.putIfAbsent(book.bookUrl, () => GlobalKey());
-
-    return ListTile(
-      key: _itemKeys[book.bookUrl],
-      leading: BookCoverWidget(
-        coverUrl: book.coverUrl,
-        bookName: book.name,
-        author: book.author,
-        width: 50,
-        height: 70,
-        borderRadius: BorderRadius.circular(3),
-      ),
-      title: Text(book.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold)),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('${book.author} · ${book.originName}', style: const TextStyle(fontSize: 12)),
-          Text(book.latestChapterTitle ?? '暫無目錄', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-        ],
-      ),
-      trailing: provider.isBatchMode 
-          ? Icon(isSelected ? Icons.check_circle : Icons.radio_button_unchecked, color: isSelected ? Colors.blue : null)
-          : (book.lastCheckCount > 0 && provider.showUnread 
-              ? Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(10)),
-                  child: Text('${book.lastCheckCount}', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                ) 
-              : null),
-      onTap: () {
-        if (provider.isBatchMode) {
-          provider.toggleSelect(book.bookUrl);
-        } else {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => BookDetailPage(searchBook: AggregatedSearchBook(book: SearchBook(bookUrl: book.bookUrl, name: book.name, author: book.author, coverUrl: book.coverUrl, intro: book.intro, origin: book.origin, originName: book.originName, type: book.type), sources: [book.originName]))));
-        }
-      },
-      onLongPress: () => provider.toggleBatchMode(book.bookUrl),
-    );
-  }
-
-  void _showImportUrlDialog(BuildContext context, BookshelfProvider provider) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('從 URL 匯入'),
-        content: TextField(controller: controller, decoration: const InputDecoration(hintText: '輸入 JSON 檔案 URL'), maxLines: null),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
-          TextButton(onPressed: () { if (controller.text.isNotEmpty) provider.importBookshelfFromUrl(controller.text); Navigator.pop(context); }, child: const Text('確定')),
-        ],
-      ),
-    );
-  }
-
-  void _showLayoutConfigDialog(BuildContext context, BookshelfProvider provider) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('版面設定'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            StatefulBuilder(builder: (context, setState) => SwitchListTile(title: const Text('顯示未讀標記'), value: provider.showUnread, onChanged: (val) { provider.toggleShowUnread(); setState(() {}); })),
-            StatefulBuilder(builder: (context, setState) => SwitchListTile(title: const Text('顯示最後更新時間'), value: provider.showLastUpdate, onChanged: (val) { provider.toggleShowLastUpdate(); setState(() {}); })),
-          ],
-        ),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('關閉'))],
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消'))],
       ),
     );
   }

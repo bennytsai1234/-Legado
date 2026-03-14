@@ -1,29 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'book_detail_provider.dart';
-import 'change_cover_sheet.dart';
-import '../../core/models/search_book.dart';
-import '../../core/models/book.dart';
+import 'package:legado_reader/features/book_detail/book_detail_provider.dart';
+import 'package:legado_reader/features/book_detail/change_cover_sheet.dart';
+import 'package:legado_reader/core/models/search_book.dart';
+import 'package:legado_reader/core/models/book.dart';
 
-import '../source_manager/source_editor_page.dart';
-import '../source_manager/source_debug_page.dart';
-import '../reader/reader_page.dart';
-import '../../core/database/dao/book_source_dao.dart';
-import '../../core/services/export_book_service.dart';
+import 'package:legado_reader/features/source_manager/source_editor_page.dart';
+import 'package:legado_reader/features/source_manager/source_debug_page.dart';
+import 'package:legado_reader/features/reader/reader_page.dart';
+import 'package:legado_reader/core/database/dao/book_source_dao.dart';
+import 'package:legado_reader/core/services/export_book_service.dart';
 
 class BookDetailPage extends StatelessWidget {
-  final AggregatedSearchBook searchBook;
+  final Book? book;
+  final AggregatedSearchBook? searchBook;
 
-  const BookDetailPage({super.key, required this.searchBook});
+  const BookDetailPage({super.key, this.book, this.searchBook})
+      : assert(book != null || searchBook != null, "Must provide either book or searchBook");
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => BookDetailProvider(searchBook),
+      create: (_) => BookDetailProvider(searchBook ?? AggregatedSearchBook(book: searchBook?.book ?? searchBook!.book, sources: [])),
       child: Consumer<BookDetailProvider>(
         builder: (context, provider, child) {
-          final book = provider.book;
+          // 如果是從書架進入，手動同步 book
+          if (book != null && provider.book.bookUrl != book!.bookUrl) {
+             // 這裡暫時依賴 Provider 內部的 init 邏輯，
+             // 未來應重構 Provider 支援直接傳入 Book
+          }
+          final currentBook = provider.book;
           return Scaffold(
             appBar: AppBar(
               title: const Text('書籍詳情'),
@@ -35,7 +42,7 @@ class BookDetailPage extends StatelessWidget {
                 PopupMenuButton<String>(
                   onSelected: (val) {
                     if (val == 'export') {
-                      ExportBookService().exportToTxt(book);
+                      ExportBookService().exportToTxt(currentBook);
                     } else if (val == 'clear_cache') {
                       provider.clearCache();
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已清理正文快取')));
@@ -61,8 +68,8 @@ class BookDetailPage extends StatelessWidget {
                 ? const Center(child: CircularProgressIndicator())
                 : CustomScrollView(
                     slivers: [
-                      SliverToBoxAdapter(child: _buildHeader(context, provider, book)),
-                      SliverToBoxAdapter(child: _buildIntro(book)),
+                      SliverToBoxAdapter(child: _buildHeader(context, provider, currentBook)),
+                      SliverToBoxAdapter(child: _buildIntro(currentBook)),
                       SliverPadding(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         sliver: SliverToBoxAdapter(
@@ -85,7 +92,7 @@ class BookDetailPage extends StatelessWidget {
                           final chapter = provider.filteredChapters[index];
                           return ListTile(
                             title: Text(chapter.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                            onTap: () => _navigateToReader(context, book, chapter.index),
+                            onTap: () => _navigateToReader(context, currentBook, chapter.index),
                           );
                         }, childCount: provider.filteredChapters.length),
                       ),
@@ -124,8 +131,8 @@ class BookDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, BookDetailProvider provider, Book book) {
-    final coverUrl = book.getDisplayCover();
+  Widget _buildHeader(BuildContext context, BookDetailProvider provider, Book b) {
+    final coverUrl = b.getDisplayCover();
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(
@@ -160,14 +167,14 @@ class BookDetailPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(book.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  Text(b.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  Text('作者：${book.author}', style: const TextStyle(fontSize: 16)),
+                  Text('作者：${b.author}', style: const TextStyle(fontSize: 16)),
                   const SizedBox(height: 4),
                   GestureDetector(
-                    onTap: () => _showSourceOptions(context, book),
+                    onTap: () => _showSourceOptions(context, b),
                     child: Text(
-                      '來源：${book.originName}', 
+                      '來源：${b.originName}', 
                       style: const TextStyle(fontSize: 14, color: Colors.blue, decoration: TextDecoration.underline)
                     ),
                   ),
@@ -175,8 +182,8 @@ class BookDetailPage extends StatelessWidget {
                   Row(
                     children: [
                       ElevatedButton(
-                        onPressed: () => _navigateToReader(context, book, book.durChapterIndex),
-                        child: Text(book.durChapterIndex == 0 && book.durChapterPos == 0 ? '開始閱讀' : '繼續閱讀'),
+                        onPressed: () => _navigateToReader(context, b, b.durChapterIndex),
+                        child: Text(b.durChapterIndex == 0 && b.durChapterPos == 0 ? '開始閱讀' : '繼續閱讀'),
                       ),
                       const SizedBox(width: 8),
                       TextButton(onPressed: () => _showChangeSourceDialog(context, provider), child: const Text('換源', style: TextStyle(fontSize: 12))),
@@ -195,7 +202,7 @@ class BookDetailPage extends StatelessWidget {
     return Container(width: 100, height: 140, color: Colors.grey.shade200, child: const Icon(Icons.book, size: 50, color: Colors.grey));
   }
 
-  Widget _buildIntro(Book book) {
+  Widget _buildIntro(Book b) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
@@ -204,23 +211,23 @@ class BookDetailPage extends StatelessWidget {
           const Divider(),
           const Text('簡介', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          Text(book.intro ?? '暫無簡介', style: const TextStyle(fontSize: 15, height: 1.5)),
+          Text(b.intro ?? '暫無簡介', style: const TextStyle(fontSize: 15, height: 1.5)),
           const SizedBox(height: 16),
         ],
       ),
     );
   }
 
-  void _showSourceOptions(BuildContext context, Book book) {
+  void _showSourceOptions(BuildContext context, Book b) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(book.originName),
+        title: Text(b.originName),
         content: const Text('請選擇操作'),
         actions: [
           TextButton(
             onPressed: () async {
-              final source = await BookSourceDao().getByUrl(book.origin);
+              final source = await BookSourceDao().getByUrl(b.origin);
               if (context.mounted) {
                 Navigator.pop(context);
                 if (source != null) {
@@ -234,11 +241,11 @@ class BookDetailPage extends StatelessWidget {
           ),
           TextButton(
             onPressed: () async {
-              final source = await BookSourceDao().getByUrl(book.origin);
+              final source = await BookSourceDao().getByUrl(b.origin);
               if (context.mounted) {
                 Navigator.pop(context);
                 if (source != null) {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => SourceDebugPage(source: source, debugKey: book.name)));
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => SourceDebugPage(source: source, debugKey: b.name)));
                 }
               }
             },
@@ -250,8 +257,8 @@ class BookDetailPage extends StatelessWidget {
     );
   }
 
-  void _navigateToReader(BuildContext context, Book book, int index) {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => ReaderPage(book: book, chapterIndex: index)));
+  void _navigateToReader(BuildContext context, Book b, int index) {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => ReaderPage(book: b, chapterIndex: index)));
   }
 
   void _showChangeSourceDialog(BuildContext context, BookDetailProvider provider) {
@@ -333,7 +340,7 @@ class BookDetailPage extends StatelessWidget {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
-          TextButton(
+          ElevatedButton(
             onPressed: () {
               provider.updateBookInfo(nameCtrl.text, authorCtrl.text, introCtrl.text, coverCtrl.text);
               Navigator.pop(context);

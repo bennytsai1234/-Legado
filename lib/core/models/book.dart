@@ -66,6 +66,7 @@ class Book {
   bool get isImage => (type & 4) != 0; // BookType.image = 4
   bool get isEpub => bookUrl.toLowerCase().endsWith('.epub');
   bool get isLocal => origin == "local" || origin.startsWith("webdav");
+  bool get isUpdate => lastCheckCount > 0;
 
   Book({
     this.bookUrl = "",
