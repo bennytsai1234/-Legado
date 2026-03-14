@@ -4,20 +4,20 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart' as url_launcher;
 import 'package:share_plus/share_plus.dart' as share_plus;
-import 'reader_provider.dart';
-import 'engine/page_view_widget.dart';
-import '../../core/models/book.dart';
-import '../dict/dict_dialog.dart';
-import '../settings/font_manager_page.dart';
-import '../settings/settings_page.dart';
-import '../replace_rule/replace_rule_page.dart';
+import 'package:legado_reader/features/reader/reader_provider.dart';
+import 'package:legado_reader/features/reader/engine/page_view_widget.dart';
+import 'package:legado_reader/core/models/book.dart';
+import 'package:legado_reader/features/dict/dict_dialog.dart';
+import 'package:legado_reader/features/settings/font_manager_page.dart';
+import 'package:legado_reader/features/settings/settings_page.dart';
+import 'package:legado_reader/features/replace_rule/replace_rule_page.dart';
 
-import 'engine/simulation_page_view.dart';
-import 'widgets/reader_menu_top.dart';
-import 'widgets/reader_menu_bottom.dart';
-import 'widgets/reader_brightness_bar.dart';
-import 'widgets/reader_chapters_drawer.dart';
-import 'widgets/reader_settings_sheets.dart';
+import 'package:legado_reader/features/reader/engine/simulation_page_view.dart';
+import 'package:legado_reader/features/reader/widgets/reader_menu_top.dart';
+import 'package:legado_reader/features/reader/widgets/reader_menu_bottom.dart';
+import 'package:legado_reader/features/reader/widgets/reader_brightness_bar.dart';
+import 'package:legado_reader/features/reader/widgets/reader_chapters_drawer.dart';
+import 'package:legado_reader/features/reader/widgets/reader_settings_sheets.dart';
 
 class ReaderPage extends StatefulWidget {
   final Book book;

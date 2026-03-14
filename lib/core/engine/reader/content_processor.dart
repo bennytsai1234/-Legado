@@ -1,9 +1,9 @@
 import 'package:characters/characters.dart';
-import '../../../../core/models/book.dart';
-import '../../../../core/models/chapter.dart';
-import '../../../../core/models/replace_rule.dart';
-import '../../services/chinese_utils.dart';
-import '../../constant/app_pattern.dart';
+import 'package:legado_reader/core/models/book.dart';
+import 'package:legado_reader/core/models/chapter.dart';
+import 'package:legado_reader/core/models/replace_rule.dart';
+import 'package:legado_reader/core/services/chinese_utils.dart';
+import 'package:legado_reader/core/constant/app_pattern.dart';
 
 /// ContentProcessor - 閱讀器正文處理引擎
 /// 負責：去重、重新分段、簡繁轉換、規則淨化

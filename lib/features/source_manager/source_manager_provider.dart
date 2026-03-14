@@ -2,151 +2,84 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../core/database/dao/book_source_dao.dart';
-import '../../core/database/dao/book_dao.dart';
-import '../../core/models/book_source.dart';
-import '../../core/services/check_source_service.dart';
+import 'package:legado_reader/core/database/dao/book_source_dao.dart';
+import 'package:legado_reader/core/models/book_source.dart';
+import 'package:legado_reader/core/services/check_source_service.dart';
 
-class SourceManagerProvider extends ChangeNotifier {
+class SourceManagerProvider with ChangeNotifier {
   final BookSourceDao _dao = BookSourceDao();
-  final BookDao _bookDao = BookDao();
-  final CheckSourceService _checkService = CheckSourceService();
-  
+  final CheckSourceService checkService = CheckSourceService();
+
   List<BookSource> _sources = [];
-  List<String> _groups = [];
-  String _selectedGroup = '全部';
-  int _sortMode = 0; // 0:手動, 1:權重, 2:響應速度, 3:更新時間, 4:名稱
-  bool _groupByDomain = false;
-  bool _isLoading = false;
-
-  bool _isBatchMode = false;
-  Set<String> _selectedUrls = {};
-
   List<BookSource> get sources {
     List<BookSource> list = List.from(_sources);
     if (_selectedGroup != '全部') {
       list = list.where((s) => s.bookSourceGroup?.contains(_selectedGroup) ?? false).toList();
     }
+    // 排序邏輯...
+    if (_sortMode == 1) {
+      list.sort((a, b) => b.weight.compareTo(a.weight));
+    } else {
+      list.sort((a, b) => a.customOrder.compareTo(b.customOrder));
+    }
     return list;
   }
 
-  List<String> get groups => ['全部', ..._groups];
-  String get selectedGroup => _selectedGroup;
+  bool _isLoading = false;
   bool get isLoading => _isLoading;
+
+  bool _isBatchMode = false;
   bool get isBatchMode => _isBatchMode;
+
+  final Set<String> _selectedUrls = {};
   Set<String> get selectedUrls => _selectedUrls;
+
+  List<String> _groups = ['全部'];
+  List<String> get groups => _groups;
+
+  String _selectedGroup = '全部';
+  String get selectedGroup => _selectedGroup;
+
+  int _sortMode = 0; // 0: 手動, 1: 權重
   int get sortMode => _sortMode;
+
+  bool _groupByDomain = false;
   bool get groupByDomain => _groupByDomain;
-  
-  CheckSourceService get checkService => _checkService;
 
   SourceManagerProvider() {
-    _init();
-    // 監聽校驗服務的變化以更新 UI
-    _checkService.addListener(() {
-      if (!_checkService.isChecking) {
-        loadSources(); // 校驗完成後重新載入
-      }
-      notifyListeners();
-    });
-  }
-
-  Future<void> _init() async {
-    final prefs = await SharedPreferences.getInstance();
-    _sortMode = prefs.getInt('source_sort_mode') ?? 0;
-    _groupByDomain = prefs.getBool('source_group_by_domain') ?? false;
-    await loadSources();
-  }
-
-  Future<void> setSortMode(int mode) async {
-    _sortMode = mode;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('source_sort_mode', mode);
-    _applySort();
-    notifyListeners();
-  }
-
-  Future<void> toggleGroupByDomain() async {
-    _groupByDomain = !_groupByDomain;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('source_group_by_domain', _groupByDomain);
-    _applySort();
-    notifyListeners();
-  }
-
-  void _applySort() {
-    if (_groupByDomain) {
-      _sources.sort((a, b) {
-        final hostA = Uri.tryParse(a.bookSourceUrl)?.host ?? "";
-        final hostB = Uri.tryParse(b.bookSourceUrl)?.host ?? "";
-        int res = hostA.compareTo(hostB);
-        if (res == 0) {
-          res = b.lastUpdateTime.compareTo(a.lastUpdateTime);
-        }
-        return res;
-      });
-      return;
-    }
-
-    switch (_sortMode) {
-      case 1: // 權重
-        _sources.sort((a, b) => b.weight.compareTo(a.weight));
-        break;
-      case 2: // 響應速度
-        _sources.sort((a, b) => a.respondTime.compareTo(b.respondTime));
-        break;
-      case 3: // 更新時間
-        _sources.sort((a, b) => b.lastUpdateTime.compareTo(a.lastUpdateTime));
-        break;
-      case 4: // 名稱
-        _sources.sort((a, b) => a.bookSourceName.compareTo(b.bookSourceName));
-        break;
-      default: // 手動
-        _sources.sort((a, b) => a.customOrder.compareTo(b.customOrder));
-        break;
-    }
+    loadSources();
   }
 
   Future<void> loadSources() async {
     _isLoading = true;
     notifyListeners();
-
-    _sources = await _dao.getAllPart();
-    _groups = await _dao.getGroups();
-    _applySort();
-
+    _sources = await _dao.getAll();
+    _updateGroups();
     _isLoading = false;
     notifyListeners();
   }
 
+  void _updateGroups() {
+    final Set<String> groupSet = {'全部'};
+    for (var s in _sources) {
+      if (s.bookSourceGroup != null && s.bookSourceGroup!.isNotEmpty) {
+        groupSet.addAll(s.bookSourceGroup!.split(RegExp(r'[,，\s]+')));
+      }
+    }
+    _groups = groupSet.toList();
+  }
+
   void selectGroup(String group) {
     _selectedGroup = group;
-    if (_isBatchMode) {
-      _selectedUrls.clear();
-    }
     notifyListeners();
   }
 
-  Future<void> toggleEnabled(BookSource source) async {
-    final newState = !source.enabled;
-    source.enabled = newState;
-    await _dao.insertOrUpdate(source);
-    notifyListeners();
-  }
-
-  Future<void> deleteSource(BookSource source) async {
-    await _dao.deleteSources([source.bookSourceUrl]);
-    await loadSources();
-  }
-
-  // --- 批量管理功能 ---
   void toggleBatchMode() {
     _isBatchMode = !_isBatchMode;
     if (!_isBatchMode) _selectedUrls.clear();
     notifyListeners();
   }
-  
+
   void toggleSelect(String url) {
     if (_selectedUrls.contains(url)) {
       _selectedUrls.remove(url);
@@ -156,61 +89,68 @@ class SourceManagerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void selectInterval() {
-    if (_selectedUrls.isEmpty) return;
-    
-    final currentVisibleSources = sources;
-    int minIdx = -1;
-    int maxIdx = -1;
-    
-    for (int i = 0; i < currentVisibleSources.length; i++) {
-      if (_selectedUrls.contains(currentVisibleSources[i].bookSourceUrl)) {
-        if (minIdx == -1) minIdx = i;
-        maxIdx = i;
-      }
-    }
-    
-    if (minIdx != -1 && maxIdx != -1) {
-      for (int i = minIdx; i <= maxIdx; i++) {
-        _selectedUrls.add(currentVisibleSources[i].bookSourceUrl);
-      }
-    }
-    notifyListeners();
-  }
-  
   void selectAll() {
-    final currentVisibleSources = sources;
-    if (_selectedUrls.length == currentVisibleSources.length) {
+    if (_selectedUrls.length == sources.length) {
       _selectedUrls.clear();
     } else {
-      _selectedUrls = currentVisibleSources.map((s) => s.bookSourceUrl).toSet();
+      _selectedUrls.addAll(sources.map((s) => s.bookSourceUrl));
     }
     notifyListeners();
   }
-  
+
+  Future<void> toggleEnabled(BookSource source) async {
+    source.enabled = !source.enabled;
+    await _dao.insertOrUpdate(source);
+    notifyListeners();
+  }
+
+  Future<void> deleteSource(BookSource source) async {
+    await _dao.deleteSources([source.bookSourceUrl]);
+    await loadSources();
+  }
+
   Future<void> deleteSelected() async {
     await _dao.deleteSources(_selectedUrls.toList());
-    _selectedUrls.clear();
     _isBatchMode = false;
+    _selectedUrls.clear();
     await loadSources();
   }
 
   Future<void> exportSelected() async {
-    if (_selectedUrls.isEmpty) return;
+    final selectedSources = _sources.where((s) => _selectedUrls.contains(s.bookSourceUrl)).toList();
+    final json = jsonEncode(selectedSources.map((s) => s.toJson()).toList());
+    await Clipboard.setData(ClipboardData(text: json));
+  }
+
+  // --- 排序與分組管理 ---
+  Future<void> reorderSource(int oldIndex, int newIndex) async {
+    if (_sortMode != 0 || _groupByDomain) return;
+    if (newIndex > oldIndex) newIndex -= 1;
     
-    // 需要獲取完整書源數據進行匯出
-    final List<BookSource> exportList = [];
-    for (var url in _selectedUrls) {
-      final s = await _dao.getByUrl(url);
-      if (s != null) exportList.add(s);
-    }
-    
-    final jsonStr = jsonEncode(exportList.map((s) => s.toJson()).toList());
-    await Clipboard.setData(ClipboardData(text: jsonStr));
-    
-    _isBatchMode = false;
-    _selectedUrls.clear();
+    final list = sources;
+    final item = list.removeAt(oldIndex);
+    list.insert(newIndex, item);
+
+    await _dao.updateCustomOrder(list);
+    await loadSources();
+  }
+
+  Future<void> addGroup(String name) async {
+    if (name.isEmpty || _groups.contains(name)) return;
+    _groups.add(name);
     notifyListeners();
+  }
+
+  Future<void> renameGroup(String oldName, String newName) async {
+    if (newName.isEmpty || oldName == newName) return;
+    await _dao.renameGroup(oldName, newName);
+    await loadSources();
+  }
+
+  Future<void> deleteGroup(String name) async {
+    await _dao.removeGroupLabel(name);
+    if (_selectedGroup == name) _selectedGroup = '全部';
+    await loadSources();
   }
 
   // --- 校驗功能 ---
@@ -219,12 +159,12 @@ class SourceManagerProvider extends ChangeNotifier {
     final urls = _selectedUrls.toList();
     _isBatchMode = false;
     _selectedUrls.clear();
-    await _checkService.check(urls);
+    await checkService.check(urls);
   }
 
   Future<void> checkAllSources() async {
     final urls = sources.map((s) => s.bookSourceUrl).toList();
-    await _checkService.check(urls);
+    await checkService.check(urls);
   }
 
   Future<void> clearInvalidSources() async {
@@ -241,16 +181,11 @@ class SourceManagerProvider extends ChangeNotifier {
 
   Future<void> selectionAddToGroups(Set<String> urls, String groupName) async {
     if (urls.isEmpty || groupName.isEmpty) return;
-    
     for (var url in urls) {
       final source = await _dao.getByUrl(url);
       if (source != null) {
-        final List<String> groups = (source.bookSourceGroup ?? "").split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-        if (!groups.contains(groupName)) {
-          groups.add(groupName);
-          source.bookSourceGroup = groups.join(',');
-          await _dao.insertOrUpdate(source);
-        }
+        source.addGroup(groupName);
+        await _dao.insertOrUpdate(source);
       }
     }
     _isBatchMode = false;
@@ -260,15 +195,11 @@ class SourceManagerProvider extends ChangeNotifier {
 
   Future<void> selectionRemoveFromGroups(Set<String> urls, String groupName) async {
     if (urls.isEmpty || groupName.isEmpty) return;
-    
     for (var url in urls) {
       final source = await _dao.getByUrl(url);
       if (source != null) {
-        final List<String> groups = (source.bookSourceGroup ?? "").split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-        if (groups.remove(groupName)) {
-          source.bookSourceGroup = groups.isEmpty ? null : groups.join(',');
-          await _dao.insertOrUpdate(source);
-        }
+        source.removeGroup(groupName);
+        await _dao.insertOrUpdate(source);
       }
     }
     _isBatchMode = false;
@@ -276,156 +207,49 @@ class SourceManagerProvider extends ChangeNotifier {
     await loadSources();
   }
 
-  // --- 書源遷移 (高度還原 Android migrateSource) ---
-  Future<void> migrateSource(String oldUrl, String newUrl) async {
-    final books = await _bookDao.getAll();
-    final toUpdate = books.where((b) => b.origin == oldUrl).toList();
-    
-    for (var book in toUpdate) {
-      book.origin = newUrl;
-      await _bookDao.insertOrUpdate(book);
-    }
-    notifyListeners();
-  }
-
-  // --- 排序與分組管理 ---
-  Future<void> reorderSource(int oldIndex, int newIndex) async {
-    if (_sortMode != 0 || _groupByDomain) return; // 僅手動排序模式支援重排
-
-    if (newIndex > oldIndex) newIndex -= 1;
-    
-    // 獲取當前過濾後的清單進行重排
-    final list = sources;
-    final item = list.removeAt(oldIndex);
-    list.insert(newIndex, item);
-
-    // 更新所有受影響書源的 customOrder 並存入資料庫
-    for (int i = 0; i < _sources.length; i++) {
-      // 這裡需要根據全量清單重新計算 customOrder
-      // 為了簡單起見，直接更新所有書源的 order
-    }
-    
-    // 精確邏輯：更新被移動項及其周邊項的順序
-    await _dao.updateCustomOrder(list);
-    await loadSources();
-  }
-
-  Future<void> addGroup(String name) async {
-    if (name.isEmpty || _groups.contains(name)) return;
-    _groups.add(name);
-    notifyListeners();
-  }
-
-  Future<void> renameGroup(String oldName, String newName) async {
-    if (newName.isEmpty || oldName == newName) return;
-    
-    // 1. 更新 Provider 中的分組清單
-    final idx = _groups.indexOf(oldName);
-    if (idx != -1) _groups[idx] = newName;
-
-    // 2. 更新資料庫中所有屬於該分組的書源標籤
-    await _dao.renameGroup(oldName, newName);
-    await loadSources();
-  }
-
-  Future<void> deleteGroup(String name) async {
-    _groups.remove(name);
-    // 2. 移除所有屬於該分組書源的該分組標籤
-    await _dao.removeGroupLabel(name);
-    if (_selectedGroup == name) _selectedGroup = '全部';
-    await loadSources();
-  }
-
-  /// 從文本匯入
-  Future<int> importFromText(String text) async {
+  // --- 匯入功能 ---
+  Future<int> importFromUrl(String url) async {
     try {
-      final dynamic decoded = jsonDecode(text);
-      return await importFromData(decoded);
+      final response = await Dio().get(url);
+      return await importFromJson(response.data);
     } catch (e) {
-      debugPrint('從文本匯入書源失敗: $e');
-    }
-    return 0;
-  }
-
-  /// 從解析後的資料匯入 (List 或 Map)
-  Future<int> importFromData(dynamic data) async {
-    try {
-      if (data == null) return 0;
-      List<dynamic> list = data is List ? data : [data];
-      List<BookSource> newSources = [];
-      
-      for (var item in list) {
-        if (item is Map<String, dynamic>) {
-          final source = BookSource.fromJson(item);
-          source.lastUpdateTime = DateTime.now().millisecondsSinceEpoch;
-          newSources.add(source);
-        }
-      }
-
-      if (newSources.isNotEmpty) {
-        await _dao.insertOrUpdateAll(newSources);
-        await loadSources();
-        return newSources.length;
-      }
-    } catch (e) {
-      debugPrint('匯入書源資料失敗: $e');
-    }
-    return 0;
-  }
-
-  /// 從 JSON 匯入
-  Future<int> importFromJson(String jsonStr) async {
-    try {
-      final data = jsonDecode(jsonStr);
-      return await importFromData(data);
-    } catch (e) {
-      debugPrint('從 JSON 匯入書源失敗: $e');
       return 0;
     }
   }
 
-  Future<int> importFromUrl(String url) async {
-    final urls = url.split(RegExp(r'[\n\r]+')).map((e) => e.trim()).where((e) => e.isNotEmpty);
-    int totalCount = 0;
-    final dio = Dio();
-    
-    for (final u in urls) {
-      try {
-        final response = await dio.get(u);
-        if (response.data != null) {
-          // 處理 Legado 可能的各種回傳格式 (直接 JSON, 或包含在 data 欄位)
-          dynamic data = response.data;
-          if (data is String) data = jsonDecode(data);
-          
-          if (data is Map && data.containsKey('data')) {
-            data = data['data'];
-          }
-          
-          totalCount += await importFromData(data);
-        }
-      } catch (e) {
-        debugPrint('從 URL 匯入書源失敗 ($u): $e');
-      }
+  Future<int> importFromText(String text) async {
+    try {
+      return await importFromJson(jsonDecode(text));
+    } catch (e) {
+      return 0;
     }
-    return totalCount;
   }
 
-  /// 從 QR Code 掃描結果匯入
   Future<int> importFromQr(String code) async {
-    if (code.isEmpty) return 0;
-    
-    // 1. 處理直接是 JSON 的情況
-    if (code.startsWith('[') || code.startsWith('{')) {
-      return await importFromText(code);
-    }
-    
-    // 2. 處理加密書源 (legado://) 或 URL
-    if (code.startsWith('http') || code.startsWith('legado://')) {
-      // 若是 URL 則直接呼叫 importFromUrl
-      final url = code.replaceFirst('legado://import/source?src=', '');
-      return await importFromUrl(Uri.decodeComponent(url));
-    }
-    
+    if (code.startsWith('http')) return await importFromUrl(code);
     return 0;
   }
+
+  Future<int> importFromJson(dynamic data) async {
+    List<dynamic> list = [];
+    if (data is List) {
+      list = data;
+    } else if (data is Map) {
+      list = [data];
+    }
+    
+    int count = 0;
+    for (var item in list) {
+      try {
+        final source = BookSource.fromJson(item);
+        await _dao.insertOrUpdate(source);
+        count++;
+      } catch (_) {}
+    }
+    await loadSources();
+    return count;
+  }
+
+  void toggleGroupByDomain() { _groupByDomain = !_groupByDomain; notifyListeners(); }
+  void setSortMode(int mode) { _sortMode = mode; notifyListeners(); }
 }

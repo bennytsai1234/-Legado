@@ -3,16 +3,16 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
-import 'source_manager_provider.dart';
-import 'source_editor_page.dart';
-import 'qr_scan_page.dart';
-import 'explore_sources_page.dart';
-import 'source_debug_page.dart';
-import 'source_group_manage_page.dart';
-import '../../core/models/book_source.dart';
-import 'widgets/source_item_tile.dart';
-import 'widgets/source_filter_bar.dart';
-import 'widgets/source_batch_toolbar.dart';
+import 'package:legado_reader/features/source_manager/source_manager_provider.dart';
+import 'package:legado_reader/features/source_manager/source_editor_page.dart';
+import 'package:legado_reader/features/source_manager/qr_scan_page.dart';
+import 'package:legado_reader/features/source_manager/explore_sources_page.dart';
+import 'package:legado_reader/features/source_manager/source_debug_page.dart';
+import 'package:legado_reader/features/source_manager/source_group_manage_page.dart';
+import 'package:legado_reader/core/models/book_source.dart';
+import 'package:legado_reader/features/source_manager/widgets/source_item_tile.dart';
+import 'package:legado_reader/features/source_manager/widgets/source_filter_bar.dart';
+import 'package:legado_reader/features/source_manager/widgets/source_batch_toolbar.dart';
 
 class SourceManagerPage extends StatefulWidget {
   const SourceManagerPage({super.key});
