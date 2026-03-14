@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart' as url_launcher;
+import 'package:share_plus/share_plus.dart' as share_plus;
 import 'reader_provider.dart';
 import 'change_chapter_source_sheet.dart';
 import 'engine/page_view_widget.dart';
@@ -165,16 +167,51 @@ class _ReaderPageState extends State<ReaderPage> {
           ),
         SelectionArea(
           onSelectionChanged: (c) => _selectedText = c?.plainText ?? "",
-          contextMenuBuilder: (context, state) => AdaptiveTextSelectionToolbar.buttonItems(
-            anchors: state.contextMenuAnchors,
-            buttonItems: [
-              ...state.contextMenuButtonItems,
-              if (_selectedText.isNotEmpty) ...[
-                if (num.tryParse(_selectedText) == null) ContextMenuButtonItem(label: '查詞', onPressed: () { state.hideToolbar(); DictDialog.show(context, _selectedText); }),
-                ContextMenuButtonItem(label: '筆記', onPressed: () { state.hideToolbar(); _showAnnotationDialog(context, provider, _selectedText); }),
-              ],
-            ],
-          ),
+          contextMenuBuilder: (context, state) {
+            final List<ContextMenuButtonItem> buttonItems = [
+              ContextMenuButtonItem(
+                label: '複製',
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: _selectedText));
+                  state.hideToolbar();
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已複製到剪貼簿'), duration: Duration(seconds: 1)));
+                },
+              ),
+              if (_selectedText.isNotEmpty && num.tryParse(_selectedText) == null)
+                ContextMenuButtonItem(
+                  label: '查詞',
+                  onPressed: () {
+                    state.hideToolbar();
+                    DictDialog.show(context, _selectedText);
+                  },
+                ),
+              ContextMenuButtonItem(
+                label: '筆記',
+                onPressed: () {
+                  state.hideToolbar();
+                  _showAnnotationDialog(context, provider, _selectedText);
+                },
+              ),
+              ContextMenuButtonItem(
+                label: '搜尋',
+                onPressed: () {
+                  state.hideToolbar();
+                  url_launcher.launchUrl(Uri.parse('https://www.google.com/search?q=$_selectedText'));
+                },
+              ),
+              ContextMenuButtonItem(
+                label: '分享',
+                onPressed: () {
+                  state.hideToolbar();
+                  share_plus.Share.share(_selectedText);
+                },
+              ),
+            ];
+            return AdaptiveTextSelectionToolbar.buttonItems(
+              anchors: state.contextMenuAnchors,
+              buttonItems: buttonItems,
+            );
+          },
           child: provider.pageTurnMode == 3 // 仿真翻頁 (對標 Android Simulation)
             ? SimulationPageView(
                 currentChild: PageViewWidget(page: provider.pages[provider.currentPageIndex], contentStyle: contentStyle, titleStyle: titleStyle),
