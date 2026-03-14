@@ -10,25 +10,36 @@ abstract class SettingsProviderBase extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     if (value is bool) {
       await prefs.setBool(key, value);
-    } else if (value is double) await prefs.setDouble(key, value);
-    else if (value is int) await prefs.setInt(key, value);
-    else if (value is String) await prefs.setString(key, value);
+    } else if (value is double) {
+      await prefs.setDouble(key, value);
+    } else if (value is int) {
+      await prefs.setInt(key, value);
+    } else if (value is String) {
+      await prefs.setString(key, value);
+    }
   }
 
   ThemeMode parseThemeMode(String mode) {
     switch (mode) {
-      case 'light': return ThemeMode.light;
-      case 'dark': return ThemeMode.dark;
-      default: return ThemeMode.system;
+      case 'light':
+        return ThemeMode.light;
+      case 'dark':
+        return ThemeMode.dark;
+      default:
+        return ThemeMode.system;
     }
   }
 
   Locale? parseLocale(String lang) {
-    if (lang == 'system') return null;
+    if (lang == 'system') {
+      return null;
+    }
     final parts = lang.split('_');
-    if (parts.length == 2) return Locale(parts[0], parts[1]);
+    if (parts.length == 2) {
+      return Locale(parts[0], parts[1]);
+    }
     return Locale(lang);
   }
 
-  void update() => update();
+  void update() => notifyListeners();
 }

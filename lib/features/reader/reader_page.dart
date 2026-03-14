@@ -7,11 +7,11 @@ import 'engine/page_view_widget.dart';
 import 'package:legado_reader/core/models/book.dart';
 import 'package:legado_reader/features/settings/settings_page.dart';
 import 'package:legado_reader/features/replace_rule/replace_rule_page.dart';
+import 'widgets/reader/reader_top_menu.dart';
+import 'widgets/reader/reader_bottom_menu.dart';
 import 'widgets/reader_brightness_bar.dart';
 import 'widgets/reader_chapters_drawer.dart';
 import 'widgets/reader_settings_sheets.dart';
-import 'widgets/reader/reader_top_menu.dart';
-import 'widgets/reader/reader_bottom_menu.dart';
 
 class ReaderPage extends StatefulWidget {
   final Book book;
@@ -32,9 +32,13 @@ class _ReaderPageState extends State<ReaderPage> {
     _pageCtrl = PageController(initialPage: widget.chapterPos + (widget.chapterIndex > 0 ? 1 : 0));
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _jumpSub = context.read<ReaderProvider>().jumpPageStream.listen((p) {
-        final target = p + (context.read<ReaderProvider>().currentChapterIndex > 0 ? 1 : 0);
-        if (_pageCtrl.hasClients && _pageCtrl.page?.round() != target) _pageCtrl.jumpToPage(target);
+      final provider = context.read<ReaderProvider>();
+      _jumpSub = provider.jumpPageStream.listen((p) {
+        if (!mounted) return;
+        final target = p + (provider.currentChapterIndex > 0 ? 1 : 0);
+        if (_pageCtrl.hasClients && _pageCtrl.page?.round() != target) {
+          _pageCtrl.jumpToPage(target);
+        }
       });
     });
   }
@@ -53,7 +57,13 @@ class _ReaderPageState extends State<ReaderPage> {
     switch (action) {
       case 0: p.toggleControls(); break;
       case 1: p.nextPage(); break;
-      case 2: p.currentPageIndex > 0 ? p.onPageChanged(p.currentPageIndex - 1) : p.prevChapter(); break;
+      case 2:
+        if (p.currentPageIndex > 0) {
+          p.onPageChanged(p.currentPageIndex - 1);
+        } else {
+          p.prevChapter();
+        }
+        break;
       case 3: p.nextChapter(); break;
       case 4: p.prevChapter(); break;
       case 5: p.toggleTts(); break;
@@ -63,21 +73,28 @@ class _ReaderPageState extends State<ReaderPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(create: (_) => ReaderProvider(book: widget.book, chapterIndex: widget.chapterIndex, chapterPos: widget.chapterPos), child: Scaffold(
-      key: _key, body: Consumer<ReaderProvider>(builder: (context, p, _) {
-        _updateUI(p.showControls);
-        return Container(color: p.currentTheme.backgroundColor, child: Stack(children: [
-          _buildReaderContent(p),
-          if (p.pages.isNotEmpty && !p.isLoading) _buildPermanentInfo(p),
-          Positioned.fill(child: GestureDetector(behavior: HitTestBehavior.translucent, onTapUp: (d) => p.showControls ? p.toggleControls() : _handleTap(d.localPosition, context.size!, p))),
-          IgnorePointer(child: Container(color: Colors.black.withValues(alpha: (1.0 - p.brightness).clamp(0.0, 0.8)))),
-          ReaderTopMenu(provider: p, onMore: () => _showMore(context)),
-          ReaderBrightnessBar(provider: p),
-          ReaderBottomMenu(provider: p, onOpenDrawer: () => _key.currentState?.openDrawer(), onTts: p.toggleTts, onInterface: () => ReaderSettingsSheets.showInterfaceSettings(context, p), onSettings: () => ReaderSettingsSheets.showMoreSettings(context, p), onAutoPage: p.toggleAutoPage, onToggleDayNight: () => p.setTheme(p.themeIndex == 1 ? 0 : 1)),
-        ]));
-      }),
-      drawer: Consumer<ReaderProvider>(builder: (context, p, _) => ReaderChaptersDrawer(provider: p)),
-    ));
+    return ChangeNotifierProvider(
+      create: (_) => ReaderProvider(book: widget.book, chapterIndex: widget.chapterIndex, chapterPos: widget.chapterPos),
+      child: Scaffold(
+        key: _key,
+        body: Consumer<ReaderProvider>(builder: (context, p, _) {
+          _updateUI(p.showControls);
+          return Container(
+            color: p.currentTheme.backgroundColor,
+            child: Stack(children: [
+              _buildReaderContent(p),
+              if (p.pages.isNotEmpty && !p.isLoading) _buildPermanentInfo(p),
+              Positioned.fill(child: GestureDetector(behavior: HitTestBehavior.translucent, onTapUp: (d) => p.showControls ? p.toggleControls() : _handleTap(d.localPosition, context.size!, p))),
+              IgnorePointer(child: Container(color: Colors.black.withValues(alpha: (1.0 - p.brightness).clamp(0.0, 0.8)))),
+              ReaderTopMenu(provider: p, onMore: () => _showMore(context)),
+              ReaderBrightnessBar(provider: p),
+              ReaderBottomMenu(provider: p, onOpenDrawer: () => _key.currentState?.openDrawer(), onTts: p.toggleTts, onInterface: () => ReaderSettingsSheets.showInterfaceSettings(context, p), onSettings: () => ReaderSettingsSheets.showMoreSettings(context, p), onAutoPage: p.toggleAutoPage, onToggleDayNight: () => p.setTheme(p.themeIndex == 1 ? 0 : 1)),
+            ]),
+          );
+        }),
+        drawer: Consumer<ReaderProvider>(builder: (context, p, _) => ReaderChaptersDrawer(provider: p)),
+      ),
+    );
   }
 
   Widget _buildReaderContent(ReaderProvider p) {
@@ -85,25 +102,53 @@ class _ReaderPageState extends State<ReaderPage> {
     if (p.pages.isEmpty) return const Center(child: Text("暫無內容"));
     final ts = TextStyle(fontSize: p.fontSize + 4, fontWeight: FontWeight.bold, color: p.currentTheme.textColor, letterSpacing: p.letterSpacing);
     final cs = TextStyle(fontSize: p.fontSize, height: p.lineHeight, color: p.currentTheme.textColor, letterSpacing: p.letterSpacing);
-    return PageView.builder(controller: _pageCtrl, itemCount: (p.currentChapterIndex > 0 ? 1 : 0) + p.pages.length + (p.currentChapterIndex < p.chapters.length - 1 ? 1 : 0), onPageChanged: (i) {
-      final h = p.currentChapterIndex > 0;
-      if (h && i == 0) {
-        p.prevChapter();
-      } else if (i == (h ? 1 : 0) + p.pages.length) p.nextChapter(); else p.onPageChanged(i - (h ? 1 : 0));
-    }, itemBuilder: (ctx, i) {
-      final h = p.currentChapterIndex > 0;
-      if (h && i == 0) return _virtual(p, "載入中...");
-      final idx = i - (h ? 1 : 0);
-      return (idx == p.pages.length) ? _virtual(p, "載入中...") : PageViewWidget(page: p.pages[idx], contentStyle: cs, titleStyle: ts);
-    });
+    return PageView.builder(
+      controller: _pageCtrl,
+      itemCount: (p.currentChapterIndex > 0 ? 1 : 0) + p.pages.length + (p.currentChapterIndex < p.chapters.length - 1 ? 1 : 0),
+      onPageChanged: (i) {
+        final h = p.currentChapterIndex > 0;
+        if (h && i == 0) {
+          p.prevChapter();
+        } else if (i == (h ? 1 : 0) + p.pages.length) {
+          p.nextChapter();
+        } else {
+          p.onPageChanged(i - (h ? 1 : 0));
+        }
+      },
+      itemBuilder: (ctx, i) {
+        final h = p.currentChapterIndex > 0;
+        if (h && i == 0) return _virtual(p, "載入中...");
+        final idx = i - (h ? 1 : 0);
+        return (idx == p.pages.length) ? _virtual(p, "載入中...") : PageViewWidget(page: p.pages[idx], contentStyle: cs, titleStyle: ts);
+      },
+    );
   }
 
-  Widget _buildPermanentInfo(ReaderProvider p) => Positioned(bottom: 0, left: 0, right: 0, child: Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 8), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-    Expanded(child: Text(p.book.name, style: TextStyle(color: p.currentTheme.textColor.withValues(alpha: 0.4), fontSize: 10), overflow: TextOverflow.ellipsis)),
-    Text("${p.currentPageIndex + 1}/${p.pages.length}", style: TextStyle(color: p.currentTheme.textColor.withValues(alpha: 0.4), fontSize: 10)),
-    SizedBox(width: 60, child: Text("${(p.chapters.isEmpty ? 0 : p.currentChapterIndex / p.chapters.length * 100).toStringAsFixed(1)}%", textAlign: TextAlign.right, style: TextStyle(color: p.currentTheme.textColor.withValues(alpha: 0.4), fontSize: 10))),
-  ])));
+  Widget _buildPermanentInfo(ReaderProvider p) => Positioned(
+        bottom: 0, left: 0, right: 0,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(child: Text(p.book.name, style: TextStyle(color: p.currentTheme.textColor.withValues(alpha: 0.4), fontSize: 10), overflow: TextOverflow.ellipsis)),
+              Text("${p.currentPageIndex + 1}/${p.pages.length}", style: TextStyle(color: p.currentTheme.textColor.withValues(alpha: 0.4), fontSize: 10)),
+              SizedBox(width: 60, child: Text("${(p.chapters.isEmpty ? 0 : p.currentChapterIndex / p.chapters.length * 100).toStringAsFixed(1)}%", textAlign: TextAlign.right, style: TextStyle(color: p.currentTheme.textColor.withValues(alpha: 0.4), fontSize: 10))),
+            ],
+          ),
+        ),
+      );
 
-  void _showMore(BuildContext context) => showModalBottomSheet(context: context, builder: (ctx) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [ListTile(leading: const Icon(Icons.rule), title: const Text('替換規則'), onTap: () { Navigator.pop(ctx); Navigator.push(context, MaterialPageRoute(builder: (_) => const ReplaceRulePage())); }), ListTile(leading: const Icon(Icons.settings), title: const Text('閱讀設定'), onTap: () { Navigator.pop(ctx); Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage())); })])));
-  Widget _virtual(ReaderProvider p, String t) => Container(color: p.currentTheme.backgroundColor, child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const CircularProgressIndicator(), const SizedBox(height: 16), Text(t, style: TextStyle(color: p.currentTheme.textColor.withValues(alpha: 0.5)))])));
+  void _showMore(BuildContext context) => showModalBottomSheet(
+        context: context,
+        builder: (ctx) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(leading: const Icon(Icons.rule), title: const Text('替換規則'), onTap: () { Navigator.pop(ctx); Navigator.push(context, MaterialPageRoute(builder: (_) => const ReplaceRulePage())); }),
+          ListTile(leading: const Icon(Icons.settings), title: const Text('閱讀設定'), onTap: () { Navigator.pop(ctx); Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage())); }),
+        ])),
+      );
+
+  Widget _virtual(ReaderProvider p, String t) => Container(
+        color: p.currentTheme.backgroundColor,
+        child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const CircularProgressIndicator(), const SizedBox(height: 16), Text(t, style: TextStyle(color: p.currentTheme.textColor.withValues(alpha: 0.5)))]))
+      );
 }

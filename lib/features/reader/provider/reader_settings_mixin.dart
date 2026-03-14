@@ -35,9 +35,13 @@ mixin ReaderSettingsMixin on ReaderProviderBase {
     final fk = 'reader_$k';
     if (v is double) {
       await p.setDouble(fk, v);
-    } else if (v is int) await p.setInt(fk, v);
-    else if (v is bool) await p.setBool(fk, v);
-    else if (v is String) await p.setString(fk, v);
+    } else if (v is int) {
+      await p.setInt(fk, v);
+    } else if (v is bool) {
+      await p.setBool(fk, v);
+    } else if (v is String) {
+      await p.setString(fk, v);
+    }
   }
 
   void setFontSize(double s) { fontSize = s; saveSetting('font_size', s); clearReaderCache(); (this as dynamic).doPaginate(); }

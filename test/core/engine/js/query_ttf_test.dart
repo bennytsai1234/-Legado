@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:legado_reader/core/engine/js/query_ttf.dart';
-import 'package:legado_reader/core/engine/js/ttf/buffer_reader.dart';
+
 
 void main() {
   group('QueryTTF Tests', () {

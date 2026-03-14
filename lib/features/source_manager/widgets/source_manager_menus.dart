@@ -42,9 +42,13 @@ class SourceManagerMenus {
       onSelected: (value) {
         if (value == 'group_by_domain') {
           provider.toggleGroupByDomain();
-        } else if (value.startsWith('sort_')) provider.setSortMode(int.parse(value.substring(5)));
-        else if (value == 'check_all') provider.checkAllSources();
-        else if (value == 'clear_invalid') onClearInvalid(provider);
+        } else if (value.startsWith('sort_')) {
+          provider.setSortMode(int.parse(value.substring(5)));
+        } else if (value == 'check_all') {
+          provider.checkAllSources();
+        } else if (value == 'clear_invalid') {
+          onClearInvalid(provider);
+        }
       },
       itemBuilder: (context) => [
         PopupMenuItem(value: 'group_by_domain', child: Row(children: [Icon(provider.groupByDomain ? Icons.check_box : Icons.check_box_outline_blank, size: 20), const SizedBox(width: 10), const Text('按域名分組')])),

@@ -9,7 +9,7 @@ import '../book_source_service.dart';
 
 /// WebService 基礎類別與單例結構
 abstract class WebServiceBase extends ChangeNotifier {
-  static final WebServiceBase? _instance = null; // 由子類實現單例
+   // 由子類實現單例
 
   HttpServer? server;
   bool isRunning = false;

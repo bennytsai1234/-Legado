@@ -61,10 +61,16 @@ class BookDetailPage extends StatelessWidget {
   void _handleMenuSelection(BuildContext context, BookDetailProvider provider, String val) {
     if (val == 'export') {
       ExportBookService().exportToTxt(provider.book);
-    } else if (val == 'clear_cache') { provider.clearCache(); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已清理快取'))); }
-    else if (val == 'preload') _showPreloadDialog(context, provider);
-    else if (val == 'edit') _showEditBookInfoDialog(context, provider);
-    else if (val == 'change_cover') _showChangeCoverSheet(context, provider);
+    } else if (val == 'clear_cache') {
+      provider.clearCache();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已清理快取')));
+    } else if (val == 'preload') {
+      _showPreloadDialog(context, provider);
+    } else if (val == 'edit') {
+      _showEditBookInfoDialog(context, provider);
+    } else if (val == 'change_cover') {
+      _showChangeCoverSheet(context, provider);
+    }
   }
 
   void _showPhotoView(BuildContext context, String url) {
@@ -73,8 +79,22 @@ class BookDetailPage extends StatelessWidget {
 
   void _showSourceOptions(BuildContext context, Book b) {
     showDialog(context: context, builder: (ctx) => AlertDialog(title: Text(b.originName), actions: [
-      TextButton(onPressed: () async { final s = await BookSourceDao().getByUrl(b.origin); if (ctx.mounted) { Navigator.pop(ctx); if (s != null) Navigator.push(context, MaterialPageRoute(builder: (_) => SourceEditorPage(source: s))); } }, child: const Text('詳情')),
-      TextButton(onPressed: () async { final s = await BookSourceDao().getByUrl(b.origin); if (ctx.mounted) { Navigator.pop(ctx); if (s != null) Navigator.push(context, MaterialPageRoute(builder: (_) => SourceDebugPage(source: s, debugKey: b.name))); } }, child: const Text('調試')),
+      TextButton(onPressed: () async {
+        final s = await BookSourceDao().getByUrl(b.origin);
+        if (!context.mounted) return;
+        if (ctx.mounted) {
+          Navigator.pop(ctx);
+          if (s != null) Navigator.push(context, MaterialPageRoute(builder: (_) => SourceEditorPage(source: s)));
+        }
+      }, child: const Text('詳情')),
+      TextButton(onPressed: () async {
+        final s = await BookSourceDao().getByUrl(b.origin);
+        if (!context.mounted) return;
+        if (ctx.mounted) {
+          Navigator.pop(ctx);
+          if (s != null) Navigator.push(context, MaterialPageRoute(builder: (_) => SourceDebugPage(source: s, debugKey: b.name)));
+        }
+      }, child: const Text('調試')),
       TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('關閉')),
     ]));
   }

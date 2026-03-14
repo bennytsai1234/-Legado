@@ -94,7 +94,9 @@ class _ChangeChapterSourceSheetState extends State<ChangeChapterSourceSheet> {
   }
 
   Widget _buildSourceList(ChangeSourceProvider provider) {
-    if (provider.filteredResults.isEmpty && !provider.isSearching) return const Center(child: Text('無搜尋結果'));
+    if (provider.filteredResults.isEmpty && !provider.isSearching) {
+      return const Center(child: Text('無搜尋結果'));
+    }
     return ListView.separated(
       itemCount: provider.filteredResults.length,
       separatorBuilder: (_, __) => const Divider(height: 1),
@@ -108,16 +110,22 @@ class _ChangeChapterSourceSheetState extends State<ChangeChapterSourceSheet> {
   Future<void> _handleSourceSelected(BuildContext context, ChangeSourceProvider provider, SearchBook searchBook) async {
     final sources = await provider.sourceDao.getAll();
     final source = sources.cast<BookSource?>().firstWhere((s) => s?.bookSourceUrl == searchBook.origin, orElse: () => null);
-    if (source == null) return;
+    if (source == null) {
+      return;
+    }
 
+    if (!context.mounted) return;
     showDialog(context: context, barrierDismissible: false, builder: (ctx) => const Center(child: CircularProgressIndicator()));
 
     try {
       final tempBook = searchBook.toBook();
       final chapters = await provider.service.getChapterList(source, tempBook);
       int targetIndex = chapters.indexWhere((c) => c.title == widget.chapterTitle);
-      if (targetIndex == -1 && widget.chapterIndex < chapters.length) targetIndex = widget.chapterIndex;
+      if (targetIndex == -1 && widget.chapterIndex < chapters.length) {
+        targetIndex = widget.chapterIndex;
+      }
 
+      if (!context.mounted) return;
       if (targetIndex != -1) {
         final content = await provider.service.getContent(source, tempBook, chapters[targetIndex]);
         if (mounted) {
@@ -130,10 +138,16 @@ class _ChangeChapterSourceSheetState extends State<ChangeChapterSourceSheet> {
           }
         }
       } else {
-        if (mounted) { Navigator.pop(context); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('找不到對應章節'))); }
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('找不到對應章節')));
+        }
       }
     } catch (e) {
-      if (mounted) { Navigator.pop(context); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('換源失敗: $e'))); }
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('換源失敗: $e')));
+      }
     }
   }
 
@@ -145,10 +159,18 @@ class _ChangeChapterSourceSheetState extends State<ChangeChapterSourceSheet> {
         content: Text('偵測到新來源為${newBook.type == 2 ? "有聲" : "文本"}類型，是否遷移？'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-          ElevatedButton(onPressed: () {
-            Navigator.pop(ctx); Navigator.pop(context);
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => newBook.type == 2 ? AudioPlayerPage(book: newBook, chapterIndex: newBook.durChapterIndex) : ReaderPage(book: newBook)));
-          }, child: const Text('遷移並跳轉')),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              if (!context.mounted) return;
+              Navigator.pop(context);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => newBook.type == 2 ? AudioPlayerPage(book: newBook, chapterIndex: newBook.durChapterIndex) : ReaderPage(book: newBook)),
+              );
+            },
+            child: const Text('遷移並跳轉'),
+          ),
         ],
       ),
     );
