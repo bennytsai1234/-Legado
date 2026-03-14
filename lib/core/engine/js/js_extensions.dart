@@ -2,19 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_js/flutter_js.dart';
-import 'package:dio/dio.dart';
-import 'package:uuid/uuid.dart';
-import 'package:convert/convert.dart';
-import 'package:html/parser.dart' as html_parser;
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'js_encode_utils.dart';
-import 'package:legado_reader/core/engine/analyze_url.dart';
 import 'package:legado_reader/core/models/base_source.dart';
-import 'package:legado_reader/core/services/http_client.dart';
 import 'package:legado_reader/core/services/cookie_store.dart';
 import 'package:legado_reader/core/services/cache_manager.dart';
-import 'package:legado_reader/core/services/chinese_utils.dart';
 import 'package:legado_reader/core/services/encoding_detect.dart';
 import 'package:fast_gbk/fast_gbk.dart';
 
@@ -23,37 +16,53 @@ import 'package:crypto/crypto.dart';
 import 'package:archive/archive.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:legado_reader/core/services/backstage_webview.dart';
-import 'package:legado_reader/core/services/source_verification_service.dart';
 import 'query_ttf.dart';
+
+// 導入拆分後的擴展
+import 'extensions/js_network_extensions.dart';
+import 'extensions/js_crypto_extensions.dart';
+import 'extensions/js_string_extensions.dart';
 
 /// JsExtensions - JS 橋接擴展
 /// 對應 Android: help/JsExtensions.kt
 class JsExtensions {
   final JavascriptRuntime runtime;
   final BaseSource? source;
-  final CookieStore _cookieStore = CookieStore();
-  final CacheManager _cacheManager = CacheManager();
-  static final Map<String, QueryTTF> _ttfCache = {};
-  static final Map<String, String> _fontReplaceCache = {};
+  final CookieStore cookieStore = CookieStore();
+  final CacheManager cacheManager = CacheManager();
+  static final Map<String, QueryTTF> ttfCache = {};
+  static final Map<String, String> fontReplaceCache = {};
   
   // 全域 JS 作用域 (模擬 Android SharedJsScope)
-  static final Map<String, dynamic> _sharedScope = {};
+  static final Map<String, dynamic> sharedScope = {};
 
   JsExtensions(this.runtime, {this.source});
 
   /// 注入 java 物件及函式
   void inject() {
+    // 1. 注入基礎核心功能
+    _injectCoreExtensions();
+
+    // 2. 注入拆分後的擴展功能
+    injectNetworkExtensions();
+    injectCryptoExtensions();
+    injectStringExtensions();
+
+    // 3. 注入 java 物件及其屬性 (JS 端的封裝層)
+    _injectJavaObjectJs();
+  }
+
+  void _injectCoreExtensions() {
     // 實作 java.put
     runtime.onMessage('put', (dynamic args) {
       if (args is List && args.length >= 2) {
-        _sharedScope[args[0].toString()] = args[1];
+        sharedScope[args[0].toString()] = args[1];
       }
     });
 
     // 實作 java.get
     runtime.onMessage('get', (dynamic args) {
-      return _sharedScope[args.toString()];
+      return sharedScope[args.toString()];
     });
 
     // 實作 java.log
@@ -66,147 +75,10 @@ class JsExtensions {
       debugPrint('JS_TOAST: $args');
     });
 
-    // 實作 java.ajax(url) -> 返回 String body
-    runtime.onMessage('ajax', (dynamic args) async {
-      try {
-        final url = _parseUrlArg(args);
-        final analyzeUrl = AnalyzeUrl(url);
-        return await analyzeUrl.getResponseBody();
-      } catch (e) {
-        return e.toString();
-      }
-    });
-
-    // 實作 java.ajaxAll(urlList)
-    runtime.onMessage('ajaxAll', (dynamic args) async {
-      try {
-        if (args is List) {
-          final List<String> urls = args.map((e) => e.toString()).toList();
-          final List<Future<String>> futures =
-              urls.map((url) => AnalyzeUrl(url).getResponseBody()).toList();
-          return await Future.wait(futures);
-        }
-        return [];
-      } catch (e) {
-        return [e.toString()];
-      }
-    });
-
-    // 實作 java.connect(urlStr) -> 返回物件 {body: "...", url: "...", code: 200}
-    runtime.onMessage('connect', (dynamic args) async {
-      try {
-        final url = _parseUrlArg(args);
-        final analyzeUrl = AnalyzeUrl(url);
-        final body = await analyzeUrl.getResponseBody();
-        return {'body': body, 'url': analyzeUrl.url, 'code': 200};
-      } catch (e) {
-        return {'body': e.toString(), 'url': args.toString(), 'code': 500};
-      }
-    });
-
-    // 實作 java.get(url, headers)
-    runtime.onMessage('get', (dynamic args) async {
-      try {
-        final url = args[0].toString();
-        final Map<String, dynamic> headers = Map<String, dynamic>.from(
-          args[1] ?? {},
-        );
-        final response = await HttpClient().client.get(
-          url,
-          options: Options(headers: headers),
-        );
-        return {
-          'body': response.data.toString(),
-          'url': response.requestOptions.uri.toString(),
-          'code': response.statusCode,
-          'headers': response.headers.map,
-        };
-      } catch (e) {
-        return {'body': e.toString(), 'code': 500};
-      }
-    });
-
-    // 實作 java.post(url, body, headers)
-    runtime.onMessage('post', (dynamic args) async {
-      try {
-        final url = args[0].toString();
-        final body = args[1];
-        final Map<String, dynamic> headers = Map<String, dynamic>.from(
-          args[2] ?? {},
-        );
-        final response = await HttpClient().client.post(
-          url,
-          data: body,
-          options: Options(headers: headers),
-        );
-        return {
-          'body': response.data.toString(),
-          'url': response.requestOptions.uri.toString(),
-          'code': response.statusCode,
-          'headers': response.headers.map,
-        };
-      } catch (e) {
-        return {'body': e.toString(), 'code': 500};
-      }
-    });
-
-    // 實作 java.getCookie
-    runtime.onMessage('getCookie', (dynamic args) async {
-      final tag = args[0].toString();
-      final key = args.length > 1 ? args[1]?.toString() : null;
-      if (key != null) {
-        final cookie = await _cookieStore.getCookie(tag);
-        return _cookieStore.cookieToMap(cookie)[key] ?? "";
-      }
-      return await _cookieStore.getCookie(tag);
-    });
-
-    // 實作 java.createSymmetricCrypto
-    runtime.onMessage('symmetricCrypto', (dynamic args) {
-      final action = args[0].toString();
-      final transformation = args[1].toString();
-      final key = args[2];
-      final iv = args[3];
-      final data = args[4];
-      final outputFormat = args[5].toString();
-
-      return JsEncodeUtils.symmetricCrypto(
-        action,
-        transformation,
-        key,
-        iv,
-        data,
-        outputFormat: outputFormat,
-      );
-    });
-
-    // 實作 java.strToBytes
-    runtime.onMessage('strToBytes', (dynamic args) {
-      final str = args[0].toString();
-      final charset = args.length > 1 ? args[1].toString() : 'UTF-8';
-      if (charset.toUpperCase().contains('GBK') ||
-          charset.toUpperCase().contains('GB2312')) {
-        return gbk.encode(str);
-      }
-      return utf8.encode(str);
-    });
-
-    // 實作 java.bytesToStr
-    runtime.onMessage('bytesToStr', (dynamic args) {
-      final List<int> bytes = List<int>.from(args[0]);
-      final charset = args.length > 1 ? args[1].toString() : 'UTF-8';
-      if (charset.toUpperCase().contains('GBK') ||
-          charset.toUpperCase().contains('GB2312')) {
-        return gbk.decode(bytes);
-      }
-      return utf8.decode(bytes);
-    });
-
     // 實作 java.downloadFile
     runtime.onMessage('downloadFile', (dynamic args) async {
       final url = args.toString();
       try {
-        final dio = HttpClient().client;
         final key = JsEncodeUtils.md5Encode16(url);
         final tempDir = await getTemporaryDirectory();
         final savePath = p.join(tempDir.path, "downloads", key);
@@ -214,7 +86,8 @@ class JsExtensions {
         if (!await file.parent.exists()) {
           await file.parent.create(recursive: true);
         }
-        await dio.download(url, savePath);
+        final HttpClient client = HttpClient(); // Ensure this is available or use dio directly
+        await client.client.download(url, savePath);
         return savePath;
       } catch (e) {
         return "";
@@ -247,100 +120,6 @@ class JsExtensions {
       return "";
     });
 
-    // 注入輔助函式
-    runtime.onMessage(
-      '_md5Encode',
-      (dynamic args) => JsEncodeUtils.md5Encode(args.toString()),
-    );
-    runtime.onMessage(
-      '_md5Encode16',
-      (dynamic args) => JsEncodeUtils.md5Encode16(args.toString()),
-    );
-    runtime.onMessage(
-      '_base64Encode',
-      (dynamic args) => JsEncodeUtils.base64Encode(args.toString()),
-    );
-    runtime.onMessage('_base64Decode', (dynamic args) {
-      final str = args is List ? args[0].toString() : args.toString();
-      final charset =
-          args is List && args.length > 1 ? args[1].toString() : 'UTF-8';
-      return JsEncodeUtils.base64Decode(str, charset: charset);
-    });
-    runtime.onMessage(
-      '_hexEncode',
-      (dynamic args) => hex.encode(utf8.encode(args.toString())),
-    );
-    runtime.onMessage(
-      '_hexDecode',
-      (dynamic args) => utf8.decode(hex.decode(args.toString())),
-    );
-    runtime.onMessage('_randomUUID', (dynamic args) => const Uuid().v4());
-    runtime.onMessage('_timeFormat', (dynamic args) {
-      final time = args;
-      final t = time is int ? time : int.tryParse(time.toString()) ?? 0;
-      return DateTime.fromMillisecondsSinceEpoch(t).toIso8601String();
-    });
-
-    runtime.onMessage('_htmlFormat', (dynamic args) {
-      final doc = html_parser.parse(args.toString());
-      return doc.body?.text ?? "";
-    });
-
-    // 實作 java.webView
-    runtime.onMessage('webView', (dynamic args) async {
-      try {
-        final html = args[0]?.toString();
-        final url = args.length > 1 ? args[1]?.toString() : null;
-        final js = args.length > 2 ? args[2]?.toString() : null;
-        
-        final webView = BackstageWebView(
-          html: html,
-          url: url,
-          javaScript: js,
-        );
-        
-        final response = await webView.getStrResponse();
-        return response['body']?.toString() ?? "";
-      } catch (e) {
-        debugPrint('webView error: $e');
-        return e.toString();
-      }
-    });
-
-    // 實作 java.startBrowserAwait (高度還原 Android)
-    runtime.onMessage('startBrowserAwait', (dynamic args) async {
-      try {
-        final url = args[0].toString();
-        final title = args.length > 1 ? args[1].toString() : "驗證";
-        
-        final result = await SourceVerificationService().getVerificationResult(
-          sourceKey: source?.getKey() ?? "unknown",
-          url: url,
-          title: title,
-          useBrowser: true,
-        );
-        
-        return {'body': result, 'url': url, 'code': 200};
-      } catch (e) {
-        return {'body': e.toString(), 'url': args[0].toString(), 'code': 500};
-      }
-    });
-
-    // 實作 java.getVerificationCode
-    runtime.onMessage('getVerificationCode', (dynamic args) async {
-      try {
-        final imageUrl = args.toString();
-        return await SourceVerificationService().getVerificationResult(
-          sourceKey: source?.getKey() ?? "unknown",
-          url: imageUrl,
-          title: "請輸入驗證碼",
-          useBrowser: false,
-        );
-      } catch (e) {
-        return "";
-      }
-    });
-
     // 實作 java.unArchiveFile (高度還原 Android)
     runtime.onMessage('unArchiveFile', (dynamic args) async {
       try {
@@ -365,29 +144,6 @@ class JsExtensions {
         return p.relative(outPath, from: tempDir.path);
       } catch (_) {
         return "";
-      }
-    });
-
-    // 實作 java.getZipByteArrayContent
-    runtime.onMessage('getZipByteArrayContent', (dynamic args) async {
-      try {
-        final url = args[0].toString();
-        final innerPath = args[1].toString();
-        
-        Uint8List? bytes;
-        if (url.startsWith('http')) {
-          final analyzeUrl = AnalyzeUrl(url, source: source);
-          bytes = await analyzeUrl.getByteArray();
-        } else {
-          bytes = Uint8List.fromList(hex.decode(url));
-        }
-        
-        if (bytes == null) return null;
-        final archive = ZipDecoder().decodeBytes(bytes);
-        final file = archive.findFile(innerPath);
-        return file?.content as List<int>?;
-      } catch (_) {
-        return null;
       }
     });
 
@@ -418,32 +174,6 @@ class JsExtensions {
       }
     });
 
-    runtime.onMessage('t2s', (dynamic args) => ChineseUtils.t2s(args.toString()));
-    runtime.onMessage('s2t', (dynamic args) => ChineseUtils.s2t(args.toString()));
-
-    // 實作 java.toNumChapter (高度還原 Android)
-    runtime.onMessage('_toNumChapter', (dynamic args) {
-      final s = args.toString();
-      final regex = RegExp(r'(.*?)([〇零一二三四五六七八九十百千萬億壹貳叁肆伍陸柒捌玖拾佰仟]+)(.*)');
-      final match = regex.firstMatch(s);
-      if (match != null) {
-        final intStr = _chineseNumToInt(match.group(2)!);
-        return "${match.group(1)}$intStr${match.group(3)}";
-      }
-      return s;
-    });
-
-    // 實作 java.timeFormatUTC
-    runtime.onMessage('timeFormatUTC', (dynamic args) {
-      try {
-        final time = args[0] as int;
-        final format = args[1].toString();
-        final offsetMs = args[2] as int;
-        final date = DateTime.fromMillisecondsSinceEpoch(time, isUtc: true).add(Duration(milliseconds: offsetMs));
-        return DateFormat(format).format(date);
-      } catch (_) { return ""; }
-    });
-
     // 實作 java.openUrl
     runtime.onMessage('openUrl', (dynamic args) async {
       try {
@@ -461,15 +191,17 @@ class JsExtensions {
         String key = "";
         if (useCache) {
           key = md5.convert(utf8.encode(dataStr)).toString();
-          if (_ttfCache.containsKey(key)) {
+          if (ttfCache.containsKey(key)) {
             return key;
           }
         }
         
         Uint8List? buffer;
         if (dataStr.startsWith('http')) {
-          final analyzeUrl = AnalyzeUrl(dataStr);
-          buffer = await analyzeUrl.getByteArray();
+          // This would ideally use a network extension method, but keeping here for core logic
+          final client = HttpClient().client;
+          final response = await client.get<List<int>>(dataStr, options: Options(responseType: ResponseType.bytes));
+          buffer = response.data != null ? Uint8List.fromList(response.data!) : null;
         } else {
           buffer = base64Decode(dataStr);
         }
@@ -477,7 +209,7 @@ class JsExtensions {
         if (buffer != null) {
           final qTTF = QueryTTF(buffer);
           final cacheKey = key.isNotEmpty ? key : md5.convert(buffer).toString();
-          _ttfCache[cacheKey] = qTTF;
+          ttfCache[cacheKey] = qTTF;
           return cacheKey;
         }
       } catch (e) {
@@ -492,14 +224,13 @@ class JsExtensions {
         final errorKey = args[1]?.toString();
         final correctKey = args[2]?.toString();
         
-        // 增加緩存 key，包含文本與字體 ID
         final cacheKey = "${errorKey}_${correctKey}_${text.hashCode}";
-        if (_fontReplaceCache.containsKey(cacheKey)) {
-          return _fontReplaceCache[cacheKey];
+        if (fontReplaceCache.containsKey(cacheKey)) {
+          return fontReplaceCache[cacheKey];
         }
 
-        final errorTTF = errorKey != null ? _ttfCache[errorKey] : null;
-        final correctTTF = correctKey != null ? _ttfCache[correctKey] : null;
+        final errorTTF = errorKey != null ? ttfCache[errorKey] : null;
+        final correctTTF = correctKey != null ? ttfCache[correctKey] : null;
 
         if (errorTTF == null || correctTTF == null) return text;
         
@@ -526,8 +257,8 @@ class JsExtensions {
         }
         
         final finalResult = result.toString();
-        if (_fontReplaceCache.length > 500) _fontReplaceCache.clear();
-        _fontReplaceCache[cacheKey] = finalResult;
+        if (fontReplaceCache.length > 500) fontReplaceCache.clear();
+        fontReplaceCache[cacheKey] = finalResult;
         
         return finalResult;
       } catch (e) {
@@ -536,7 +267,27 @@ class JsExtensions {
       }
     });
 
-    // 注入 java 物件及其屬性
+    runtime.onMessage('importScript', (dynamic args) async {
+      final path = args.toString();
+      if (path.startsWith('http')) {
+        return await cacheFile(path, 0);
+      } else {
+        final file = File(path);
+        if (await file.exists()) {
+          return await file.readAsString();
+        }
+      }
+      return "";
+    });
+
+    runtime.onMessage('cacheFile', (dynamic args) async {
+      final url = args[0].toString();
+      final saveTime = args.length > 1 ? args[1] as int : 0;
+      return await cacheFile(url, saveTime);
+    });
+  }
+
+  void _injectJavaObjectJs() {
     runtime.evaluate('''
       var java = {
         ajax: function(url) { return sendMessage('ajax', JSON.stringify(url)); },
@@ -627,38 +378,20 @@ class JsExtensions {
         }
       };
     ''');
-
-    // 額外訊息處理
-    runtime.onMessage('importScript', (dynamic args) async {
-      final path = args.toString();
-      if (path.startsWith('http')) {
-        return await _cacheFile(path, 0);
-      } else {
-        final file = File(path);
-        if (await file.exists()) {
-          return await file.readAsString();
-        }
-      }
-      return "";
-    });
-
-    runtime.onMessage('cacheFile', (dynamic args) async {
-      final url = args[0].toString();
-      final saveTime = args.length > 1 ? args[1] as int : 0;
-      return await _cacheFile(url, saveTime);
-    });
   }
 
-  Future<String> _cacheFile(String url, int saveTime) async {
+  Future<String> cacheFile(String url, int saveTime) async {
     final key = JsEncodeUtils.md5Encode16(url);
-    final cached = await _cacheManager.get(key);
+    final cached = await cacheManager.get(key);
     if (cached != null) return cached;
 
     try {
-      final analyzeUrl = AnalyzeUrl(url);
-      final content = await analyzeUrl.getResponseBody();
+      // Use core logic or network extensions
+      final HttpClient client = HttpClient();
+      final response = await client.client.get(url);
+      final content = response.data.toString();
       if (content.isNotEmpty) {
-        await _cacheManager.put(key, content);
+        await cacheManager.put(key, content);
       }
       return content;
     } catch (e) {
@@ -666,66 +399,7 @@ class JsExtensions {
     }
   }
 
-  /// 中文數字轉整數 (深度還原 Android chineseNumToInt)
-  int _chineseNumToInt(String chNum) {
-    final chnMap = {
-      '零': 0, '〇': 0, '一': 1, '二': 2, '两': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10,
-      '壹': 1, '貳': 2, '叁': 3, '肆': 4, '伍': 5, '陸': 6, '柒': 7, '捌': 8, '玖': 9, '拾': 10,
-      '百': 100, '佰': 100, '千': 1000, '仟': 1000, '萬': 10000, '億': 100000000,
-    };
-
-    if (chNum.length > 1 && RegExp(r'^[〇零一二三四五六七八九壹貳叁肆伍陸柒捌玖]+$').hasMatch(chNum)) {
-      String res = "";
-      for (var i = 0; i < chNum.length; i++) {
-        res += (chnMap[chNum[i]] ?? 0).toString();
-      }
-      return int.tryParse(res) ?? -1;
-    }
-
-    int result = 0;
-    int tmp = 0;
-    int billion = 0;
-
-    try {
-      for (var i = 0; i < chNum.length; i++) {
-        final val = chnMap[chNum[i]] ?? 0;
-        if (val == 100000000) {
-          result += tmp;
-          result *= val;
-          billion = billion * 100000000 + result;
-          result = 0; tmp = 0;
-        } else if (val == 10000) {
-          result += tmp;
-          result *= val;
-          tmp = 0;
-        } else if (val >= 10) {
-          if (tmp == 0) tmp = 1;
-          result += val * tmp;
-          tmp = 0;
-        } else {
-          tmp = (i >= 2 && i == chNum.length - 1 && (chnMap[chNum[i - 1]] ?? 0) > 10)
-              ? val * (chnMap[chNum[i - 1]] ?? 0) ~/ 10
-              : tmp * 10 + val;
-        }
-      }
-      return result + tmp + billion;
-    } catch (_) {
-      return -1;
-    }
-  }
-
-  String _parseUrlArg(dynamic args) {
-    if (args is List && args.isNotEmpty) return args[0].toString();
-    return args.toString();
-  }
-
-  // 靜態輔助方法，供其它地方獲取通用 JS
   static String getUtilsJs() {
-    return ""; // 目前主要透過 inject() 動態注入
+    return "";
   }
-}
-
-// 修正 debugPrint 缺失問題
-void debugPrint(String message) {
-  // Use a proper logger or just ignore if it's too noisy
 }
