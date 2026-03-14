@@ -195,4 +195,17 @@ class ChapterDao {
       WHERE bookUrl NOT IN (SELECT bookUrl FROM books WHERE isInBookshelf = 1)
     ''');
   }
+
+  /// 獲取所有正文內容的總大小 (預估值)
+  Future<int> getTotalContentSize() async {
+    final db = await _db;
+    final result = await db.rawQuery('SELECT SUM(LENGTH(content)) as total FROM $contentsTable');
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  /// 清空所有正文快取
+  Future<void> clearAllContent() async {
+    final db = await _db;
+    await db.delete(contentsTable);
+  }
 }

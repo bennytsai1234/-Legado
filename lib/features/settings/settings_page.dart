@@ -11,6 +11,7 @@ import '../dict/dict_rule_page.dart';
 import 'other_settings_page.dart';
 import 'aloud_settings_page.dart';
 import '../cache_manager/download_manager_page.dart';
+import '../cache_manager/global_cache_page.dart';
 import '../about/about_page.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -122,6 +123,17 @@ class SettingsPage extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const DownloadManagerPage()),
+                  );
+                },
+              ),
+              _buildListTile(
+                context,
+                icon: Icons.storage_outlined,
+                title: '儲存空間管理',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const GlobalCachePage()),
                   );
                 },
               ),
