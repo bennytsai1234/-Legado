@@ -11,6 +11,20 @@
 | `RuleData.kt` | ⚠️ Partial | **移植規格**：需在 `rule_data_interface.dart` 同目錄實作 `RuleData` 類，補全 `variableMap` 的 JSON 序列化邏輯。 |
 
 ### 🛠️ 待辦缺口 (Todo Gaps)
-- [ ] GAP-ANALYZE-01: 實作 `CustomUrl` 類別，支援 URL 屬性解析與 `toString()` 序列化。
-- [ ] GAP-ANALYZE-02: 實作 `RuleData` 類別，補全 `RuleDataInterface` 的具體業務邏輯。
+- [x] GAP-ANALYZE-01: 實作 `CustomUrl` 類別，支援 URL 屬性解析與 `toString()` 序列化。
+- [x] GAP-ANALYZE-02: 實作 `RuleData` 類別，補全 `RuleDataInterface` 的具體業務邏輯。
+
+## 🔍 審計報告：`io.legado.app.data.entities`
+
+### 📄 檔案對比清單
+| 檔案名稱 | 狀態 | 診斷詳情 |
+|:---|:---|:---|
+| `Book.kt` | ⚠️ Partial | **移植規格**：需在 `book_extensions.dart` 補全進度百分比計算與 `simulatedTotalChapterNum` 邏輯。 |
+| `BookSource.kt` | ⚠️ Partial | **移植規格**：需在 `book_source_logic.dart` 強化分組解析，對齊 `splitNotBlank` 行為。 |
+| `SearchBook.kt` | ⚠️ Partial | **移植規格**：需在 `search_book.dart` 實作 `origins` 集合與 `addOrigin` 方法，支持搜尋結果聚合。 |
+
+### 🛠️ 待辦缺口 (Todo Gaps)
+- [ ] GAP-DATA-01: 在 `BookExtensions` 補全閱讀進度百分比與模擬章節邏輯。
+- [ ] GAP-DATA-02: 在 `BookSourceLogic` 強化分組標籤解析。
+- [ ] GAP-DATA-03: 在 `SearchBook` 加入多來源聚合邏輯。
 <!-- AUDIT_FOLDER_END -->
