@@ -16,7 +16,7 @@ import 'engine/text_page.dart';
 import 'engine/chapter_provider.dart';
 import '../../core/database/dao/bookmark_dao.dart';
 import '../../core/models/bookmark.dart';
-import '../../core/services/content_processor.dart';
+import '../../core/engine/reader/content_processor.dart' as engine;
 import '../../core/services/webdav_service.dart';
 import '../../core/database/dao/http_tts_dao.dart';
 import '../../core/services/http_tts_service.dart';
@@ -280,7 +280,7 @@ class ReaderProvider extends ChangeNotifier {
     _themeIndex = i.clamp(0, AppTheme.readingThemes.length - 1);
     final theme = AppTheme.readingThemes[_themeIndex];
     
-    // 套用主題內的排版細節 (對標 Android applyConfig)
+    // 套用主題內的排版設定
     _fontSize = theme.textSize;
     _lineHeight = theme.lineSpacing;
     _paragraphSpacing = theme.paragraphSpacing;
@@ -350,43 +350,42 @@ class ReaderProvider extends ChangeNotifier {
   }
 
   Future<void> loadChapter(int index) async {
-    if (index < 0 || index >= _chapters.length) {
-      return;
-    }
+    if (index < 0 || index >= _chapters.length) return;
     _isLoading = true;
     _currentChapterIndex = index;
     notifyListeners();
     try {
+      final chapter = _chapters[index];
       String? cachedContent = await _chapterDao.getContent(book.bookUrl, index);
       String rawContent = "";
+      
       if (_chapterSourceOverrides.containsKey(index)) {
-        rawContent = await _service.getContent(
-            _chapterSourceOverrides[index]!, book, _chapters[index]);
+        rawContent = await _service.getContent(_chapterSourceOverrides[index]!, book, chapter);
       } else if (cachedContent != null) {
         rawContent = cachedContent;
       } else {
-        if (_source == null) {
-          await _loadSource();
-        }
-        rawContent =
-            await _service.getContent(_source!, book, _chapters[index]);
+        if (_source == null) await _loadSource();
+        rawContent = await _service.getContent(_source!, book, chapter);
         await _chapterDao.saveContent(book.bookUrl, index, rawContent);
       }
-      final enabledRules = await _replaceDao.getEnabled();
-      _content = ContentProcessor.processContent(book, _chapters[index],
-          rawContent,
-          rules: enabledRules, chineseConvertType: _chineseConvert);
-      await _bookDao.updateProgress(
-          book.bookUrl, index, 0, _chapters[index].title);
+
+      final rules = await _replaceDao.getEnabled();
+      _content = engine.ContentProcessor.process(
+        book: book,
+        chapter: chapter,
+        rawContent: rawContent,
+        rules: rules,
+        chineseConvertType: _chineseConvert,
+        reSegmentEnabled: true,
+        removeSameTitle: _removeSameTitle,
+      );
+      
+      await _bookDao.updateProgress(book.bookUrl, index, 0, chapter.title);
       WebDAVService().uploadBookProgress(book);
       
       // 同步到桌面小組件
-      final progress = _chapters.isNotEmpty ? (_currentChapterIndex / _chapters.length) : 0.0;
-      WidgetService().updateRecentBook(
-        book, 
-        lastChapterTitle: _chapters[_currentChapterIndex].title,
-        progress: progress,
-      );
+      final progress = _chapters.isNotEmpty ? (index / _chapters.length) : 0.0;
+      WidgetService().updateRecentBook(book, lastChapterTitle: chapter.title, progress: progress);
 
       _doPaginate();
     } catch (e) {
@@ -396,8 +395,7 @@ class ReaderProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> replaceChapterSource(
-      int index, BookSource source, String content) async {
+  Future<void> replaceChapterSource(int index, BookSource source, String content) async {
     _chapterSourceOverrides[index] = source;
     _content = content;
     await _chapterDao.saveContent(book.bookUrl, index, content);
@@ -406,9 +404,7 @@ class ReaderProvider extends ChangeNotifier {
 
   Future<void> _loadSource() async {
     final sources = await _sourceDao.getAll();
-    _source = sources
-        .cast<BookSource?>()
-        .firstWhere((s) => s?.bookSourceUrl == book.origin, orElse: () => null);
+    _source = sources.cast<BookSource?>().firstWhere((s) => s?.bookSourceUrl == book.origin, orElse: () => null);
   }
 
   Future<void> _loadChapters() async {
@@ -445,17 +441,12 @@ class ReaderProvider extends ChangeNotifier {
 
   void toggleTts() async {
     if (_ttsMode == 0) {
-      if (tts.isPlaying) {
-        tts.stop();
-      } else {
-        tts.speak(_content);
-      }
+      tts.isPlaying ? tts.stop() : tts.speak(_content);
     } else {
       if (httpTts.isPlaying) {
         httpTts.stop();
       } else if (_selectedHttpTtsId != null) {
-        final eng =
-            _httpTtsEngines.firstWhere((e) => e.id == _selectedHttpTtsId);
+        final eng = _httpTtsEngines.firstWhere((e) => e.id == _selectedHttpTtsId);
         await httpTts.speakList(eng, _content.split('\n'));
       }
     }
@@ -466,10 +457,7 @@ class ReaderProvider extends ChangeNotifier {
     _isAutoPaging = true;
     _autoPageTimer?.cancel();
     _autoPageTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
-      if (!_isAutoPaging) {
-        timer.cancel();
-        return;
-      }
+      if (!_isAutoPaging) { timer.cancel(); return; }
       final delta = 0.016 / _autoPageSpeed;
       _autoPageProgress += delta;
       if (_autoPageProgress >= 1.0) {
@@ -489,16 +477,10 @@ class ReaderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleAutoPage() {
-    _isAutoPaging ? stopAutoPage() : startAutoPage();
-  }
+  void toggleAutoPage() { _isAutoPaging ? stopAutoPage() : startAutoPage(); }
 
   Future<void> toggleBookmark() async {
-    final existing = _bookmarks.cast<Bookmark?>().firstWhere(
-        (b) =>
-            b?.chapterIndex == _currentChapterIndex &&
-            b?.chapterPos == _currentPageIndex,
-        orElse: () => null);
+    final existing = _bookmarks.cast<Bookmark?>().firstWhere((b) => b?.chapterIndex == _currentChapterIndex && b?.chapterPos == _currentPageIndex, orElse: () => null);
     if (existing != null) {
       await _bookmarkDao.delete(existing);
     } else {
@@ -521,11 +503,8 @@ class ReaderProvider extends ChangeNotifier {
     try {
       final sources = await _sourceDao.getEnabled();
       for (final s in sources) {
-        if (s.bookSourceUrl == _source?.bookSourceUrl) {
-          continue;
-        }
-        final searchResults =
-            await _service.preciseSearch([s], book.name, book.author);
+        if (s.bookSourceUrl == _source?.bookSourceUrl) continue;
+        final searchResults = await _service.preciseSearch([s], book.name, book.author);
         if (searchResults.isNotEmpty) {
           final bestMatch = searchResults.first;
           book.bookUrl = bestMatch.bookUrl;
@@ -554,36 +533,17 @@ class ReaderProvider extends ChangeNotifier {
         res.add({
           'chapterIndex': i,
           'chapterTitle': chapters[i].title,
-          'snippet':
-              '...${c.substring((c.indexOf(kw) - 20).clamp(0, c.length), (c.indexOf(kw) + kw.length + 20).clamp(0, c.length)).replaceAll('\n', ' ')}...'
+          'snippet': '...${c.substring((c.indexOf(kw) - 20).clamp(0, c.length), (c.indexOf(kw) + kw.length + 20).clamp(0, c.length)).replaceAll('\n', ' ')}...'
         });
       }
     }
     return res;
   }
 
-  void updateViewSize(Size size) {
-    if (_viewSize != size) {
-      _viewSize = size;
-      _doPaginate();
-    }
-  }
-
-  void toggleReverseContent() {
-    _reverseContent = !_reverseContent;
-    loadChapter(_currentChapterIndex);
-  }
-
-  void toggleRemoveSameTitle() {
-    _removeSameTitle = !_removeSameTitle;
-    loadChapter(_currentChapterIndex);
-  }
+  void updateViewSize(Size size) { if (_viewSize != size) { _viewSize = size; _doPaginate(); } }
+  void toggleReverseContent() { _reverseContent = !_reverseContent; loadChapter(_currentChapterIndex); }
+  void toggleRemoveSameTitle() { _removeSameTitle = !_removeSameTitle; loadChapter(_currentChapterIndex); }
 
   @override
-  void dispose() {
-    tts.stop();
-    httpTts.stop();
-    _autoPageTimer?.cancel();
-    super.dispose();
-  }
+  void dispose() { tts.stop(); httpTts.stop(); _autoPageTimer?.cancel(); super.dispose(); }
 }
