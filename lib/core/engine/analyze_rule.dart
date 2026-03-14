@@ -6,10 +6,10 @@ import 'parsers/analyze_by_json_path.dart';
 import 'parsers/analyze_by_xpath.dart';
 import 'parsers/analyze_by_regex.dart';
 import 'js/js_engine.dart';
-import '../services/cookie_store.dart';
-import '../services/cache_manager.dart';
-import '../services/http_client.dart';
-import '../models/rule_data_interface.dart';
+import 'package:legado_reader/core/services/cookie_store.dart';
+import 'package:legado_reader/core/services/cache_manager.dart';
+import 'package:legado_reader/core/services/http_client.dart';
+import 'package:legado_reader/core/models/rule_data_interface.dart';
 
 /// AnalyzeRule - 規則總控
 /// 對應 Android: model/analyzeRule/AnalyzeRule.kt (32KB)

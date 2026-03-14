@@ -1,7 +1,7 @@
-import '../../core/base/base_provider.dart';
-import '../../core/engine/analyze_url.dart';
-import '../../core/database/dao/book_source_dao.dart';
-import '../../core/services/cookie_store.dart';
+import 'package:legado_reader/core/base/base_provider.dart';
+import 'package:legado_reader/core/engine/analyze_url.dart';
+import 'package:legado_reader/core/database/dao/book_source_dao.dart';
+import 'package:legado_reader/core/services/cookie_store.dart';
 import 'browser_params.dart';
 
 class BrowserProvider extends BaseProvider {

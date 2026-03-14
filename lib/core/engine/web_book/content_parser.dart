@@ -1,5 +1,5 @@
-import '../../../../core/models/book_source.dart';
-import '../analyze_rule.dart';
+import 'package:legado_reader/core/models/book_source.dart';
+import 'package:legado_reader/core/engine/analyze_rule.dart';
 
 class ContentParser {
   static String parse({

@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import '../../models/rss_source.dart';
-import '../app_database.dart';
+import 'package:legado_reader/core/models/rss_source.dart';
+import 'package:legado_reader/core/database/app_database.dart';
 
 class RssSourceDao {
   static const String tableName = 'rss_sources';
@@ -106,3 +106,4 @@ class RssSourceDao {
     return groups.toList()..sort();
   }
 }
+

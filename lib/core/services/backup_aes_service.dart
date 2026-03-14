@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart' as enc;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../constant/prefer_key.dart';
+import 'package:legado_reader/core/constant/prefer_key.dart';
 
 /// BackupAESService - 對標 Android BackupAES.kt
 /// 用於加密備份中的敏感資訊（如 WebDav 密碼、伺服器配置）

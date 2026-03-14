@@ -9,13 +9,13 @@ import 'package:html/parser.dart' as html_parser;
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'js_encode_utils.dart';
-import '../analyze_url.dart';
-import '../../models/base_source.dart';
-import '../../services/http_client.dart';
-import '../../services/cookie_store.dart';
-import '../../services/cache_manager.dart';
-import '../../services/chinese_utils.dart';
-import '../../services/encoding_detect.dart';
+import 'package:legado_reader/core/engine/analyze_url.dart';
+import 'package:legado_reader/core/models/base_source.dart';
+import 'package:legado_reader/core/services/http_client.dart';
+import 'package:legado_reader/core/services/cookie_store.dart';
+import 'package:legado_reader/core/services/cache_manager.dart';
+import 'package:legado_reader/core/services/chinese_utils.dart';
+import 'package:legado_reader/core/services/encoding_detect.dart';
 import 'package:fast_gbk/fast_gbk.dart';
 
 import 'dart:typed_data';
@@ -23,8 +23,8 @@ import 'package:crypto/crypto.dart';
 import 'package:archive/archive.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../services/backstage_webview.dart';
-import '../../services/source_verification_service.dart';
+import 'package:legado_reader/core/services/backstage_webview.dart';
+import 'package:legado_reader/core/services/source_verification_service.dart';
 import 'query_ttf.dart';
 
 /// JsExtensions - JS 橋接擴展

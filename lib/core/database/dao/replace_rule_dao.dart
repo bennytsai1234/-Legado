@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import '../../models/replace_rule.dart';
-import '../app_database.dart';
+import 'package:legado_reader/core/models/replace_rule.dart';
+import 'package:legado_reader/core/database/app_database.dart';
 
 /// ReplaceRuleDao - 替換規則資料存取對象
 class ReplaceRuleDao {
@@ -74,3 +74,4 @@ class ReplaceRuleDao {
     );
   }
 }
+

@@ -319,34 +319,44 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
   }
 
   Future<void> _scanQrCode(BuildContext context, SourceManagerProvider provider) async {
+    final messenger = ScaffoldMessenger.of(context);
     final String? result = await Navigator.push(context, MaterialPageRoute(builder: (context) => const QrScanPage()));
-    if (result != null && result.isNotEmpty && context.mounted) {
+    
+    if (result != null && result.isNotEmpty) {
+      if (!context.mounted) return;
       final count = await provider.importFromQr(result);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(count > 0 ? '成功匯入 $count 個書源' : '未找到有效書源')));
+      messenger.showSnackBar(SnackBar(content: Text(count > 0 ? '成功匯入 $count 個書源' : '未找到有效書源')));
     }
   }
 
   Future<void> _importFromFile(BuildContext context) async {
+    final provider = context.read<SourceManagerProvider>();
     final messenger = ScaffoldMessenger.of(context);
+    
     try {
       final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['json', 'txt']);
-      if (result != null && result.files.single.path != null && mounted) {
+      if (result != null && result.files.single.path != null) {
+        if (!context.mounted) return;
         final file = File(result.files.single.path!);
         final content = await file.readAsString();
-        final count = await context.read<SourceManagerProvider>().importFromText(content);
+        final count = await provider.importFromText(content);
+        if (!context.mounted) return;
         messenger.showSnackBar(SnackBar(content: Text(count > 0 ? '從檔案匯入 $count 個書源' : '檔案無有效書源')));
       }
     } catch (e) {
-      if (mounted) messenger.showSnackBar(SnackBar(content: Text('選取檔案出錯: $e')));
+      if (context.mounted) messenger.showSnackBar(SnackBar(content: Text('選取檔案出錯: $e')));
     }
   }
 
   Future<void> _importFromClipboard(BuildContext context) async {
+    final provider = context.read<SourceManagerProvider>();
     final messenger = ScaffoldMessenger.of(context);
     final data = await Clipboard.getData(Clipboard.kTextPlain);
-    if (data?.text != null && mounted) {
-      final count = await context.read<SourceManagerProvider>().importFromText(data!.text!);
+    
+    if (data?.text != null) {
+      final count = await provider.importFromText(data!.text!);
+      if (!context.mounted) return;
       messenger.showSnackBar(SnackBar(content: Text(count > 0 ? '從剪貼簿匯入 $count 個書源' : '剪貼簿無有效書源')));
     }
   }

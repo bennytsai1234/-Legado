@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import '../../models/rule_sub.dart';
-import '../app_database.dart';
+import 'package:legado_reader/core/models/rule_sub.dart';
+import 'package:legado_reader/core/database/app_database.dart';
 
 class RuleSubDao {
   static const String tableName = 'rule_subs';
@@ -42,3 +42,4 @@ class RuleSubDao {
     }).toList();
   }
 }
+

@@ -1,6 +1,6 @@
-import '../../models/book_source.dart';
-import '../../models/search_book.dart';
-import '../analyze_rule.dart';
+import 'package:legado_reader/core/models/book_source.dart';
+import 'package:legado_reader/core/models/search_book.dart';
+import 'package:legado_reader/core/engine/analyze_rule.dart';
 
 class BookListParser {
   static List<SearchBook> parse({

@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import '../../models/rss_article.dart';
-import '../app_database.dart';
+import 'package:legado_reader/core/models/rss_article.dart';
+import 'package:legado_reader/core/database/app_database.dart';
 
 class RssArticleDao {
   static const String tableName = 'rss_articles';
@@ -61,3 +61,4 @@ class RssArticleDao {
     await db.update(tableName, {'read': read ? 1 : 0}, where: 'origin = ? AND link = ?', whereArgs: [origin, link]);
   }
 }
+

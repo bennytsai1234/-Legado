@@ -5,9 +5,9 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
-import '../../core/database/app_database.dart';
-import '../../core/constant/prefer_key.dart';
-import '../../core/services/webdav_service.dart';
+import 'package:legado_reader/core/database/app_database.dart';
+import 'package:legado_reader/core/constant/prefer_key.dart';
+import 'package:legado_reader/core/services/webdav_service.dart';
 
 class SettingsProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;

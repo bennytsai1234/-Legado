@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import '../app_database.dart';
-import '../../models/cache.dart';
+import 'package:legado_reader/core/database/app_database.dart';
+import 'package:legado_reader/core/models/cache.dart';
 
 /// CacheDao - 快取資料表操作
 /// 對應 Android: data/dao/CacheDao.kt
@@ -82,3 +82,4 @@ class CacheDao {
     );
   }
 }
+

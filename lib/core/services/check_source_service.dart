@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import '../models/book.dart';
-import '../database/dao/book_source_dao.dart';
+import 'package:legado_reader/core/models/book.dart';
+import 'package:legado_reader/core/database/dao/book_source_dao.dart';
 import 'book_source_service.dart';
 import 'event_bus.dart';
 

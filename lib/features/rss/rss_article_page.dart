@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../core/models/rss_source.dart';
-import '../../core/models/rss_article.dart';
+import 'package:legado_reader/core/models/rss_source.dart';
+import 'package:legado_reader/core/models/rss_article.dart';
 import 'rss_article_provider.dart';
 import 'rss_read_page.dart';
 

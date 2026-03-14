@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import '../../models/download_task.dart';
-import '../app_database.dart';
+import 'package:legado_reader/core/models/download_task.dart';
+import 'package:legado_reader/core/database/app_database.dart';
 
 /// DownloadDao - 下載任務資料存取對象
 class DownloadDao {
@@ -69,3 +69,4 @@ class DownloadDao {
     await db.delete(tableName, where: 'status = ?', whereArgs: [3]);
   }
 }
+

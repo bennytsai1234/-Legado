@@ -3,12 +3,12 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'rule_analyzer.dart';
 import 'analyze_rule.dart';
-import '../models/base_source.dart';
-import '../services/http_client.dart';
-import '../services/cookie_store.dart';
-import '../services/app_log_service.dart';
-import '../services/backstage_webview.dart';
-import '../services/rate_limiter.dart';
+import 'package:legado_reader/core/models/base_source.dart';
+import 'package:legado_reader/core/services/http_client.dart';
+import 'package:legado_reader/core/services/cookie_store.dart';
+import 'package:legado_reader/core/services/app_log_service.dart';
+import 'package:legado_reader/core/services/backstage_webview.dart';
+import 'package:legado_reader/core/services/rate_limiter.dart';
 import 'package:fast_gbk/fast_gbk.dart';
 
 /// AnalyzeUrl - URL 構建與請求引擎

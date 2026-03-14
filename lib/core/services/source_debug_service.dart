@@ -3,11 +3,11 @@ import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'book_source_service.dart';
 import 'web_service.dart';
-import '../models/book_source.dart';
-import '../models/book.dart';
-import '../models/chapter.dart';
-import '../utils/html_formatter.dart';
-import '../engine/analyze_url.dart';
+import 'package:legado_reader/core/models/book_source.dart';
+import 'package:legado_reader/core/models/book.dart';
+import 'package:legado_reader/core/models/chapter.dart';
+import 'package:legado_reader/core/utils/html_formatter.dart';
+import 'package:legado_reader/core/engine/analyze_url.dart';
 
 class DebugLog {
   final int state; // 1: info, 10: search, 20: detail, 30: toc, 40: content, 1000: success, -1: error

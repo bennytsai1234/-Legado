@@ -4,19 +4,19 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
-import '../database/dao/book_dao.dart';
-import '../database/dao/book_source_dao.dart';
-import '../database/dao/chapter_dao.dart';
-import '../database/dao/replace_rule_dao.dart';
-import '../database/dao/rss_source_dao.dart';
-import '../models/api_response.dart';
-import '../models/book.dart';
-import '../models/book_source.dart';
-import '../models/book_progress.dart';
-import '../models/replace_rule.dart';
-import '../models/rss_source.dart';
+import 'package:legado_reader/core/database/dao/book_dao.dart';
+import 'package:legado_reader/core/database/dao/book_source_dao.dart';
+import 'package:legado_reader/core/database/dao/chapter_dao.dart';
+import 'package:legado_reader/core/database/dao/replace_rule_dao.dart';
+import 'package:legado_reader/core/database/dao/rss_source_dao.dart';
+import 'package:legado_reader/core/models/api_response.dart';
+import 'package:legado_reader/core/models/book.dart';
+import 'package:legado_reader/core/models/book_source.dart';
+import 'package:legado_reader/core/models/book_progress.dart';
+import 'package:legado_reader/core/models/replace_rule.dart';
+import 'package:legado_reader/core/models/rss_source.dart';
 import 'book_source_service.dart';
-import '../engine/app_event_bus.dart';
+import 'package:legado_reader/core/engine/app_event_bus.dart';
 
 /// WebService - 本地 Web 伺服器
 /// 對應 Android: service/WebService.kt 與 web/HttpServer.kt

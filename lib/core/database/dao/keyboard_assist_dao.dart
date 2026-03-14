@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import '../../models/keyboard_assist.dart';
-import '../app_database.dart';
+import 'package:legado_reader/core/models/keyboard_assist.dart';
+import 'package:legado_reader/core/database/app_database.dart';
 
 class KeyboardAssistDao {
   static const String tableName = 'keyboard_assists';
@@ -26,3 +26,4 @@ class KeyboardAssistDao {
     );
   }
 }
+

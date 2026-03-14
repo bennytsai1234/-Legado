@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:json_path/json_path.dart';
-import '../rule_analyzer.dart';
+import 'package:legado_reader/core/engine/rule_analyzer.dart';
 
 /// AnalyzeByJsonPath - JsonPath 解析器
 /// 對應 Android: model/analyzeRule/AnalyzeByJSonPath.kt (6KB)

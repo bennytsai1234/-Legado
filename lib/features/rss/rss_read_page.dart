@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import '../../core/models/rss_source.dart';
-import '../../core/models/rss_article.dart';
-import '../../core/models/rss_star.dart';
-import '../../core/database/dao/rss_star_dao.dart';
-import '../../core/services/rss_parser.dart';
-import '../../core/engine/analyze_url.dart';
+import 'package:legado_reader/core/models/rss_source.dart';
+import 'package:legado_reader/core/models/rss_article.dart';
+import 'package:legado_reader/core/models/rss_star.dart';
+import 'package:legado_reader/core/database/dao/rss_star_dao.dart';
+import 'package:legado_reader/core/services/rss_parser.dart';
+import 'package:legado_reader/core/engine/analyze_url.dart';
 
 class RssReadPage extends StatefulWidget {
   final RssSource source;

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:provider/provider.dart';
 import 'source_manager_provider.dart';
-import '../../core/models/book_source.dart';
+import 'package:legado_reader/core/models/book_source.dart';
 
 class ExploreSourcesPage extends StatefulWidget {
   const ExploreSourcesPage({super.key});

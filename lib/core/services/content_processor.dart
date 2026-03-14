@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:characters/characters.dart';
-import '../models/chapter.dart';
-import '../models/book.dart';
-import '../models/replace_rule.dart';
-import '../constant/app_pattern.dart';
+import 'package:legado_reader/core/models/chapter.dart';
+import 'package:legado_reader/core/models/book.dart';
+import 'package:legado_reader/core/models/replace_rule.dart';
+import 'package:legado_reader/core/constant/app_pattern.dart';
 import 'chinese_utils.dart';
 
 /// ContentProcessor - 內容處理器

@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import '../../models/rss_star.dart';
-import '../app_database.dart';
+import 'package:legado_reader/core/models/rss_star.dart';
+import 'package:legado_reader/core/database/app_database.dart';
 
 class RssStarDao {
   static const String tableName = 'rss_stars';
@@ -46,3 +46,4 @@ class RssStarDao {
     return maps.map((m) => RssStar.fromJson(m)).toList();
   }
 }
+

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../source_manager_provider.dart';
+import 'package:legado_reader/features/source_manager/source_manager_provider.dart';
 
 class SourceBatchToolbar extends StatelessWidget {
   final SourceManagerProvider provider;

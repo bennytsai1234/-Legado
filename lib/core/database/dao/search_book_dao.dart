@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import '../app_database.dart';
-import '../../models/search_book.dart';
+import 'package:legado_reader/core/database/app_database.dart';
+import 'package:legado_reader/core/models/search_book.dart';
 
 /// SearchBookDao - 搜尋結果快取資料庫
 /// 對應 Android: SearchBookDao.kt
@@ -77,3 +77,4 @@ class SearchBookDao {
     await d.delete('search_books');
   }
 }
+

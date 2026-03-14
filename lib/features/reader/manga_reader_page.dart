@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
-import '../../core/models/book.dart';
-import '../../core/models/chapter.dart';
-import '../../core/models/book_source.dart';
-import '../../core/services/book_source_service.dart';
-import '../../core/database/dao/book_source_dao.dart';
-import '../../core/database/dao/chapter_dao.dart';
+import 'package:legado_reader/core/models/book.dart';
+import 'package:legado_reader/core/models/chapter.dart';
+import 'package:legado_reader/core/models/book_source.dart';
+import 'package:legado_reader/core/services/book_source_service.dart';
+import 'package:legado_reader/core/database/dao/book_source_dao.dart';
+import 'package:legado_reader/core/database/dao/chapter_dao.dart';
 
 class MangaReaderPage extends StatefulWidget {
   final Book book;

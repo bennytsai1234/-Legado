@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/database/dao/rss_star_dao.dart';
-import '../../core/models/rss_star.dart';
+import 'package:legado_reader/core/database/dao/rss_star_dao.dart';
+import 'package:legado_reader/core/models/rss_star.dart';
 
 class RssStarProvider extends ChangeNotifier {
   final RssStarDao _dao = RssStarDao();

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../core/models/rss_source.dart';
-import '../../core/services/rss_parser.dart';
-import '../../core/engine/analyze_url.dart';
+import 'package:legado_reader/core/models/rss_source.dart';
+import 'package:legado_reader/core/services/rss_parser.dart';
+import 'package:legado_reader/core/engine/analyze_url.dart';
 
 class RssDebugPage extends StatefulWidget {
   final RssSource source;

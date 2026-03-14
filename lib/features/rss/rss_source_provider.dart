@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import '../../core/database/dao/rss_source_dao.dart';
-import '../../core/models/rss_source.dart';
+import 'package:legado_reader/core/database/dao/rss_source_dao.dart';
+import 'package:legado_reader/core/models/rss_source.dart';
 
 class RssSourceProvider extends ChangeNotifier {
   final RssSourceDao _dao = RssSourceDao();

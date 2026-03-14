@@ -7,21 +7,21 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:synchronized/synchronized.dart';
 
-import '../services/app_log_service.dart';
-import 'dao/bookmark_dao.dart';
-import 'dao/cache_dao.dart';
-import 'dao/read_record_dao.dart';
-import 'dao/book_group_dao.dart';
-import 'dao/rss_source_dao.dart';
-import 'dao/rss_article_dao.dart';
-import 'dao/dict_rule_dao.dart';
-import 'dao/http_tts_dao.dart';
-import 'dao/rss_star_dao.dart';
-import 'dao/rule_sub_dao.dart';
-import 'dao/search_keyword_dao.dart';
-import 'dao/txt_toc_rule_dao.dart';
-import 'dao/rss_read_record_dao.dart';
-import 'dao/keyboard_assist_dao.dart';
+import 'package:legado_reader/core/services/app_log_service.dart';
+import 'package:legado_reader/core/database/dao/bookmark_dao.dart';
+import 'package:legado_reader/core/database/dao/cache_dao.dart';
+import 'package:legado_reader/core/database/dao/read_record_dao.dart';
+import 'package:legado_reader/core/database/dao/book_group_dao.dart';
+import 'package:legado_reader/core/database/dao/rss_source_dao.dart';
+import 'package:legado_reader/core/database/dao/rss_article_dao.dart';
+import 'package:legado_reader/core/database/dao/dict_rule_dao.dart';
+import 'package:legado_reader/core/database/dao/http_tts_dao.dart';
+import 'package:legado_reader/core/database/dao/rss_star_dao.dart';
+import 'package:legado_reader/core/database/dao/rule_sub_dao.dart';
+import 'package:legado_reader/core/database/dao/search_keyword_dao.dart';
+import 'package:legado_reader/core/database/dao/txt_toc_rule_dao.dart';
+import 'package:legado_reader/core/database/dao/rss_read_record_dao.dart';
+import 'package:legado_reader/core/database/dao/keyboard_assist_dao.dart';
 
 class AppDatabase {
   static const String _dbName = 'legado_reader.db';

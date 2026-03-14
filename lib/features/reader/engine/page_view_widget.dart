@@ -2,7 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:provider/provider.dart';
-import '../reader_provider.dart';
+import 'package:legado_reader/features/reader/reader_provider.dart';
 import 'text_page.dart';
 
 /// PageViewWidget - 單頁文字繪製視圖

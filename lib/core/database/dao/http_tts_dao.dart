@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import '../../models/http_tts.dart';
-import '../app_database.dart';
+import 'package:legado_reader/core/models/http_tts.dart';
+import 'package:legado_reader/core/database/app_database.dart';
 
 class HttpTtsDao {
   static const String tableName = 'http_tts';
@@ -67,3 +67,4 @@ class HttpTtsDao {
     await db.delete(tableName, where: 'id = ?', whereArgs: [id]);
   }
 }
+

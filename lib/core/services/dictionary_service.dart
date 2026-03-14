@@ -1,6 +1,6 @@
 import 'package:url_launcher/url_launcher.dart';
-import '../models/dict_rule.dart';
-import '../database/dao/dict_rule_dao.dart';
+import 'package:legado_reader/core/models/dict_rule.dart';
+import 'package:legado_reader/core/database/dao/dict_rule_dao.dart';
 
 class DictionaryService {
   static final DictionaryService _instance = DictionaryService._internal();

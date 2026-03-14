@@ -1,5 +1,5 @@
-import '../database/dao/cookie_dao.dart';
-import '../models/cookie.dart';
+import 'package:legado_reader/core/database/dao/cookie_dao.dart';
+import 'package:legado_reader/core/models/cookie.dart';
 
 /// CookieStore - Cookie 管理服務
 /// 參考 Android: help/http/CookieStore.kt

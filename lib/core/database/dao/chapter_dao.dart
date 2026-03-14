@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import '../../models/chapter.dart';
-import '../app_database.dart';
+import 'package:legado_reader/core/models/chapter.dart';
+import 'package:legado_reader/core/database/app_database.dart';
 
 /// ChapterDao - 章節與正文資料存取對象
 /// 對應 Android: data/dao/BookChapterDao.kt
@@ -209,3 +209,4 @@ class ChapterDao {
     await db.delete(contentsTable);
   }
 }
+

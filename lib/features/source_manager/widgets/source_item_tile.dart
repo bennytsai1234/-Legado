@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/models/book_source.dart';
-import '../source_manager_provider.dart';
-import '../source_login_page.dart';
+import 'package:legado_reader/core/models/book_source.dart';
+import 'package:legado_reader/features/source_manager/source_manager_provider.dart';
+import 'package:legado_reader/features/source_manager/source_login_page.dart';
 
 class SourceItemTile extends StatelessWidget {
   final BookSource source;

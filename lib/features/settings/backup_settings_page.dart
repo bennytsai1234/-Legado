@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'settings_provider.dart';
-import '../../core/services/webdav_service.dart';
+import 'package:legado_reader/core/services/webdav_service.dart';
 
 class BackupSettingsPage extends StatefulWidget {
   const BackupSettingsPage({super.key});

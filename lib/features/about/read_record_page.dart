@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../core/database/dao/read_record_dao.dart';
-import '../../core/models/read_record.dart';
+import 'package:legado_reader/core/database/dao/read_record_dao.dart';
+import 'package:legado_reader/core/models/read_record.dart';
 
 class ReadRecordPage extends StatelessWidget {
   const ReadRecordPage({super.key});

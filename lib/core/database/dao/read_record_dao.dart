@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import '../app_database.dart';
-import '../../models/read_record.dart';
+import 'package:legado_reader/core/database/app_database.dart';
+import 'package:legado_reader/core/models/read_record.dart';
 
 /// ReadRecordShow 模型 (SQL result)
 class ReadRecordShow {
@@ -146,3 +146,4 @@ class ReadRecordDao {
     await db.delete(tableName, where: 'bookName = ?', whereArgs: [bookName]);
   }
 }
+

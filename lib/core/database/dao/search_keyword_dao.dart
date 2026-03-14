@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import '../../models/search_keyword.dart';
-import '../app_database.dart';
+import 'package:legado_reader/core/models/search_keyword.dart';
+import 'package:legado_reader/core/database/app_database.dart';
 
 class SearchKeywordDao {
   static const String tableName = 'search_keywords';
@@ -39,3 +39,4 @@ class SearchKeywordDao {
     return maps.map((m) => SearchKeyword.fromJson(m)).toList();
   }
 }
+

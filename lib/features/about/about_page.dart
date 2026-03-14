@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../core/services/update_service.dart';
+import 'package:legado_reader/core/services/update_service.dart';
 import 'app_log_page.dart';
 import 'crash_log_page.dart';
 import 'read_record_page.dart';

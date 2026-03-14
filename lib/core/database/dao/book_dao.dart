@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:sqflite/sqflite.dart';
-import '../../models/book.dart';
-import '../app_database.dart';
+import 'package:legado_reader/core/models/book.dart';
+import 'package:legado_reader/core/database/app_database.dart';
 
 /// BookDao - 書籍資料存取對象
 /// 對應 Android: data/dao/BookDao.kt
@@ -225,3 +225,4 @@ class BookDao {
     _notify();
   }
 }
+

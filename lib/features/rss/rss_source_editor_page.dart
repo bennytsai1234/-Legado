@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/models/rss_source.dart';
-import '../../core/database/dao/rss_source_dao.dart';
+import 'package:legado_reader/core/models/rss_source.dart';
+import 'package:legado_reader/core/database/dao/rss_source_dao.dart';
 import 'rss_debug_page.dart';
 
 class RssSourceEditorPage extends StatefulWidget {

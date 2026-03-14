@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import '../../core/models/dict_rule.dart';
-import '../../core/services/dict_service.dart';
+import 'package:legado_reader/core/models/dict_rule.dart';
+import 'package:legado_reader/core/services/dict_service.dart';
 
 class DictProvider with ChangeNotifier {
   final DictService _service = DictService();

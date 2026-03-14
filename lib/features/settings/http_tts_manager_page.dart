@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/database/dao/http_tts_dao.dart';
-import '../../core/models/http_tts.dart';
+import 'package:legado_reader/core/database/dao/http_tts_dao.dart';
+import 'package:legado_reader/core/models/http_tts.dart';
 
 class HttpTtsManagerPage extends StatefulWidget {
   const HttpTtsManagerPage({super.key});

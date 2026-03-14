@@ -1,6 +1,6 @@
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html_parser;
-import '../rule_analyzer.dart';
+import 'package:legado_reader/core/engine/rule_analyzer.dart';
 
 /// AnalyzeByCss - CSS 選擇器解析器
 /// 對應 Android: model/analyzeRule/AnalyzeByJSoup.kt (18KB)

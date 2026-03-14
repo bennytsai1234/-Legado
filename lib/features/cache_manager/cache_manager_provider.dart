@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../core/models/book.dart';
-import '../../core/models/chapter.dart';
-import '../../core/database/dao/chapter_dao.dart';
-import '../../core/services/download_service.dart';
+import 'package:legado_reader/core/models/book.dart';
+import 'package:legado_reader/core/models/chapter.dart';
+import 'package:legado_reader/core/database/dao/chapter_dao.dart';
+import 'package:legado_reader/core/services/download_service.dart';
 
 class CacheManagerProvider extends ChangeNotifier {
   final Book book;

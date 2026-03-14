@@ -1,5 +1,5 @@
 import 'package:sqflite/sqflite.dart';
-import '../app_database.dart';
+import 'package:legado_reader/core/database/app_database.dart';
 
 /// SearchHistoryDao - 搜尋歷史資料存取對象
 class SearchHistoryDao {
@@ -40,3 +40,4 @@ class SearchHistoryDao {
     await db.delete(tableName);
   }
 }
+

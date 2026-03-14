@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import '../../models/txt_toc_rule.dart';
-import '../app_database.dart';
+import 'package:legado_reader/core/models/txt_toc_rule.dart';
+import 'package:legado_reader/core/database/app_database.dart';
 
 class TxtTocRuleDao {
   static const String tableName = 'txt_toc_rules';
@@ -58,3 +58,4 @@ class TxtTocRuleDao {
     return maps.map((m) => TxtTocRule.fromJson(m)).toList();
   }
 }
+

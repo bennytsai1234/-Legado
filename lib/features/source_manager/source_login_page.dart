@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import '../../core/models/book_source.dart';
-import '../../core/services/cookie_store.dart';
+import 'package:legado_reader/core/models/book_source.dart';
+import 'package:legado_reader/core/services/cookie_store.dart';
 import 'dynamic_form_builder.dart';
 
 class SourceLoginPage extends StatefulWidget {

@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import '../../models/rss_read_record.dart';
-import '../app_database.dart';
+import 'package:legado_reader/core/models/rss_read_record.dart';
+import 'package:legado_reader/core/database/app_database.dart';
 
 class RssReadRecordDao {
   static const String tableName = 'rss_read_records';
@@ -27,3 +27,4 @@ class RssReadRecordDao {
     );
   }
 }
+

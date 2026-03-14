@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import '../../models/book_group.dart';
-import '../app_database.dart';
+import 'package:legado_reader/core/models/book_group.dart';
+import 'package:legado_reader/core/database/app_database.dart';
 
 /// BookGroupDao - 書籍群組資料表操作
 /// 對應 Android: data/dao/BookGroupDao.kt
@@ -183,3 +183,4 @@ class BookGroupDao {
     return id;
   }
 }
+

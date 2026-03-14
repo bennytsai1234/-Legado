@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'search_provider.dart';
-import '../book_detail/book_detail_page.dart';
-import '../../core/models/book_source.dart';
-import '../../core/widgets/book_cover_widget.dart';
+import 'package:legado_reader/features/book_detail/book_detail_page.dart';
+import 'package:legado_reader/core/models/book_source.dart';
+import 'package:legado_reader/core/widgets/book_cover_widget.dart';
 
 class SearchPage extends StatelessWidget {
   final String? initialQuery;

@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 
 import 'js_engine.dart';
-import '../../services/cache_manager.dart';
-import '../../services/http_client.dart';
+import 'package:legado_reader/core/services/cache_manager.dart';
+import 'package:legado_reader/core/services/http_client.dart';
 
 /// SharedJsScope - 跨腳本變數共用
 /// 對應 Android: model/SharedJsScope.kt

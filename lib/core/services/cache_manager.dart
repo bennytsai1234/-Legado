@@ -2,8 +2,8 @@ import 'dart:io';
 import 'dart:collection';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
-import '../database/dao/cache_dao.dart';
-import '../models/cache.dart';
+import 'package:legado_reader/core/database/dao/cache_dao.dart';
+import 'package:legado_reader/core/models/cache.dart';
 
 /// LruMemoryCache - 簡易 LRU 記憶體快取
 /// 對應 Android: LruCache (String, Any)

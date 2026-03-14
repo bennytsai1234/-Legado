@@ -1,8 +1,8 @@
 import 'package:html/parser.dart' as html_parser;
 import 'package:xml/xml.dart';
-import '../models/rss_source.dart';
-import '../models/rss_article.dart';
-import '../engine/analyze_rule.dart';
+import 'package:legado_reader/core/models/rss_source.dart';
+import 'package:legado_reader/core/models/rss_article.dart';
+import 'package:legado_reader/core/engine/analyze_rule.dart';
 
 /// RssParser - RSS 解析引擎
 /// 支援標準 XML 與自訂規則解析

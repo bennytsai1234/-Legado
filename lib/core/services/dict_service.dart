@@ -1,7 +1,7 @@
-import '../engine/analyze_rule.dart';
-import '../engine/analyze_url.dart';
-import '../models/dict_rule.dart';
-import '../database/dao/dict_rule_dao.dart';
+import 'package:legado_reader/core/engine/analyze_rule.dart';
+import 'package:legado_reader/core/engine/analyze_url.dart';
+import 'package:legado_reader/core/models/dict_rule.dart';
+import 'package:legado_reader/core/database/dao/dict_rule_dao.dart';
 
 class DictService {
   final DictRuleDao _dao = DictRuleDao();

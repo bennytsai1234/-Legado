@@ -1,7 +1,7 @@
 import 'package:sqflite/sqflite.dart';
-import '../../models/bookmark.dart';
-import '../app_database.dart';
-import '../../engine/app_event_bus.dart';
+import 'package:legado_reader/core/models/bookmark.dart';
+import 'package:legado_reader/core/database/app_database.dart';
+import 'package:legado_reader/core/engine/app_event_bus.dart';
 
 /// BookmarkDao - 書籤資料表操作
 /// 對應 Android: data/dao/BookmarkDao.kt
@@ -122,3 +122,4 @@ class BookmarkDao {
     return List.generate(maps.length, (i) => Bookmark.fromJson(maps[i]));
   }
 }
+

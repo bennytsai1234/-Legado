@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import '../models/book.dart';
-import '../models/chapter.dart';
-import '../models/download_task.dart';
-import '../database/dao/book_dao.dart';
-import '../database/dao/book_source_dao.dart';
-import '../database/dao/chapter_dao.dart';
-import '../database/dao/download_dao.dart';
+import 'package:legado_reader/core/models/book.dart';
+import 'package:legado_reader/core/models/chapter.dart';
+import 'package:legado_reader/core/models/download_task.dart';
+import 'package:legado_reader/core/database/dao/book_dao.dart';
+import 'package:legado_reader/core/database/dao/book_source_dao.dart';
+import 'package:legado_reader/core/database/dao/chapter_dao.dart';
+import 'package:legado_reader/core/database/dao/download_dao.dart';
 import 'book_source_service.dart';
-import '../engine/app_event_bus.dart';
+import 'package:legado_reader/core/engine/app_event_bus.dart';
 
 /// DownloadService - 書籍離線快取服務
 /// 對應 Android: service/CacheBookService.kt

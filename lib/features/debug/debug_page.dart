@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../core/engine/analyze_rule.dart';
-import '../../core/models/book_source.dart';
-import '../../core/services/book_source_service.dart';
-import '../../core/models/book.dart';
-import '../../shared/widgets/base_scaffold.dart';
+import 'package:legado_reader/core/engine/analyze_rule.dart';
+import 'package:legado_reader/core/models/book_source.dart';
+import 'package:legado_reader/core/services/book_source_service.dart';
+import 'package:legado_reader/core/models/book.dart';
+import 'package:legado_reader/shared/widgets/base_scaffold.dart';
 
 /// DebugPage - 規則調試頁面
 /// 對應 Android: ui/book/source/debug/DebugActivity.kt

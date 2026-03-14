@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../core/models/book_source.dart';
+import 'package:legado_reader/core/models/book_source.dart';
 import 'source_debug_page.dart';
 import 'views/source_edit_basic.dart';
 import 'views/source_edit_search.dart';
 import 'views/source_edit_toc.dart';
 import 'views/source_edit_content.dart';
-import '../../core/database/dao/book_source_dao.dart';
+import 'package:legado_reader/core/database/dao/book_source_dao.dart';
 
 class SourceEditorPage extends StatefulWidget {
   final BookSource? source;

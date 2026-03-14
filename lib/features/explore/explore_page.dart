@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../core/models/search_book.dart';
+import 'package:legado_reader/core/models/search_book.dart';
 import 'explore_provider.dart';
-import '../book_detail/book_detail_page.dart';
-import '../search/search_page.dart';
+import 'package:legado_reader/features/book_detail/book_detail_page.dart';
+import 'package:legado_reader/features/search/search_page.dart';
 
 class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../core/models/book.dart';
-import '../../core/models/chapter.dart';
-import '../../core/models/book_source.dart';
-import '../../core/services/book_source_service.dart';
-import '../../core/services/audio_play_service.dart';
-import '../../core/database/dao/book_source_dao.dart';
-import '../../core/database/dao/chapter_dao.dart';
+import 'package:legado_reader/core/models/book.dart';
+import 'package:legado_reader/core/models/chapter.dart';
+import 'package:legado_reader/core/models/book_source.dart';
+import 'package:legado_reader/core/services/book_source_service.dart';
+import 'package:legado_reader/core/services/audio_play_service.dart';
+import 'package:legado_reader/core/database/dao/book_source_dao.dart';
+import 'package:legado_reader/core/database/dao/chapter_dao.dart';
 import 'change_chapter_source_sheet.dart';
 
 class AudioPlayerPage extends StatefulWidget {

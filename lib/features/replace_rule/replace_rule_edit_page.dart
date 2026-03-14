@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/models/replace_rule.dart';
+import 'package:legado_reader/core/models/replace_rule.dart';
 
 class ReplaceRuleEditPage extends StatefulWidget {
   final ReplaceRule? rule;

@@ -1,5 +1,5 @@
-import '../../core/constant/book_type.dart';
-import '../../core/services/source_verification_service.dart';
+import 'package:legado_reader/core/constant/book_type.dart';
+import 'package:legado_reader/core/services/source_verification_service.dart';
 
 class BrowserParams {
   final String url;

@@ -7,12 +7,12 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:provider/provider.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
-import '../source_manager/source_manager_provider.dart';
-import '../rss/rss_source_provider.dart';
-import '../replace_rule/replace_rule_provider.dart';
-import '../bookshelf/bookshelf_provider.dart';
-import '../../core/database/dao/http_tts_dao.dart';
-import '../../core/models/http_tts.dart';
+import 'package:legado_reader/features/source_manager/source_manager_provider.dart';
+import 'package:legado_reader/features/rss/rss_source_provider.dart';
+import 'package:legado_reader/features/replace_rule/replace_rule_provider.dart';
+import 'package:legado_reader/features/bookshelf/bookshelf_provider.dart';
+import 'package:legado_reader/core/database/dao/http_tts_dao.dart';
+import 'package:legado_reader/core/models/http_tts.dart';
 
 class IntentHandlerService {
   static final IntentHandlerService _instance = IntentHandlerService._internal();

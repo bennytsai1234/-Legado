@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import '../../models/dict_rule.dart';
-import '../app_database.dart';
+import 'package:legado_reader/core/models/dict_rule.dart';
+import 'package:legado_reader/core/database/app_database.dart';
 
 class DictRuleDao {
   static const String tableName = 'dict_rules';
@@ -56,4 +56,5 @@ class DictRuleDao {
     );
   }
 }
+
 

@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import '../app_database.dart';
-import '../../models/book_source.dart';
+import 'package:legado_reader/core/database/app_database.dart';
+import 'package:legado_reader/core/models/book_source.dart';
 
 /// BookSourceDao - 書源資料存取對象
 /// 對應 Android: data/dao/BookSourceDao.kt
@@ -146,3 +146,4 @@ class BookSourceDao {
     await batch.commit(noResult: true);
   }
 }
+

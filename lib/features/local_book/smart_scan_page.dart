@@ -4,7 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../bookshelf/bookshelf_provider.dart';
+import 'package:legado_reader/features/bookshelf/bookshelf_provider.dart';
 
 class SmartScanPage extends StatefulWidget {
   const SmartScanPage({super.key});

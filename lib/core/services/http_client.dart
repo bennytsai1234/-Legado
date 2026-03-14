@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'cookie_store.dart';
-import '../constant/prefer_key.dart';
+import 'package:legado_reader/core/constant/prefer_key.dart';
 
 /// HttpClient - 全域 HTTP 客戶端
 /// 參考 Android: help/http/HttpHelper.kt

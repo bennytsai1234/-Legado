@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../core/models/search_book.dart';
+import 'package:legado_reader/core/models/search_book.dart';
 import 'change_cover_provider.dart';
 import 'book_detail_provider.dart';
 

@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import '../../models/cookie.dart';
-import '../app_database.dart';
+import 'package:legado_reader/core/models/cookie.dart';
+import 'package:legado_reader/core/database/app_database.dart';
 
 /// CookieDao - Cookie 資料存取對象
 class CookieDao {
@@ -43,3 +43,4 @@ class CookieDao {
     await db.delete(tableName);
   }
 }
+

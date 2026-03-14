@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/models/chapter.dart';
+import 'package:legado_reader/core/models/chapter.dart';
 import 'text_page.dart';
 
 class ChapterProvider {

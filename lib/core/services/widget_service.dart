@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:home_widget/home_widget.dart';
-import '../models/book.dart';
+import 'package:legado_reader/core/models/book.dart';
 
 /// WidgetService - 桌面小組件服務 (iOS WidgetKit / Android AppWidget)
 /// 負責同步當前閱讀書籍的數據至原生 UserDefaults / SharedPreferences

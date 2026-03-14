@@ -7,12 +7,12 @@ import 'theme_settings_page.dart';
 import 'welcome_settings_page.dart';
 import 'icon_settings_page.dart';
 import 'font_manager_page.dart';
-import '../dict/dict_rule_page.dart';
+import 'package:legado_reader/features/dict/dict_rule_page.dart';
 import 'other_settings_page.dart';
 import 'aloud_settings_page.dart';
-import '../cache_manager/download_manager_page.dart';
-import '../cache_manager/global_cache_page.dart';
-import '../about/about_page.dart';
+import 'package:legado_reader/features/cache_manager/download_manager_page.dart';
+import 'package:legado_reader/features/cache_manager/global_cache_page.dart';
+import 'package:legado_reader/features/about/about_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});

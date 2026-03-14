@@ -6,9 +6,9 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
-import '../models/http_tts.dart';
-import '../engine/analyze_url.dart';
-import '../engine/analyze_rule.dart';
+import 'package:legado_reader/core/models/http_tts.dart';
+import 'package:legado_reader/core/engine/analyze_url.dart';
+import 'package:legado_reader/core/engine/analyze_rule.dart';
 
 /// HttpTtsService - 在線 HTTP TTS 朗讀服務
 /// 仿照 Android: service/HttpReadAloudService.kt 實作段落緩存與連續播放

@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
-import '../../core/database/dao/chapter_dao.dart';
+import 'package:legado_reader/core/database/dao/chapter_dao.dart';
 
 class GlobalCacheInfo {
   final String label;

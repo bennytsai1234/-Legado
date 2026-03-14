@@ -4,7 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'rss_source_provider.dart';
 import 'rss_article_page.dart';
 import 'rss_source_editor_page.dart';
-import '../../core/models/rss_source.dart';
+import 'package:legado_reader/core/models/rss_source.dart';
 
 class RssSourcePage extends StatelessWidget {
   const RssSourcePage({super.key});

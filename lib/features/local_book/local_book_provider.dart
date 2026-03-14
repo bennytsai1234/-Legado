@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_js/flutter_js.dart';
-import '../../core/local_book/epub_parser.dart';
-import '../../core/local_book/txt_parser.dart';
-import '../../core/database/dao/book_dao.dart';
-import '../../core/database/dao/chapter_dao.dart';
-import '../../core/models/book.dart';
-import '../../core/models/chapter.dart';
+import 'package:legado_reader/core/local_book/epub_parser.dart';
+import 'package:legado_reader/core/local_book/txt_parser.dart';
+import 'package:legado_reader/core/database/dao/book_dao.dart';
+import 'package:legado_reader/core/database/dao/chapter_dao.dart';
+import 'package:legado_reader/core/models/book.dart';
+import 'package:legado_reader/core/models/chapter.dart';
 
 class LocalBookProvider extends ChangeNotifier {
   final BookDao _bookDao = BookDao();

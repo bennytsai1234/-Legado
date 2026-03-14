@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
-import '../../core/database/dao/book_source_dao.dart';
-import '../../core/database/dao/search_book_dao.dart';
-import '../../core/models/book_source.dart';
-import '../../core/models/search_book.dart';
-import '../../core/services/book_source_service.dart';
+import 'package:legado_reader/core/database/dao/book_source_dao.dart';
+import 'package:legado_reader/core/database/dao/search_book_dao.dart';
+import 'package:legado_reader/core/models/book_source.dart';
+import 'package:legado_reader/core/models/search_book.dart';
+import 'package:legado_reader/core/services/book_source_service.dart';
 import 'package:pool/pool.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

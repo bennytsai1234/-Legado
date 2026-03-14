@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
-import '../../core/database/dao/bookmark_dao.dart';
-import '../../core/database/dao/book_dao.dart';
-import '../../core/models/bookmark.dart';
-import '../reader/reader_page.dart';
+import 'package:legado_reader/core/database/dao/bookmark_dao.dart';
+import 'package:legado_reader/core/database/dao/book_dao.dart';
+import 'package:legado_reader/core/models/bookmark.dart';
+import 'package:legado_reader/features/reader/reader_page.dart';
 import 'package:intl/intl.dart';
-import '../../core/engine/app_event_bus.dart';
+import 'package:legado_reader/core/engine/app_event_bus.dart';
 
 /// BookmarkListPage - 全域書籤管理
 /// 對應 Android: ui/book/bookmark/AllBookmarkActivity.kt

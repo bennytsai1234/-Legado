@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../reader_provider.dart';
-import '../../../shared/theme/app_theme.dart';
+import 'package:legado_reader/features/reader/reader_provider.dart';
+import 'package:legado_reader/shared/theme/app_theme.dart';
 
 class ReaderSettingsSheets {
   static void showPageTurnMode(BuildContext context, ReaderProvider provider) {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../reader_provider.dart';
+import 'package:legado_reader/features/reader/reader_provider.dart';
 
 class ReaderMenuTop extends StatelessWidget {
   final ReaderProvider provider;

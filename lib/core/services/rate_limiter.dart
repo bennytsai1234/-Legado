@@ -1,5 +1,5 @@
 import 'dart:async';
-import '../models/base_source.dart';
+import 'package:legado_reader/core/models/base_source.dart';
 
 /// ConcurrentRecord - 並發記錄
 class ConcurrentRecord {
