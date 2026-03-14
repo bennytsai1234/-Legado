@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import '../database/dao/book_dao.dart';
 import '../database/dao/book_source_dao.dart';
@@ -90,7 +91,11 @@ class WebService extends ChangeNotifier {
     try {
       dynamic result;
       if (method == 'GET') {
-        result = await _handleGet(path, request.uri.queryParameters);
+        if (path == '/' || path == '/index.html') {
+          result = await _handleStaticFile('index.html');
+        } else {
+          result = await _handleGet(path, request.uri.queryParameters);
+        }
       } else if (method == 'POST') {
         if (path == '/addLocalBook') {
           result = await _handleAddLocalBook(request);
@@ -173,6 +178,23 @@ class WebService extends ChangeNotifier {
   /// 處理 POST 請求 (對標 HttpServer.kt)
   Future<dynamic> _handlePost(String path, String body) async {
     switch (path) {
+      case '/renameGroup':
+        final Map<String, dynamic> map = jsonDecode(body);
+        final oldName = map['oldName'];
+        final newName = map['newName'];
+        if (oldName != null && newName != null) {
+          await _sourceDao.renameGroup(oldName, newName);
+          return true;
+        }
+        return false;
+      case '/deleteGroup':
+        final Map<String, dynamic> map = jsonDecode(body);
+        final name = map['name'];
+        if (name != null) {
+          await _sourceDao.removeGroupLabel(name);
+          return true;
+        }
+        return false;
       case '/saveBookSource':
         final source = BookSource.fromJson(jsonDecode(body));
         await _sourceDao.insertOrUpdate(source);
@@ -368,5 +390,14 @@ class WebService extends ChangeNotifier {
       if (match) return i;
     }
     return -1;
+  }
+
+  Future<dynamic> _handleStaticFile(String fileName) async {
+    try {
+      final path = 'assets/web/$fileName';
+      return await rootBundle.loadString(path);
+    } catch (e) {
+      return "<html><body><h1>Web Interface Source Not Found</h1><p>Please ensure assets/web/$fileName exists.</p></body></html>";
+    }
   }
 }
