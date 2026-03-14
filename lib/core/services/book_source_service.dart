@@ -8,6 +8,8 @@ import 'package:legado_reader/core/engine/web_book/book_list_parser.dart';
 import 'package:legado_reader/core/engine/web_book/book_info_parser.dart';
 import 'package:legado_reader/core/engine/web_book/chapter_list_parser.dart';
 import 'package:legado_reader/core/engine/web_book/content_parser.dart';
+import 'package:legado_reader/core/engine/analyze_rule.dart';
+
 
 /// BookSourceService - 書源服務 (對標 Android model/webBook/WebBook.kt)
 /// 負責發起網路請求並委派解析器處理數據
@@ -21,6 +23,11 @@ class BookSourceService {
       page: page,
     );
     
+    // 執行登入檢查 JS Hook
+    final rule = AnalyzeRule(source: source);
+    await rule.checkLogin();
+
+    
     final body = await analyzeUrl.getResponseBody();
     return BookListParser.parse(
       source: source,
@@ -32,7 +39,13 @@ class BookSourceService {
 
   Future<List<SearchBook>> exploreBooks(BookSource source, String url, {int page = 1}) async {
     final analyzeUrl = AnalyzeUrl(url, source: source, page: page);
+    
+    // 執行登入檢查 JS Hook
+    final rule = AnalyzeRule(source: source);
+    await rule.checkLogin();
+    
     final body = await analyzeUrl.getResponseBody();
+
     return BookListParser.parse(
       source: source,
       body: body,
@@ -43,7 +56,13 @@ class BookSourceService {
 
   Future<Book> getBookInfo(BookSource source, Book book) async {
     final analyzeUrl = AnalyzeUrl(book.bookUrl, source: source);
+    
+    // 執行登入檢查 JS Hook
+    final rule = AnalyzeRule(source: source);
+    await rule.checkLogin();
+    
     final body = await analyzeUrl.getResponseBody();
+
     return BookInfoParser.parse(
       source: source,
       book: book,
@@ -54,7 +73,14 @@ class BookSourceService {
 
   Future<List<BookChapter>> getChapterList(BookSource source, Book book) async {
     final analyzeUrl = AnalyzeUrl(book.tocUrl, source: source);
+    
+    // 執行登入檢查與目錄預整理 JS Hook
+    final rule = AnalyzeRule(source: source);
+    await rule.checkLogin();
+    await rule.preUpdateToc();
+    
     final body = await analyzeUrl.getResponseBody();
+
     return ChapterListParser.parse(
       source: source,
       book: book,
@@ -65,7 +91,13 @@ class BookSourceService {
 
   Future<String> getContent(BookSource source, Book book, BookChapter chapter, {String? nextChapterUrl}) async {
     final analyzeUrl = AnalyzeUrl(chapter.url, source: source);
+    
+    // 執行登入檢查 JS Hook
+    final rule = AnalyzeRule(source: source);
+    await rule.checkLogin();
+    
     final body = await analyzeUrl.getResponseBody();
+
     return ContentParser.parse(
       source: source,
       body: body,

@@ -9,6 +9,7 @@ import 'js/js_engine.dart';
 import 'package:legado_reader/core/services/cookie_store.dart';
 import 'package:legado_reader/core/services/cache_manager.dart';
 import 'package:legado_reader/core/services/http_client.dart';
+import 'package:legado_reader/core/models/book_source.dart';
 import 'package:legado_reader/core/models/rule_data_interface.dart';
 
 /// AnalyzeRule - 規則總控
@@ -477,6 +478,27 @@ class AnalyzeRule {
 
   void put(String key, String? value) { ruleData?.putVariable(key, value); }
   String get(String key) { return ruleData?.getVariable(key) ?? ""; }
+
+  /// 執行登入檢查 JS
+  /// 對標 Android BookSource.loginCheckJs
+  Future<void> checkLogin() async {
+    final js = source is BookSource ? (source as BookSource).loginCheckJs : null;
+    if (js != null && js.isNotEmpty) {
+      _log("⇒ 執行 loginCheckJs");
+      evalJS(js, null);
+    }
+  }
+
+  /// 執行目錄預整理 JS
+  /// 對標 Android TocRule.preUpdateJs
+  Future<void> preUpdateToc() async {
+    final js = source is BookSource ? (source as BookSource).ruleToc?.preUpdateJs : null;
+    if (js != null && js.isNotEmpty) {
+      _log("⇒ 執行 preUpdateJs");
+      evalJS(js, null);
+    }
+  }
+
   void dispose() { _jsEngine?.dispose(); }
 }
 
