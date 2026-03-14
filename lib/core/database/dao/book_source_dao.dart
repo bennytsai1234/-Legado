@@ -105,4 +105,44 @@ class BookSourceDao {
     }
     await batch.commit(noResult: true);
   }
+
+  Future<void> updateCustomOrder(List<BookSource> list) async {
+    final db = await _db;
+    final batch = db.batch();
+    for (int i = 0; i < list.length; i++) {
+      batch.update('book_sources', {'customOrder': i}, where: 'bookSourceUrl = ?', whereArgs: [list[i].bookSourceUrl]);
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<void> renameGroup(String oldName, String newName) async {
+    final db = await _db;
+    // 獲取所有包含該分組的書源
+    final sources = await db.query('book_sources', where: 'bookSourceGroup LIKE ?', whereArgs: ['%$oldName%']);
+    final batch = db.batch();
+    for (var map in sources) {
+      final String groupStr = map['bookSourceGroup']?.toString() ?? "";
+      final List<String> groups = groupStr.split(',').map((e) => e.trim()).toList();
+      final idx = groups.indexOf(oldName);
+      if (idx != -1) {
+        groups[idx] = newName;
+        batch.update('book_sources', {'bookSourceGroup': groups.join(',')}, where: 'bookSourceUrl = ?', whereArgs: [map['bookSourceUrl']]);
+      }
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<void> removeGroupLabel(String name) async {
+    final db = await _db;
+    final sources = await db.query('book_sources', where: 'bookSourceGroup LIKE ?', whereArgs: ['%$name%']);
+    final batch = db.batch();
+    for (var map in sources) {
+      final String groupStr = map['bookSourceGroup']?.toString() ?? "";
+      final List<String> groups = groupStr.split(',').map((e) => e.trim()).toList();
+      if (groups.remove(name)) {
+        batch.update('book_sources', {'bookSourceGroup': groups.isEmpty ? null : groups.join(',')}, where: 'bookSourceUrl = ?', whereArgs: [map['bookSourceUrl']]);
+      }
+    }
+    await batch.commit(noResult: true);
+  }
 }

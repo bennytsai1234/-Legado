@@ -9,6 +9,7 @@ import 'source_login_page.dart';
 import 'qr_scan_page.dart';
 import 'explore_sources_page.dart';
 import 'source_debug_page.dart';
+import 'source_group_manage_page.dart';
 import '../../core/models/book_source.dart';
 
 class SourceManagerPage extends StatefulWidget {
@@ -84,6 +85,13 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
                               builder: (context) => const ExploreSourcesPage(),
                             ),
                           );
+                        } else if (value == 'manage_groups') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SourceGroupManagePage(),
+                            ),
+                          );
                         }
                       },
                       itemBuilder: (context) => [
@@ -93,6 +101,7 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
                             value: 'clipboard', child: Text('剪貼簿匯入')),
                         const PopupMenuItem(value: 'qr', child: Text('掃碼匯入')),
                         const PopupMenuItem(value: 'explore', child: Text('網路書源庫搜尋')),
+                        const PopupMenuItem(value: 'manage_groups', child: Text('管理分組')),
                         const PopupMenuItem(value: 'new', child: Text('新建書源')),
                       ],
                       icon: const Icon(Icons.add),
@@ -196,12 +205,26 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
         if (provider.sources.isEmpty) {
           return const Center(child: Text('暫無書源'));
         }
+
+        final bool canReorder = provider.sortMode == 0 && !provider.groupByDomain;
+
+        if (canReorder) {
+          return ReorderableListView.builder(
+            itemCount: provider.sources.length,
+            onReorder: provider.reorderSource,
+            itemBuilder: (context, index) {
+              final source = provider.sources[index];
+              return _buildSourceItem(context, provider, source, key: ValueKey(source.bookSourceUrl));
+            },
+          );
+        }
+
         return ListView.separated(
           itemCount: provider.sources.length,
           separatorBuilder: (context, index) => const Divider(height: 1),
           itemBuilder: (context, index) {
             final source = provider.sources[index];
-            return _buildSourceItem(context, provider, source);
+            return _buildSourceItem(context, provider, source, key: ValueKey(source.bookSourceUrl));
           },
         );
       },
@@ -209,7 +232,7 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
   }
 
   Widget _buildSourceItem(
-      BuildContext context, SourceManagerProvider provider, BookSource source) {
+      BuildContext context, SourceManagerProvider provider, BookSource source, {required Key key}) {
     bool isSelected = provider.selectedUrls.contains(source.bookSourceUrl);
     
     String statusStr = "未校驗";
@@ -224,6 +247,7 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
     }
 
     final tile = ListTile(
+      key: key,
       leading: provider.isBatchMode ? Icon(
         isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
         color: isSelected ? Colors.blue : Colors.grey,
@@ -287,7 +311,7 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
     if (provider.isBatchMode) return tile;
 
     return Dismissible(
-      key: Key(source.bookSourceUrl),
+      key: key,
       direction: DismissDirection.endToStart,
       background: Container(
         color: Colors.red,
