@@ -53,14 +53,24 @@ class ContentProcessor {
     try {
       final nameStr = _escapeRegex(book.name);
       final titleStr = _escapeRegex(chapter.title).replaceAll(AppPattern.spaceRegex, r'\s*');
-      final pattern = RegExp('^(\\s|\\p{P}|$nameStr)*$titleStr(\\s)*', unicode: true);
-
-      final match = pattern.firstMatch(mContent);
+      
+      // 第一次匹配：原始標題
+      var pattern = RegExp('^(\\s|\\p{P}|$nameStr)*$titleStr(\\s)*', unicode: true);
+      var match = pattern.firstMatch(mContent);
+      
       if (match != null) {
         mContent = mContent.substring(match.end);
-      } else if (useReplace && book.getUseReplaceRule()) {
-        // 二次回退匹配 (使用可能已被淨化過的標題)
-        // 此處簡化實作，僅執行基礎正則
+      } else {
+        // 第二次回退匹配：去除標題中的非字母數字字元後再次嘗試 (模糊匹配)
+        final cleanTitle = chapter.title.replaceAll(RegExp(r'[^\w\u4e00-\u9fa5]'), '');
+        if (cleanTitle.length > 3) {
+          final cleanTitleRegex = _escapeRegex(cleanTitle).split('').join(r'\s*');
+          pattern = RegExp('^(\\s|\\p{P}|$nameStr)*$cleanTitleRegex(\\s)*', unicode: true);
+          match = pattern.firstMatch(mContent);
+          if (match != null) {
+            mContent = mContent.substring(match.end);
+          }
+        }
       }
     } catch (_) {}
 

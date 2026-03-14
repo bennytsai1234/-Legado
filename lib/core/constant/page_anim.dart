@@ -2,7 +2,7 @@
 class PageAnim {
   PageAnim._();
 
-  // AI_PORT: GAP-CONST-05 derived from [PageAnim.kt]
+  // 翻頁動畫枚舉值
   static const int cover = 0;
   static const int slide = 1;
   static const int simulation = 2;

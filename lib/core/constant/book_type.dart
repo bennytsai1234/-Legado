@@ -1,7 +1,7 @@
 /// BookType - 書籍類型遮罩 (對標 Android constant/BookType.kt)
 /// 採用位元運算以支援多重類型
 class BookType {
-  // AI_PORT: GAP-CONST-02 derived from [BookType.kt]
+  // 書籍屬性標籤 (位元遮罩)
   static const int text = 0x08; // 8: 文本
   static const int updateError = 0x10; // 16: 更新失敗
   static const int audio = 0x20; // 32: 音訊
@@ -17,7 +17,7 @@ class BookType {
   // 所有本地書籍類型的聯集
   static const int allBookTypeLocal = text | image | audio | webFile | local;
   
-  // AI_PORT: GAP-CONST-03 derived from [BookType.kt]
+  // 特殊識別標籤
   static const String localTag = "loc_book";
   static const String webDavTag = "webDav::";
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'reader_provider.dart';
+import 'widgets/reader_settings_sheets.dart';
+
 
 class AutoReadDialog extends StatelessWidget {
   const AutoReadDialog({super.key});
@@ -76,9 +78,10 @@ class AutoReadDialog extends StatelessWidget {
                 icon: Icons.settings,
                 label: '設定',
                 onTap: () {
-                  // TODO: 跳轉至翻頁動畫設定
                   Navigator.pop(context);
+                  ReaderSettingsSheets.showPageTurnMode(context, provider);
                 },
+
               ),
             ],
           ),

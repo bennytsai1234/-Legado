@@ -14,7 +14,7 @@ class AppLog {
 
   static List<LogEntry> get logs => _logs.toList();
 
-  /// 記錄日誌 (AI_PORT: derived from AppLog.kt)
+  /// 記錄日誌 (對標 Android AppLog.kt)
   static void put(String message, {Object? error, StackTrace? stackTrace, bool toast = false}) {
     if (_logs.length >= _maxLogs) {
       _logs.removeLast();

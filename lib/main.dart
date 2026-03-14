@@ -32,6 +32,8 @@ import 'core/services/webdav_service.dart';
 import 'core/services/crash_handler.dart';
 import 'core/engine/app_event_bus.dart';
 import 'core/services/default_data.dart';
+import 'core/services/app_log_service.dart';
+
 
 // 背景任務回呼函數 (對應 Android DownloadService)
 @pragma('vm:entry-point')
@@ -42,7 +44,10 @@ void callbackDispatcher() {
   });
 }
 
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
 void main() async {
+
   WidgetsFlutterBinding.ensureInitialized();
 
   // 初始化崩潰日誌
@@ -91,6 +96,7 @@ class LegadoReaderApp extends StatelessWidget {
       builder: (context, settings, child) {
         return MaterialApp(
           title: 'Legado Reader',
+          scaffoldMessengerKey: scaffoldMessengerKey,
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
@@ -98,6 +104,7 @@ class LegadoReaderApp extends StatelessWidget {
           locale: settings.locale,
           home: const SplashPage(),
         );
+
       },
     );
   }
@@ -227,6 +234,8 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   DateTime _lastTapTime = DateTime.now();
   DateTime? _lastBackTime;
   StreamSubscription? _verificationSubscription;
+  StreamSubscription? _logToastSubscription;
+
 
   Future<bool> _onWillPop() async {
     if (_currentIndex != 0) {
@@ -269,7 +278,9 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
       _checkBackupSync();
       _checkVersionUpdate();
       _autoRefreshBookshelf();
+      _initLogToastListener();
     });
+
   }
 
   Future<void> _checkVersionUpdate() async {
@@ -429,10 +440,24 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     });
   }
 
+  void _initLogToastListener() {
+    _logToastSubscription = AppLog.toastStream.listen((message) {
+      scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    });
+  }
+
   @override
   void dispose() {
     _verificationSubscription?.cancel();
+    _logToastSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
+
     IntentHandlerService().dispose();
     super.dispose();
   }
