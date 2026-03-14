@@ -21,6 +21,7 @@ import '../../core/services/webdav_service.dart';
 import '../../core/database/dao/http_tts_dao.dart';
 import '../../core/services/http_tts_service.dart';
 import '../../core/models/http_tts.dart';
+import '../../core/services/widget_service.dart';
 
 class ReaderProvider extends ChangeNotifier {
   final BookDao _bookDao = BookDao();
@@ -333,6 +334,15 @@ class ReaderProvider extends ChangeNotifier {
       await _bookDao.updateProgress(
           book.bookUrl, index, 0, _chapters[index].title);
       WebDAVService().uploadBookProgress(book);
+      
+      // 同步到桌面小組件
+      final progress = _chapters.isNotEmpty ? (_currentChapterIndex / _chapters.length) : 0.0;
+      WidgetService().updateRecentBook(
+        book, 
+        lastChapterTitle: _chapters[_currentChapterIndex].title,
+        progress: progress,
+      );
+
       _doPaginate();
     } catch (e) {
       _content = "加載失敗: $e";
