@@ -22,7 +22,9 @@ class TextLine {
   final double width;
   final double height;
   final bool isTitle;
+  final bool isParagraphStart;
   final bool isParagraphEnd;
+  final bool shouldJustify;
   final int chapterPosition;
   final double lineTop;
   final double lineBottom;
@@ -34,7 +36,9 @@ class TextLine {
     required this.width,
     required this.height,
     this.isTitle = false,
+    this.isParagraphStart = false,
     this.isParagraphEnd = false,
+    this.shouldJustify = false,
     this.chapterPosition = 0,
     this.lineTop = 0,
     this.lineBottom = 0,

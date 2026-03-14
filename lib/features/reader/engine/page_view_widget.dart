@@ -129,15 +129,32 @@ class _TextPagePainter extends CustomPainter {
 
     for (final line in page.lines) {
       final style = line.isTitle ? titleStyle : contentStyle;
-      final textSpan = TextSpan(text: line.text, style: style);
-      final textPainter = TextPainter(
-        text: textSpan,
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout();
-
       final offset = Offset(paddingLeft, paddingTop + line.lineTop);
-      textPainter.paint(canvas, offset);
+
+      if (line.shouldJustify && line.text.length > 1) {
+        // 實作兩端對齊渲染
+        final double totalTextWidth = _calculateTextWidth(line.text, style);
+        final double spacing = (size.width - (paddingLeft * 2) - totalTextWidth) / (line.text.length - 1);
+        
+        double currentX = offset.dx;
+        for (int i = 0; i < line.text.length; i++) {
+          final char = line.text[i];
+          final tp = TextPainter(
+            text: TextSpan(text: char, style: style),
+            textDirection: TextDirection.ltr,
+          )..layout();
+          tp.paint(canvas, Offset(currentX, offset.dy));
+          currentX += tp.width + spacing;
+        }
+      } else {
+        final textSpan = TextSpan(text: line.text, style: style);
+        final textPainter = TextPainter(
+          text: textSpan,
+          textDirection: TextDirection.ltr,
+        );
+        textPainter.layout();
+        textPainter.paint(canvas, offset);
+      }
     }
 
     _drawHeaderFooter(canvas, size);
@@ -151,6 +168,18 @@ class _TextPagePainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+  }
+
+  double _calculateTextWidth(String text, TextStyle style) {
+    double totalWidth = 0;
+    for (int i = 0; i < text.length; i++) {
+      final tp = TextPainter(
+        text: TextSpan(text: text[i], style: style),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      totalWidth += tp.width;
+    }
+    return totalWidth;
   }
 
   void _drawHeaderFooter(Canvas canvas, Size size) {

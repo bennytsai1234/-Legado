@@ -52,6 +52,10 @@ class ReaderProvider extends ChangeNotifier {
   double _paragraphSpacing = 1.0;
   double _letterSpacing = 0.0;
   double _textPadding = 16.0;
+  int _textIndent = 2;
+  double _titleTopSpacing = 0.0;
+  double _titleBottomSpacing = 8.0;
+  bool _textFullJustify = true;
   int _themeIndex = 0;
   double _brightness = 1.0;
   int _chineseConvert = 0;
@@ -101,6 +105,10 @@ class ReaderProvider extends ChangeNotifier {
   double get paragraphSpacing => _paragraphSpacing;
   double get letterSpacing => _letterSpacing;
   double get textPadding => _textPadding;
+  int get textIndent => _textIndent;
+  double get titleTopSpacing => _titleTopSpacing;
+  double get titleBottomSpacing => _titleBottomSpacing;
+  bool get textFullJustify => _textFullJustify;
   int get themeIndex => _themeIndex;
   ReadingTheme get currentTheme => AppTheme.readingThemes[_themeIndex];
   double get brightness => _brightness;
@@ -138,6 +146,10 @@ class ReaderProvider extends ChangeNotifier {
     _paragraphSpacing = prefs.getDouble('reader_paragraph_spacing') ?? 1.0;
     _letterSpacing = prefs.getDouble('reader_letter_spacing') ?? 0.0;
     _textPadding = prefs.getDouble('reader_text_padding') ?? 16.0;
+    _textIndent = prefs.getInt('reader_text_indent') ?? 2;
+    _titleTopSpacing = prefs.getDouble('reader_title_top_spacing') ?? 0.0;
+    _titleBottomSpacing = prefs.getDouble('reader_title_bottom_spacing') ?? 8.0;
+    _textFullJustify = prefs.getBool('reader_text_full_justify') ?? true;
     _themeIndex = prefs.getInt('reader_theme_index') ?? 0;
     _brightness = prefs.getDouble('reader_brightness') ?? 1.0;
     _pageTurnMode = prefs.getInt('reader_page_turn_mode') ?? 0;
@@ -200,6 +212,10 @@ class ReaderProvider extends ChangeNotifier {
         titleStyle: titleStyle,
         contentStyle: contentStyle,
         paragraphSpacing: _paragraphSpacing,
+        textIndent: _textIndent,
+        titleTopSpacing: _titleTopSpacing,
+        titleBottomSpacing: _titleBottomSpacing,
+        textFullJustify: _textFullJustify,
         padding: _textPadding);
     _currentPageIndex = 0;
     _isLoading = false;
@@ -233,6 +249,30 @@ class ReaderProvider extends ChangeNotifier {
   void setTextPadding(double p) {
     _textPadding = p.clamp(0.0, 50.0);
     saveSetting('text_padding', _textPadding);
+    _doPaginate();
+  }
+
+  void setTextIndent(int v) {
+    _textIndent = v.clamp(0, 8);
+    saveSetting('text_indent', _textIndent);
+    _doPaginate();
+  }
+
+  void setTitleTopSpacing(double v) {
+    _titleTopSpacing = v.clamp(0.0, 100.0);
+    saveSetting('title_top_spacing', _titleTopSpacing);
+    _doPaginate();
+  }
+
+  void setTitleBottomSpacing(double v) {
+    _titleBottomSpacing = v.clamp(0.0, 100.0);
+    saveSetting('title_bottom_spacing', _titleBottomSpacing);
+    _doPaginate();
+  }
+
+  void setTextFullJustify(bool v) {
+    _textFullJustify = v;
+    saveSetting('text_full_justify', _textFullJustify);
     _doPaginate();
   }
 
