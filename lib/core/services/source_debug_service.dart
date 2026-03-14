@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'book_source_service.dart';
+import 'web_service.dart';
 import '../models/book_source.dart';
 import '../models/book.dart';
 import '../models/chapter.dart';
@@ -18,6 +19,13 @@ class DebugLog {
   String get formattedTime => DateFormat('[mm:ss.SSS]').format(time);
   @override
   String toString() => '$formattedTime $message';
+
+  Map<String, dynamic> toJson() => {
+    'state': state,
+    'message': message,
+    'time': time.millisecondsSinceEpoch,
+    'formattedTime': formattedTime,
+  };
 }
 
 class SourceDebugService {
@@ -41,6 +49,12 @@ class SourceDebugService {
     
     final debugLog = DebugLog(state, printMsg, DateTime.now());
     _logController.add(debugLog);
+
+    // 透過 WebSocket 同步至 Web 端 (對標 Android WebSocketServer)
+    WebService().broadcastLog({
+      'type': 'sourceDebug',
+      'data': debugLog.toJson(),
+    });
   }
 
   void _logHttp(AnalyzeUrl analyzeUrl, String? responseBody) {

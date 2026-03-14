@@ -74,6 +74,12 @@ class WebService extends ChangeNotifier {
 
   /// 處理 HTTP 請求 (高度還原 HttpServer.kt 路由邏輯)
   Future<void> _handleRequest(HttpRequest request) async {
+    // 偵測是否為 WebSocket 請求 (對標 Android WebSocketServer.kt)
+    if (WebSocketTransformer.isUpgradeRequest(request)) {
+      _handleWebSocket(request);
+      return;
+    }
+
     final path = request.uri.path;
     final method = request.method;
 
@@ -390,6 +396,43 @@ class WebService extends ChangeNotifier {
       if (match) return i;
     }
     return -1;
+  }
+
+  final List<WebSocket> _webSockets = [];
+
+  void _handleWebSocket(HttpRequest request) async {
+    try {
+      final socket = await WebSocketTransformer.upgrade(request);
+      _webSockets.add(socket);
+      debugPrint("WebSocket client connected. Total: ${_webSockets.length}");
+      
+      socket.listen(
+        (data) {
+          // 處理來自 Web 端的消息 (目前對標 Android 無特別指令)
+          debugPrint("WebSocket received: $data");
+        },
+        onDone: () {
+          _webSockets.remove(socket);
+          debugPrint("WebSocket client disconnected.");
+        },
+        onError: (e) {
+          _webSockets.remove(socket);
+          debugPrint("WebSocket error: $e");
+        }
+      );
+    } catch (e) {
+      debugPrint("WebSocket upgrade failed: $e");
+    }
+  }
+
+  /// 廣播日誌到所有連線的 Web 端 (對標 Android WebSocketServer.kt broadcast)
+  void broadcastLog(Map<String, dynamic> logData) {
+    final json = jsonEncode(logData);
+    for (var socket in _webSockets) {
+      if (socket.readyState == WebSocket.open) {
+        socket.add(json);
+      }
+    }
   }
 
   Future<dynamic> _handleStaticFile(String fileName) async {

@@ -1,57 +1,50 @@
-# 🏗️ 結構化迭代地圖 (Project Structure Iteration Map)
+# 🏗️ 結構化迭代地圖 (Project Structure Iteration Map) v2
 
-本文件以 Android (Legado) 資料夾結構為基準，精確記錄每一個子模組的對位與迭代進度。
+本文件以 Android (Legado) 目錄為基準，精確記錄每一個子功能的實作細節。
 
 ---
 
-## 📊 模組迭代狀態總覽
+## 📊 模組迭代狀態與細節
 
-| Android 目錄 | 職責描述 | iOS/Flutter 對位路徑 | 狀態 |
+| Android 目錄 | 核心功能點 (細節) | iOS/Flutter 實作進度 | 狀態 |
 | :--- | :--- | :--- | :--- |
-| `ui/main` | 主介面、書架、RSS | `lib/features/bookshelf`, `rss` | 🟢 100% |
-| `ui/book/read` | 閱讀器核心與排版 | `lib/features/reader` | 🟢 95% |
-| `ui/book/source` | 書源管理、編輯、調試 | `lib/features/source_manager` | 🟢 98% |
-| `ui/dict` | 字典管理與查詞 | `lib/features/dict` | 🟢 100% |
-| `ui/font` | 字體下載與管理 | `lib/features/settings` | 🟢 100% |
-| `ui/replace` | 替換規則與調試 | `lib/features/replace_rule` | 🟢 100% |
-| `ui/config` | 備份、還原、WebDAV | `lib/features/settings` | 🟢 95% |
-| `ui/browser` | 內置瀏覽器與驗證 | `lib/features/browser` | 🟢 100% |
-| `data/dao` | 資料庫持久化 | `lib/core/database/dao` | 🟢 90% |
-| `data/entities` | 數據模型 | `lib/core/models` | 🟢 95% |
-| `service` | 背景服務 (下載、校驗) | `lib/core/services` | 🟡 80% |
-| `help` | 輔助工具類 (Coroutines, Http) | `lib/core/services`, `engine` | 🟡 75% |
-| `constant` | 全域常數與 PreferKey | `lib/core/constant` | 🟢 100% |
-| `receiver` | 廣播接收器 (系統事件) | (iOS Sandbox 限制) | ❌ Missing |
-| `web` | 內置 Web 伺服器 (傳書等) | `lib/core/services/web_service.dart` | 🟡 30% |
+| **`ui/main`** | **書架搜尋**: 實作動態 AppBar 與關鍵字過濾 | `lib/features/bookshelf` | 🟢 100% |
+| | **分組管理**: 支援書籍批量移動、分組 CRUD | `lib/features/bookshelf` | 🟢 100% |
+| | **視圖切換**: 支援列表/網格(Grid)動態切換 | `lib/features/bookshelf` | 🟢 100% |
+| **`ui/book/read`** | **自定義點擊**: 實作九宮格區域動作映射 | `lib/features/reader` | 🟢 100% |
+| | **精細排版**: 實作首行縮排、兩端對齊(Justify) | `lib/features/reader/engine` | 🟢 98% |
+| | **主題聯動**: 實作主題與排版參數(行高/字體)同步 | `lib/features/reader` | 🟢 100% |
+| | **長按選單**: 實作複製、查詞、筆記、搜尋、分享 | `lib/features/reader` | 🟢 100% |
+| **`ui/book/source`**| **專業調試**: 實作 HTTP 詳情、JSON 美化、日誌匯出 | `lib/features/source_manager` | 🟢 100% |
+| | **批量校驗**: 實作並行測試、校驗詳情日誌、失效清理 | `lib/features/source_manager` | 🟢 100% |
+| | **拖曳排序**: 實作 ReorderableListView 手動排序 | `lib/features/source_manager` | 🟢 100% |
+| **`ui/login`** | **Cookie 捕捉**: 實作 HttpOnly Cookie 與 UA 同步 | `lib/features/source_manager` | 🟢 100% |
+| **`ui/dict`** | **多標籤查詞**: 實作 TabLayout 樣式與規則複製貼上 | `lib/features/dict` | 🟢 100% |
+| **`ui/font`** | **字體管理**: 實作網路下載、預覽文字大小調節 | `lib/features/settings` | 🟢 100% |
+| **`ui/replace`** | **即時調試**: 實作編輯器內 Regex 替換效果預覽 | `lib/features/replace_rule` | 🟢 100% |
+| **`ui/config`** | **進階 WebDAV**: 實作連通測試、子目錄/裝置名設定 | `lib/features/settings` | 🟢 100% |
+| **`ui/welcome`** | **啟動規範**: 實作隱私協議檢查、動態歡迎圖 | `lib/features/welcome` | 🟢 100% |
+| **`web`** | **HTTP API**: 實作書源/書架/進階 API | `lib/core/services/web_service`| 🟢 100% |
+| | **資產託管**: 實作 static assets 伺服框架 | `lib/core/services/web_service`| 🟡 50% |
+| | **WebSocket**: 實時搜尋/調試監聽 | (尚未實作) | ❌ Missing |
+| **`help`** | **3D 仿真翻頁**: 視覺陰影與捲曲細化 | `lib/features/reader/engine` | 🟡 60% |
+| **`service`** | **鎖屏播放**: MediaControl 與通知欄交互 | `lib/core/services` | 🟡 40% |
 
 ---
 
-## 🔍 子資料夾精細化迭代日誌
-
-### 📍 1. UI 模組 (`ui/`)
-- [x] `ui/main/bookshelf` -> 實作搜尋、分組、多選、批量移動。
-- [x] `ui/book/read` -> 實作九宮格點擊、首行縮排、兩端對齊、主題同步。
-- [x] `ui/book/source/debug` -> 實作專業版日誌、JSON 美化、HTTP 詳情。
-- [x] `ui/font` -> 實作網路下載、預覽文字自定義。
-- [x] `ui/login` -> 實作 UA 同步、HttpOnly Cookie 捕捉。
-
-### 📍 2. 資料與持久化 (`data/`)
-- [x] `data/dao/BookSourceDao` -> 補齊重排、分組重新命名與標籤移除。
-- [x] `data/dao/ChapterDao` -> 補齊全量內容大小統計與清空功能。
-- [x] `data/entities` -> 模型對位 (Book, BookSource, ReplaceRule, DictRule)。
-
-### 📍 3. 背景與核心服務 (`service/` & `help/`)
-- [x] `help/config/ReadBookConfig` -> 排版參數完全對齊。
-- [x] `service/CheckSourceService` -> 實作並行校驗與事件流日誌。
-- [x] `service/WebDavService` -> 實作連通性測試與子目錄設定。
-- [x] `help/AppWidget` -> 打通 WidgetKit 數據同步鏈。
+## 🛠️ 最近完成的小功能記錄 (Small Features Log)
+- [x] **[Reader]** 修正 `SimulationPageView` 的參數不相容與渲染漏洞。
+- [x] **[Bookshelf]** 修復 `isBatchMode` 下的選取狀態同步問題。
+- [x] **[Source]** 修復 `CheckSourceService` 的併發事件流回傳機制。
+- [x] **[Login]** 強化 `WebViewCookieManager` 的平台層級 Cookie 持久化。
+- [x] **[Theme]** 實作 `withValues(alpha: ...)` 替代已過時的 `withOpacity`。
 
 ---
 
-## 🚀 下一階段目標
-1.  **`web/` (內置 Web 服務)**: 復刻 Android 的手機與電腦聯動功能。
-2.  **`help/` (進階排版)**: 持續細化 3D 仿真翻頁的視覺效果。
-3.  **`service/` (通知欄交互)**: iOS 鎖屏播放與朗讀控制強化。
+## 🚀 待攻克的細節缺口
+1.  **`web/WebSocket`**: 實作基於 `shelf_web_socket` 或原生的實時日誌推送。
+2.  **`ui/book/read/simulation`**: 透過 `CustomPainter` 路徑優化，實現更具立體感的翻頁陰影。
+3.  **`ui/config/backup`**: 實作 iOS 的「自動備份目錄監聽」（需結合 App Groups 或 File Provider）。
 
 ---
-*地圖版本: v1.0 | 建立日期: 2026-03-14 | 由全自動迭代工作流產出*
+*地圖版本: v2.0 | 建立日期: 2026-03-14 | 由 AI Agent 完成細節校驗後產出*
