@@ -17,6 +17,7 @@ import 'features/source_manager/source_manager_provider.dart';
 import 'features/search/search_provider.dart';
 import 'features/settings/settings_page.dart';
 import 'features/settings/settings_provider.dart';
+import 'features/settings/font_provider.dart';
 import 'features/dict/dict_provider.dart';
 import 'features/rss/rss_source_page.dart';
 import 'features/rss/rss_source_provider.dart';
@@ -71,6 +72,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ExploreProvider()),
         ChangeNotifierProvider(create: (_) => RssSourceProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => FontProvider()),
         ChangeNotifierProvider(create: (_) => ChangeCoverProvider()),
         ChangeNotifierProvider(create: (_) => DictProvider()),
         ChangeNotifierProvider(create: (_) => TTSService()),

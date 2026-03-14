@@ -141,7 +141,7 @@ class ReaderProvider extends ChangeNotifier {
     _brightness = prefs.getDouble('reader_brightness') ?? 1.0;
     _pageTurnMode = prefs.getInt('reader_page_turn_mode') ?? 0;
     _chineseConvert = prefs.getInt('reader_chinese_convert_v2') ?? (prefs.getBool('reader_chinese_convert') == true ? 1 : 0);
-    _fontFamily = prefs.getString('reader_font_family');
+    _fontFamily = prefs.getString('selected_font_family') ?? prefs.getString('reader_font_family');
     _ttsMode = prefs.getInt('reader_tts_mode') ?? 0;
     _selectedHttpTtsId = prefs.getInt('reader_selected_http_tts_id');
     _autoPageSpeed = prefs.getDouble('reader_auto_page_speed') ?? 30.0;
@@ -265,9 +265,16 @@ class ReaderProvider extends ChangeNotifier {
 
   void setFontFamily(String? f) {
     _fontFamily = f;
-    if (f != null) {
-      saveSetting('font_family', f);
-    }
+    final prefs = SharedPreferences.getInstance();
+    prefs.then((p) {
+      if (f != null) {
+        p.setString('selected_font_family', f);
+        p.setString('reader_font_family', f);
+      } else {
+        p.remove('selected_font_family');
+        p.remove('reader_font_family');
+      }
+    });
     _doPaginate();
   }
 

@@ -1,11 +1,7 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-import '../reader/reader_provider.dart';
+import 'font_provider.dart';
 
 class FontManagerPage extends StatefulWidget {
   const FontManagerPage({super.key});
@@ -23,172 +19,183 @@ class _FontManagerPageState extends State<FontManagerPage> {
     'Songti SC',
   ];
 
-  List<String> _customFonts = [];
-  bool _isLoading = true;
+  final String _previewText = "天地玄黃，宇宙洪荒。日月盈昃，辰宿列張。";
 
   @override
-  void initState() {
-    super.initState();
-    _loadCustomFonts();
+  Widget build(BuildContext context) {
+    return Consumer<FontProvider>(
+      builder: (context, provider, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('字體管理'),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.language),
+                tooltip: '網路下載',
+                onPressed: () => _showDownloadDialog(context, provider),
+              ),
+              IconButton(
+                icon: const Icon(Icons.add),
+                tooltip: '本地匯入',
+                onPressed: () => _importLocalFont(provider),
+              ),
+            ],
+          ),
+          body: provider.isLoading && provider.customFonts.isEmpty
+              ? const Center(child: CircularProgressIndicator())
+              : ListView(
+                  children: [
+                    if (provider.isLoading && provider.downloadProgress > 0)
+                      LinearProgressIndicator(value: provider.downloadProgress),
+                    _buildSectionTitle('系統字體'),
+                    ..._systemFonts.map((font) => _buildFontTile(
+                          font,
+                          font == 'System Default' ? null : font,
+                          provider,
+                        )),
+                    const Divider(),
+                    _buildSectionTitle('自訂字體'),
+                    if (provider.customFonts.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Text('無自訂字體，點擊右上角按鈕匯入。',
+                            style: TextStyle(color: Colors.grey, fontSize: 12)),
+                      ),
+                    ...provider.customFonts.map((font) => _buildFontTile(
+                          font,
+                          font,
+                          provider,
+                          isCustom: true,
+                        )),
+                  ],
+                ),
+        );
+      },
+    );
   }
 
-  Future<void> _loadCustomFonts() async {
-    setState(() => _isLoading = true);
-    try {
-      final dir = await _getFontDir();
-      if (await dir.exists()) {
-        final files = dir.listSync().whereType<File>().toList();
-        final List<String> loadedFonts = [];
-        
-        for (var file in files) {
-          final ext = p.extension(file.path).toLowerCase();
-          if (ext == '.ttf' || ext == '.otf') {
-            final name = p.basenameWithoutExtension(file.path);
-            try {
-              final fontData = await file.readAsBytes();
-              final fontLoader = FontLoader(name);
-              fontLoader.addFont(Future.value(ByteData.view(fontData.buffer)));
-              await fontLoader.load();
-              loadedFonts.add(name);
-            } catch (e) {
-              debugPrint("Failed to load font $name: $e");
-            }
-          }
-        }
-        setState(() {
-          _customFonts = loadedFonts;
-        });
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Text(
+        title,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
   }
 
-  Future<Directory> _getFontDir() async {
-    final appDir = await getApplicationDocumentsDirectory();
-    final fontDir = Directory('${appDir.path}/fonts');
-    if (!await fontDir.exists()) {
-      await fontDir.create(recursive: true);
-    }
-    return fontDir;
+  Widget _buildFontTile(String displayName, String? fontFamily, FontProvider provider,
+      {bool isCustom = false}) {
+    final isSelected = provider.selectedFont == fontFamily;
+
+    return Column(
+      children: [
+        RadioListTile<String?>(
+          title: Text(displayName),
+          subtitle: Text(
+            _previewText,
+            style: TextStyle(
+              fontFamily: fontFamily,
+              fontSize: 16,
+              color: isSelected ? null : Colors.grey,
+            ),
+          ),
+          value: fontFamily,
+          groupValue: provider.selectedFont,
+          onChanged: (val) => provider.setSelectedFont(val),
+          secondary: isCustom
+              ? IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                  onPressed: () => _confirmDelete(displayName, provider),
+                )
+              : null,
+        ),
+        const Divider(indent: 16, endIndent: 16, height: 1),
+      ],
+    );
   }
 
-  Future<void> _importFont() async {
+  Future<void> _importLocalFont(FontProvider provider) async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['ttf', 'otf'],
     );
 
     if (result != null && result.files.single.path != null) {
-      final path = result.files.single.path!;
-      final name = p.basenameWithoutExtension(path);
-      
-      try {
-        // Copy to app dir
-        final fontDir = await _getFontDir();
-        final ext = p.extension(path);
-        final newPath = '${fontDir.path}/$name$ext';
-        await File(path).copy(newPath);
-
-        // 動態加載字體
-        final fontData = await File(newPath).readAsBytes();
-        final fontLoader = FontLoader(name);
-        fontLoader.addFont(Future.value(ByteData.view(fontData.buffer)));
-        await fontLoader.load();
-
-        if (mounted) {
-          setState(() {
-            if (!_customFonts.contains(name)) _customFonts.add(name);
-          });
-          context.read<ReaderProvider>().setFontFamily(name);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('已加載並套用字體: $name')),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('匯入字體失敗: $e')),
-          );
-        }
+      await provider.addLocalFont(result.files.single.path!);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('字體匯入成功')),
+        );
       }
     }
   }
 
-  Future<void> _deleteFont(String name) async {
-    final fontDir = await _getFontDir();
-    final files = fontDir.listSync().whereType<File>();
-    for (var file in files) {
-      if (p.basenameWithoutExtension(file.path) == name) {
-        await file.delete();
-        setState(() {
-          _customFonts.remove(name);
-        });
-        
-        if (mounted) {
-          final provider = context.read<ReaderProvider>();
-          if (provider.fontFamily == name) {
-            provider.setFontFamily(null); // Reset to default
-          }
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('已刪除字體: $name')),
-          );
-        }
-        break;
-      }
-    }
-  }
+  void _showDownloadDialog(BuildContext context, FontProvider provider) {
+    final urlController = TextEditingController();
+    final nameController = TextEditingController();
 
-  @override
-  Widget build(BuildContext context) {
-    final currentFont = context.watch<ReaderProvider>().fontFamily;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('字體管理'),
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('網路下載字體'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: '字體名稱', hintText: '例如: 方正楷體'),
+            ),
+            TextField(
+              controller: urlController,
+              decoration: const InputDecoration(labelText: '下載 URL', hintText: 'http://.../font.ttf'),
+            ),
+          ],
+        ),
         actions: [
-          IconButton(icon: const Icon(Icons.add), onPressed: _importFont),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          ElevatedButton(
+            onPressed: () async {
+              final url = urlController.text.trim();
+              final name = nameController.text.trim();
+              if (url.isEmpty || name.isEmpty) return;
+
+              final messenger = ScaffoldMessenger.of(context);
+              Navigator.pop(context);
+              final success = await provider.downloadFont(url, name);
+              if (mounted) {
+                messenger.showSnackBar(
+                  SnackBar(content: Text(success ? '下載並安裝成功' : '下載失敗，請檢查 URL')),
+                );
+              }
+            },
+            child: const Text('下載'),
+          ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              children: [
-                const ListTile(
-                  title: Text('系統字體', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-                ..._systemFonts.map((font) => RadioListTile<String?>(
-                      title: Text(font, style: TextStyle(fontFamily: font == 'System Default' ? null : font)),
-                      value: font == 'System Default' ? null : font,
-                      groupValue: currentFont,
-                      onChanged: (val) {
-                        context.read<ReaderProvider>().setFontFamily(val);
-                      },
-                    )),
-                const Divider(),
-                const ListTile(
-                  title: Text('自訂字體', style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('點擊右上角 + 匯入字體檔案 (TTF/OTF)'),
-                ),
-                if (_customFonts.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Text('無自訂字體，請點擊上方按鈕匯入。', style: TextStyle(color: Colors.grey)),
-                  ),
-                ..._customFonts.map((font) => RadioListTile<String?>(
-                      title: Text(font, style: TextStyle(fontFamily: font)),
-                      value: font,
-                      groupValue: currentFont,
-                      onChanged: (val) {
-                        context.read<ReaderProvider>().setFontFamily(val);
-                      },
-                      secondary: IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => _deleteFont(font),
-                      ),
-                    )),
-              ],
-            ),
+    );
+  }
+
+  void _confirmDelete(String name, FontProvider provider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('刪除字體'),
+        content: Text('確定要刪除字體 "$name" 嗎？'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          TextButton(
+            onPressed: () {
+              provider.deleteFont(name);
+              Navigator.pop(context);
+            },
+            child: const Text('刪除', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
     );
   }
 }
