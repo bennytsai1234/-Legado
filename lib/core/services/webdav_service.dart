@@ -56,6 +56,18 @@ class WebDAVService extends ChangeNotifier {
     return client;
   }
 
+  /// 測試 WebDAV 連線是否有效
+  Future<bool> testConnection() async {
+    try {
+      final client = await _getClient();
+      await client.readDir('/');
+      return true;
+    } catch (e) {
+      debugPrint('WebDAV Test Connection Failed: $e');
+      return false;
+    }
+  }
+
   /// 獲取最新備份檔案資訊 (對標 Android lastBackUp)
   Future<webdav.File?> lastBackUp() async {
     try {

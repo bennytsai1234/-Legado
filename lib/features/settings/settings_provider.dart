@@ -20,11 +20,15 @@ class SettingsProvider extends ChangeNotifier {
   String _webdavUrl = '';
   String _webdavUser = '';
   String _webdavPassword = '';
+  String _webdavSubDir = '';
+  String _deviceName = '';
   bool _webdavEnabled = false;
 
   String get webdavUrl => _webdavUrl;
   String get webdavUser => _webdavUser;
   String get webdavPassword => _webdavPassword;
+  String get webdavSubDir => _webdavSubDir;
+  String get deviceName => _deviceName;
   bool get webdavEnabled => _webdavEnabled;
 
   bool _appCrash = false;
@@ -165,6 +169,8 @@ class SettingsProvider extends ChangeNotifier {
     _webdavUrl = prefs.getString(PreferKey.webDavUrl) ?? '';
     _webdavUser = prefs.getString(PreferKey.webDavAccount) ?? '';
     _webdavPassword = prefs.getString(PreferKey.webDavPassword) ?? '';
+    _webdavSubDir = prefs.getString('webdav_sub_dir') ?? '';
+    _deviceName = prefs.getString('device_name') ?? '';
     _webdavEnabled = _webdavUrl.isNotEmpty && _webdavUser.isNotEmpty;
 
     _appCrash = prefs.getBool('app_crash') ?? false;
@@ -292,6 +298,9 @@ class SettingsProvider extends ChangeNotifier {
     await _save('webdav_enabled', _webdavEnabled);
     notifyListeners();
   }
+
+  Future<void> setWebdavSubDir(String v) async { _webdavSubDir = v; await _save('webdav_sub_dir', v); notifyListeners(); }
+  Future<void> setDeviceName(String v) async { _deviceName = v; await _save('device_name', v); notifyListeners(); }
 
   Future<void> setTransparentStatusBar(bool v) async { transparentStatusBar = v; await _save('transparent_status_bar', v); notifyListeners(); }
   Future<void> setImmNavigationBar(bool v) async { immNavigationBar = v; await _save('imm_navigation_bar', v); notifyListeners(); }

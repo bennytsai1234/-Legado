@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'settings_provider.dart';
+import '../../core/services/webdav_service.dart';
 
 class BackupSettingsPage extends StatefulWidget {
   const BackupSettingsPage({super.key});
@@ -66,18 +67,24 @@ class _BackupSettingsPageState extends State<BackupSettingsPage> {
                       obscureText: true,
                       onChanged: (v) => _saveWebdavAccount(settings),
                     ),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      onPressed: () => _testWebdavConnection(settings),
+                      icon: const Icon(Icons.sync_alt),
+                      label: const Text('測試連線並同步'),
+                    ),
                   ],
                 ),
               ),
               ListTile(
                 title: const Text('子目錄 (Sub Directory)'),
-                subtitle: const Text('留空為根目錄'),
-                onTap: () => _showComingSoon(context),
+                subtitle: Text(settings.webdavSubDir.isEmpty ? '根目錄' : settings.webdavSubDir),
+                onTap: () => _showEditDialog(context, '子目錄', settings.webdavSubDir, (v) => settings.setWebdavSubDir(v)),
               ),
               ListTile(
                 title: const Text('裝置名稱 (Device Name)'),
-                subtitle: const Text('用於區分不同裝置的備份'),
-                onTap: () => _showComingSoon(context),
+                subtitle: Text(settings.deviceName.isEmpty ? '預設' : settings.deviceName),
+                onTap: () => _showEditDialog(context, '裝置名稱', settings.deviceName, (v) => settings.setDeviceName(v)),
               ),
               SwitchListTile(
                 title: const Text('同步書籍進度'),
@@ -182,6 +189,49 @@ class _BackupSettingsPageState extends State<BackupSettingsPage> {
       url: _webdavUrlController.text,
       user: _webdavUserController.text,
       password: _webdavPasswordController.text,
+    );
+  }
+
+  Future<void> _testWebdavConnection(SettingsProvider settings) async {
+    final messenger = ScaffoldMessenger.of(context);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final success = await WebDAVService().testConnection();
+    
+    if (mounted) {
+      Navigator.pop(context);
+      messenger.showSnackBar(
+        SnackBar(content: Text(success ? 'WebDAV 連線測試成功！' : '連線失敗，請檢查設定')),
+      );
+      if (success) {
+        // 成功後嘗試觸發一次備份
+        await WebDAVService().backup();
+      }
+    }
+  }
+
+  void _showEditDialog(BuildContext context, String title, String current, Function(String) onSave) {
+    final ctrl = TextEditingController(text: current);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('修改 $title'),
+        content: TextField(controller: ctrl, autofocus: true),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          TextButton(
+            onPressed: () {
+              onSave(ctrl.text.trim());
+              Navigator.pop(context);
+            },
+            child: const Text('確定'),
+          ),
+        ],
+      ),
     );
   }
 
