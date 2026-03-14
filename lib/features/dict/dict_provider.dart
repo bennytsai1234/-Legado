@@ -16,25 +16,37 @@ class DictProvider with ChangeNotifier {
   
   String _result = "";
   String get result => _result;
-  
+
+  DictRule? _selectedRule;
+  DictRule? get selectedRule => _selectedRule;
+
   Future<void> loadRules() async {
     _allRules = await _service.getAllRules();
     _rules = _allRules.where((r) => r.enabled).toList();
+    if (_rules.isNotEmpty && _selectedRule == null) {
+      _selectedRule = _rules.first;
+    }
     notifyListeners();
   }
-  
-  Future<void> search(String word) async {
+
+  void selectRule(DictRule rule) {
+    _selectedRule = rule;
+    notifyListeners();
+  }
+
+  Future<void> search(String word, {DictRule? rule}) async {
     if (_rules.isEmpty) await loadRules();
     if (_rules.isEmpty) return;
-    
+
+    final targetRule = rule ?? _selectedRule ?? _rules.first;
+    _selectedRule = targetRule;
+
     _isLoading = true;
     _result = "";
     notifyListeners();
-    
+
     try {
-      // 預設用第一個啟用的規則
-      final rule = _rules.first;
-      _result = await _service.search(rule, word);
+      _result = await _service.search(targetRule, word);
     } catch (e) {
       _result = "搜索失敗: $e";
     } finally {

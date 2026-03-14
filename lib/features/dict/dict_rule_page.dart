@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/dict_rule.dart';
 import 'dict_provider.dart';
@@ -72,11 +74,46 @@ class _DictRulePageState extends State<DictRulePage> {
     final nameController = TextEditingController(text: rule?.name ?? "");
     final urlController = TextEditingController(text: rule?.urlRule ?? "");
     final showController = TextEditingController(text: rule?.showRule ?? "");
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(rule == null ? '新增規則' : '編輯規則'),
+        title: Row(
+          children: [
+            Expanded(child: Text(rule == null ? '新增規則' : '編輯規則')),
+            IconButton(
+              icon: const Icon(Icons.copy, size: 20),
+              tooltip: '複製規則',
+              onPressed: () {
+                final r = DictRule(
+                  name: nameController.text,
+                  urlRule: urlController.text,
+                  showRule: showController.text,
+                );
+                Clipboard.setData(ClipboardData(text: jsonEncode(r.toJson())));
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已複製到剪貼簿')));
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.paste, size: 20),
+              tooltip: '貼上規則',
+              onPressed: () async {
+                final data = await Clipboard.getData(Clipboard.kTextPlain);
+                if (data?.text != null && mounted) {
+                  try {
+                    final json = jsonDecode(data.text!);
+                    final r = DictRule.fromJson(json);
+                    nameController.text = r.name;
+                    urlController.text = r.urlRule;
+                    showController.text = r.showRule;
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('格式錯誤')));
+                  }
+                }
+              },
+            ),
+          ],
+        ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
