@@ -46,7 +46,7 @@ class _BookmarkListPageState extends State<BookmarkListPage> {
   Future<void> _exportBookmarks({bool asJson = false}) async {
     if (_allBookmarks.isEmpty) return;
     final String content = asJson ? jsonEncode(_allBookmarks) : _allBookmarks.map((e) => e.bookText).join('\n');
-    await SharePlus.instance.share(content, subject: 'Legado 書籤匯出');
+    await SharePlus.instance.share(ShareParams(text: content, subject: 'Legado 書籤匯出'));
   }
 
   Future<void> _showExportMenu() async {

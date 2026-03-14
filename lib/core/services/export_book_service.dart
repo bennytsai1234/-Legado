@@ -38,6 +38,6 @@ class ExportBookService {
     } catch (_) {}
 
     // 使用 SharePlus 的最新靜態語法
-    await SharePlus.instance.shareXFiles([XFile(file.path)], subject: '匯出書籍: ${book.name}');
+    await SharePlus.instance.share(ShareParams(files: [XFile(file.path)], subject: '匯出書籍: ${book.name}'));
   }
 }
