@@ -19,7 +19,14 @@ class _FontManagerPageState extends State<FontManagerPage> {
     'Songti SC',
   ];
 
-  final String _previewText = "天地玄黃，宇宙洪荒。日月盈昃，辰宿列張。";
+  final TextEditingController _previewCtrl = TextEditingController(text: "天地玄黃，宇宙洪荒。日月盈昃，辰宿列張。");
+  double _previewSize = 16.0;
+
+  @override
+  void dispose() {
+    _previewCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,36 +48,79 @@ class _FontManagerPageState extends State<FontManagerPage> {
               ),
             ],
           ),
-          body: provider.isLoading && provider.customFonts.isEmpty
-              ? const Center(child: CircularProgressIndicator())
-              : ListView(
-                  children: [
-                    if (provider.isLoading && provider.downloadProgress > 0)
-                      LinearProgressIndicator(value: provider.downloadProgress),
-                    _buildSectionTitle('系統字體'),
-                    ..._systemFonts.map((font) => _buildFontTile(
-                          font,
-                          font == 'System Default' ? null : font,
-                          provider,
-                        )),
-                    const Divider(),
-                    _buildSectionTitle('自訂字體'),
-                    if (provider.customFonts.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Text('無自訂字體，點擊右上角按鈕匯入。',
-                            style: TextStyle(color: Colors.grey, fontSize: 12)),
+          body: Column(
+            children: [
+              _buildConfigSection(),
+              const Divider(height: 1),
+              Expanded(
+                child: provider.isLoading && provider.customFonts.isEmpty
+                    ? const Center(child: CircularProgressIndicator())
+                    : ListView(
+                        children: [
+                          if (provider.isLoading && provider.downloadProgress > 0)
+                            LinearProgressIndicator(value: provider.downloadProgress),
+                          _buildSectionTitle('系統字體'),
+                          ..._systemFonts.map((font) => _buildFontTile(
+                                font,
+                                font == 'System Default' ? null : font,
+                                provider,
+                              )),
+                          const Divider(),
+                          _buildSectionTitle('自訂字體'),
+                          if (provider.customFonts.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: Text('無自訂字體，點擊右上角按鈕匯入。',
+                                  style: TextStyle(color: Colors.grey, fontSize: 12)),
+                            ),
+                          ...provider.customFonts.map((font) => _buildFontTile(
+                                font,
+                                font,
+                                provider,
+                                isCustom: true,
+                              )),
+                        ],
                       ),
-                    ...provider.customFonts.map((font) => _buildFontTile(
-                          font,
-                          font,
-                          provider,
-                          isCustom: true,
-                        )),
-                  ],
-                ),
+              ),
+            ],
+          ),
         );
       },
+    );
+  }
+
+  Widget _buildConfigSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: Theme.of(context).cardColor,
+      child: Column(
+        children: [
+          TextField(
+            controller: _previewCtrl,
+            decoration: const InputDecoration(
+              labelText: '預覽文字',
+              isDense: true,
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (v) => setState(() {}),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Icon(Icons.format_size, size: 20, color: Colors.grey),
+              Expanded(
+                child: Slider(
+                  value: _previewSize,
+                  min: 10,
+                  max: 40,
+                  onChanged: (v) => setState(() => _previewSize = v),
+                ),
+              ),
+              Text('${_previewSize.toInt()}', style: const TextStyle(color: Colors.grey)),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -96,10 +146,10 @@ class _FontManagerPageState extends State<FontManagerPage> {
         RadioListTile<String?>(
           title: Text(displayName),
           subtitle: Text(
-            _previewText,
+            _previewCtrl.text,
             style: TextStyle(
               fontFamily: fontFamily,
-              fontSize: 16,
+              fontSize: _previewSize,
               color: isSelected ? null : Colors.grey,
             ),
           ),
@@ -184,7 +234,7 @@ class _FontManagerPageState extends State<FontManagerPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('刪除字體'),
-        content: Text('確定要刪除字體 "$name" 嗎？'),
+        content: Text('確定要刪除字體 "$name" 嗎？\n這將從本地儲存中移除該檔案。'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
           TextButton(
