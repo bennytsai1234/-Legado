@@ -57,6 +57,34 @@ class ReplaceRule {
     return (group == null || group!.isEmpty) ? name : "$name ($group)";
   }
 
+  /// 執行單條規則替換 (用於調試與預覽)
+  String apply(String content) {
+    if (pattern.isEmpty) return content;
+    try {
+      if (isRegex) {
+        final reg = RegExp(pattern, multiLine: true, dotAll: true);
+        return content.replaceAllMapped(reg, (match) {
+          return replacement.replaceAllMapped(RegExp(r'\\\$|\$(\d+)'), (m) {
+            final hit = m.group(0)!;
+            if (hit == r'\$') {
+              return r'$';
+            } else {
+              final groupIndex = int.tryParse(m.group(1)!) ?? 0;
+              if (groupIndex > 0 && groupIndex <= match.groupCount) {
+                return match.group(groupIndex) ?? '';
+              }
+              return hit;
+            }
+          });
+        });
+      } else {
+        return content.replaceAll(pattern, replacement);
+      }
+    } catch (_) {
+      return content;
+    }
+  }
+
   factory ReplaceRule.fromJson(Map<String, dynamic> json) {
     return ReplaceRule(
       id: json['id'] ?? 0,
