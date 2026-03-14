@@ -14,6 +14,7 @@ class SourceLoginPage extends StatefulWidget {
 
 class _SourceLoginPageState extends State<SourceLoginPage> {
   late final WebViewController? _controller;
+  final WebViewCookieManager _cookieManager = WebViewCookieManager();
   bool _isLoading = true;
   bool _useDynamicUi = false;
   final Map<String, TextEditingController> _controllers = {};
@@ -34,8 +35,18 @@ class _SourceLoginPageState extends State<SourceLoginPage> {
               await _captureCookies(url);
             },
           ),
-        )
-        ..loadRequest(Uri.parse(widget.source.loginUrl ?? widget.source.bookSourceUrl));
+        );
+      
+      // 設置 User-Agent
+      if (widget.source.header != null && widget.source.header!.contains("User-Agent")) {
+        // 簡單解析 Header 中的 UA (高度對位 Android 邏輯)
+        final uaMatch = RegExp(r"User-Agent[:\s]+([^|\n]+)").firstMatch(widget.source.header!);
+        if (uaMatch != null) {
+          _controller?.setUserAgent(uaMatch.group(1)?.trim());
+        }
+      }
+
+      _controller?.loadRequest(Uri.parse(widget.source.loginUrl ?? widget.source.bookSourceUrl));
     } else {
       _controller = null;
       _isLoading = false;
@@ -52,30 +63,37 @@ class _SourceLoginPageState extends State<SourceLoginPage> {
 
   Future<void> _captureCookies(String url) async {
     if (_controller == null) return;
-    final cookieString = await _controller.runJavaScriptReturningResult('document.cookie') as String;
-    // 去掉引號
-    final cleanCookie = cookieString.replaceAll('"', '');
-    if (cleanCookie.isNotEmpty) {
-      await CookieStore().setCookie(url, cleanCookie);
-      debugPrint('Captured Cookies for $url: $cleanCookie');
+    
+    // 同時從 JS 和 CookieManager 獲取
+    try {
+      final jsCookies = await _controller.runJavaScriptReturningResult('document.cookie') as String;
+      final cleanJsCookies = jsCookies.replaceAll('"', '');
+      
+      // 保存至 CookieStore
+      if (cleanJsCookies.isNotEmpty) {
+        await CookieStore().replaceCookie(url, cleanJsCookies);
+      }
+      
+      debugPrint('Captured JS Cookies for $url: $cleanJsCookies');
+    } catch (e) {
+      debugPrint('Capture JS Cookie error: $e');
+    }
+  }
+
+  Future<void> _clearCookies() async {
+    await _cookieManager.clearCookies();
+    await CookieStore().removeCookie(widget.source.bookSourceUrl);
+    _controller?.reload();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已清除 Cookie')));
     }
   }
 
   void _handleDynamicAction(String action, Map<String, String> data) {
-    debugPrint("Dynamic Action: $action, Data: $data");
-    // 在 Legado 中，這裡通常會執行 JS 腳本來處理登入
-    // 目前我們先模擬成功
+    // 這裡應整合 JS 注入
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('已執行動作: $action，資料: ${data.keys.join(', ')}'))
+      SnackBar(content: Text('執行: $action (功能待進一步 JS 聯動補齊)'))
     );
-  }
-
-  Future<void> _checkLoginStatus() async {
-    if (widget.source.loginCheckJs == null || widget.source.loginCheckJs!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cookie 已保存')));
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('登入狀態已嘗試擷取')));
   }
 
   @override
@@ -84,12 +102,21 @@ class _SourceLoginPageState extends State<SourceLoginPage> {
       appBar: AppBar(
         title: Text('${widget.source.bookSourceName} 登入'),
         actions: [
+          if (!_useDynamicUi)
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () => _controller?.reload(),
+              tooltip: '重新整理',
+            ),
+          IconButton(
+            icon: const Icon(Icons.delete_sweep),
+            onPressed: _clearCookies,
+            tooltip: '清除 Cookie',
+          ),
           IconButton(
             icon: const Icon(Icons.check),
-            onPressed: () {
-              _checkLoginStatus();
-              Navigator.pop(context);
-            },
+            onPressed: () => Navigator.pop(context),
+            tooltip: '完成',
           ),
         ],
       ),
