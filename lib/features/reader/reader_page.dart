@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart' as url_launcher;
-import 'package:share_plus/share_plus.dart' as share_plus;
+import 'package:share_plus/share_plus.dart';
 import 'package:legado_reader/features/reader/reader_provider.dart';
 import 'package:legado_reader/features/reader/engine/page_view_widget.dart';
 import 'package:legado_reader/core/models/book.dart';
@@ -234,9 +234,10 @@ class _ReaderPageState extends State<ReaderPage> {
                 label: '分享',
                 onPressed: () {
                   state.hideToolbar();
-                  share_plus.Share.share(_selectedText);
+                  Share.share(_selectedText);
                 },
               ),
+
             ];
             return AdaptiveTextSelectionToolbar.buttonItems(
               anchors: state.contextMenuAnchors,
