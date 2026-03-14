@@ -8,6 +8,7 @@ import 'source_editor_page.dart';
 import 'source_login_page.dart';
 import 'qr_scan_page.dart';
 import 'explore_sources_page.dart';
+import 'source_debug_page.dart';
 import '../../core/models/book_source.dart';
 
 class SourceManagerPage extends StatefulWidget {
@@ -41,14 +42,15 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
                       icon: const Icon(Icons.select_all),
                       tooltip: '全選',
                       onPressed: provider.selectAll,
-                      ),
-                      IconButton(
+                    ),
+                    IconButton(
                       icon: const Icon(Icons.format_line_spacing),
                       tooltip: '區間選擇',
                       onPressed: provider.selectedUrls.length >= 2 ? provider.selectInterval : null,
-                      ),
-                      IconButton(
-                      icon: const Icon(Icons.close),                      tooltip: '取消',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      tooltip: '取消',
                       onPressed: provider.toggleBatchMode,
                     ),
                   ]
@@ -210,7 +212,6 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
       BuildContext context, SourceManagerProvider provider, BookSource source) {
     bool isSelected = provider.selectedUrls.contains(source.bookSourceUrl);
     
-    // 判斷狀態 (高度還原 Android 顯示)
     String statusStr = "未校驗";
     Color statusColor = Colors.grey;
 
@@ -220,14 +221,6 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
     } else if (source.respondTime == -1) {
       statusStr = "失效";
       statusColor = Colors.red;
-    }
-
-    if (source.bookSourceGroup?.contains("搜尋失效") ?? false) {
-      statusStr = "搜尋失效";
-      statusColor = Colors.red;
-    } else if (source.bookSourceGroup?.contains("校驗超時") ?? false) {
-      statusStr = "超時";
-      statusColor = Colors.orange;
     }
 
     final tile = ListTile(
@@ -286,8 +279,7 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
       },
       onLongPress: () {
         if (!provider.isBatchMode) {
-          provider.toggleBatchMode();
-          provider.toggleSelect(source.bookSourceUrl);
+          _showSourceMenu(context, provider, source);
         }
       },
     );
@@ -309,6 +301,97 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
             SnackBar(content: Text('已刪除 ${source.bookSourceName}')));
       },
       child: tile,
+    );
+  }
+
+  void _showSourceMenu(BuildContext context, SourceManagerProvider provider, BookSource source) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.bug_report),
+              title: const Text('調試書源'),
+              onTap: () {
+                Navigator.pop(context);
+                _showDebugInputDialog(context, source);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('編輯書源'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => SourceEditorPage(source: source)),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.select_all),
+              title: const Text('批次模式'),
+              onTap: () {
+                Navigator.pop(context);
+                provider.toggleBatchMode();
+                provider.toggleSelect(source.bookSourceUrl);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text('刪除書源', style: TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(context);
+                provider.deleteSource(source);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDebugInputDialog(BuildContext context, BookSource source) {
+    final controller = TextEditingController(text: '我的世界');
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('輸入調試關鍵字'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              '支援: 搜尋詞, URL, ::發現, ++目錄, --正文',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              decoration: const InputDecoration(hintText: '搜尋詞或 URL'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SourceDebugPage(
+                    source: source,
+                    debugKey: controller.text.trim(),
+                  ),
+                ),
+              );
+            },
+            child: const Text('開始調試'),
+          ),
+        ],
+      ),
     );
   }
 

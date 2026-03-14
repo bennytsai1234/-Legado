@@ -98,16 +98,18 @@ class _DictRulePageState extends State<DictRulePage> {
               icon: const Icon(Icons.paste, size: 20),
               tooltip: '貼上規則',
               onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
                 final data = await Clipboard.getData(Clipboard.kTextPlain);
-                if (data?.text != null && mounted) {
+                final text = data?.text;
+                if (text != null && mounted) {
                   try {
-                    final json = jsonDecode(data.text!);
+                    final json = jsonDecode(text);
                     final r = DictRule.fromJson(json);
                     nameController.text = r.name;
                     urlController.text = r.urlRule;
                     showController.text = r.showRule;
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('格式錯誤')));
+                    messenger.showSnackBar(const SnackBar(content: Text('格式錯誤')));
                   }
                 }
               },
