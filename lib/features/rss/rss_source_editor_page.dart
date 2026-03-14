@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/models/rss_source.dart';
 import '../../core/database/dao/rss_source_dao.dart';
+import 'rss_debug_page.dart';
 
 class RssSourceEditorPage extends StatefulWidget {
   final RssSource? source;
@@ -59,12 +60,7 @@ class _RssSourceEditorPageState extends State<RssSourceEditorPage> {
     super.dispose();
   }
 
-  Future<void> _save() async {
-    if (_urlController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('URL 不能為空')));
-      return;
-    }
-
+  void _syncSource() {
     _editingSource.sourceName = _nameController.text;
     _editingSource.sourceUrl = _urlController.text;
     _editingSource.sourceIcon = _iconController.text;
@@ -76,9 +72,25 @@ class _RssSourceEditorPageState extends State<RssSourceEditorPage> {
     _editingSource.ruleDescription = _descRuleController.text;
     _editingSource.ruleImage = _imageRuleController.text;
     _editingSource.ruleContent = _contentRuleController.text;
+  }
 
+  Future<void> _save() async {
+    if (_urlController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('URL 不能為空')));
+      return;
+    }
+
+    _syncSource();
     await RssSourceDao().insertOrUpdate(_editingSource);
     if (mounted) Navigator.pop(context);
+  }
+
+  void _showDebug() {
+    _syncSource();
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => RssDebugPage(source: _editingSource)),
+    );
   }
 
   @override
@@ -87,6 +99,7 @@ class _RssSourceEditorPageState extends State<RssSourceEditorPage> {
       appBar: AppBar(
         title: Text(widget.source == null ? '新建 RSS 來源' : '編輯 RSS 來源'),
         actions: [
+          IconButton(icon: const Icon(Icons.bug_report), onPressed: _showDebug),
           IconButton(icon: const Icon(Icons.save), onPressed: _save),
         ],
       ),
