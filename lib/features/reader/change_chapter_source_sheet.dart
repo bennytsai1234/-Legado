@@ -108,15 +108,17 @@ class _ChangeChapterSourceSheetState extends State<ChangeChapterSourceSheet> {
   }
 
   Future<void> _handleSourceSelected(BuildContext context, ChangeSourceProvider provider, SearchBook searchBook) async {
+    final nav = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final readerProvider = context.read<ReaderProvider>();
+
     final sources = await provider.sourceDao.getAll();
+    if (!mounted) return;
+    
     final source = sources.cast<BookSource?>().firstWhere((s) => s?.bookSourceUrl == searchBook.origin, orElse: () => null);
     if (source == null) {
       return;
     }
-
-    final nav = Navigator.of(context);
-    final messenger = ScaffoldMessenger.of(context);
-    final readerProvider = context.read<ReaderProvider>();
 
     showDialog(context: context, barrierDismissible: false, builder: (ctx) => const Center(child: CircularProgressIndicator()));
 
@@ -138,6 +140,7 @@ class _ChangeChapterSourceSheetState extends State<ChangeChapterSourceSheet> {
         nav.pop();
         
         if (tempBook.type != widget.book.type) {
+          if (!mounted) return;
           _showMigrationDialog(context, widget.book.migrateTo(tempBook, chapters) as Book);
         } else {
           readerProvider.replaceChapterSource(widget.chapterIndex, source, content);
