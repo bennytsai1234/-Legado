@@ -113,7 +113,7 @@ class _ChangeChapterSourceSheetState extends State<ChangeChapterSourceSheet> {
     final readerProvider = context.read<ReaderProvider>();
 
     final sources = await provider.sourceDao.getAll();
-    if (!mounted) return;
+    if (!context.mounted) return;
     
     final source = sources.cast<BookSource?>().firstWhere((s) => s?.bookSourceUrl == searchBook.origin, orElse: () => null);
     if (source == null) {
@@ -140,7 +140,7 @@ class _ChangeChapterSourceSheetState extends State<ChangeChapterSourceSheet> {
         nav.pop();
         
         if (tempBook.type != widget.book.type) {
-          if (!mounted) return;
+          if (!context.mounted) return;
           _showMigrationDialog(context, widget.book.migrateTo(tempBook, chapters) as Book);
         } else {
           readerProvider.replaceChapterSource(widget.chapterIndex, source, content);
