@@ -1,3 +1,4 @@
+import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:legado_reader/core/models/book.dart';
 import 'package:legado_reader/core/models/chapter.dart';
@@ -30,12 +31,12 @@ class BookSourceService {
 
     
     final body = await analyzeUrl.getResponseBody();
-    return BookListParser.parse(
+    return Isolate.run(() => BookListParser.parse(
       source: source,
       body: body,
       baseUrl: analyzeUrl.url,
       isSearch: true,
-    );
+    ));
   }
 
   Future<List<SearchBook>> exploreBooks(BookSource source, String url, {int page = 1}) async {
@@ -47,12 +48,12 @@ class BookSourceService {
     
     final body = await analyzeUrl.getResponseBody();
 
-    return BookListParser.parse(
+    return Isolate.run(() => BookListParser.parse(
       source: source,
       body: body,
       baseUrl: analyzeUrl.url,
       isSearch: false,
-    );
+    ));
   }
 
   Future<Book> getBookInfo(BookSource source, Book book) async {
@@ -64,12 +65,12 @@ class BookSourceService {
     
     final body = await analyzeUrl.getResponseBody();
 
-    return BookInfoParser.parse(
+    return Isolate.run(() => BookInfoParser.parse(
       source: source,
       book: book,
       body: body,
       baseUrl: analyzeUrl.url,
-    );
+    ));
   }
 
   Future<List<BookChapter>> getChapterList(BookSource source, Book book) async {
@@ -82,12 +83,12 @@ class BookSourceService {
     
     final body = await analyzeUrl.getResponseBody();
 
-    return ChapterListParser.parse(
+    return Isolate.run(() => ChapterListParser.parse(
       source: source,
       book: book,
       body: body,
       baseUrl: analyzeUrl.url,
-    );
+    ));
   }
 
   Future<String> getContent(BookSource source, Book book, BookChapter chapter, {String? nextChapterUrl}) async {
@@ -99,11 +100,11 @@ class BookSourceService {
     
     final body = await analyzeUrl.getResponseBody();
 
-    return ContentParser.parse(
+    return Isolate.run(() => ContentParser.parse(
       source: source,
       body: body,
       baseUrl: analyzeUrl.url,
-    );
+    ));
   }
 
   /// 精準搜尋 (對標 Android WebBook.preciseSearchAwait)
