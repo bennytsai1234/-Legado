@@ -12,28 +12,40 @@ mixin RuleAnalyzerMatch on RuleAnalyzerBase {
     final closeChar = close[0];
 
     do {
-      if (curPos >= queue.length) break;
+      if (curPos >= queue.length) {
+        break;
+      }
       final c = queue[curPos++];
       if (c.codeUnitAt(0) != RuleAnalyzerBase.esc) {
-        if (c == "'" && !inDoubleQuote) inSingleQuote = !inSingleQuote;
-        else if (c == '"' && !inSingleQuote) inDoubleQuote = !inDoubleQuote;
+        if (c == "'" && !inDoubleQuote) {
+          inSingleQuote = !inSingleQuote;
+        } else if (c == '"' && !inSingleQuote) {
+          inDoubleQuote = !inDoubleQuote;
+        }
         
-        if (inSingleQuote || inDoubleQuote) continue;
+        if (inSingleQuote || inDoubleQuote) {
+          continue;
+        }
         
         if (c == '[') {
           depth++;
         } else if (c == ']') {
           depth--;
         } else if (depth == 0) {
-          if (c == openChar) otherDepth++;
-          else if (c == closeChar) otherDepth--;
+          if (c == openChar) {
+            otherDepth++;
+          } else if (c == closeChar) {
+            otherDepth--;
+          }
         }
       } else if (curPos < queue.length) {
         curPos++;
       }
     } while (depth > 0 || otherDepth > 0);
 
-    if (depth > 0 || otherDepth > 0) return false;
+    if (depth > 0 || otherDepth > 0) {
+      return false;
+    }
     pos = curPos;
     return true;
   }
@@ -47,15 +59,22 @@ mixin RuleAnalyzerMatch on RuleAnalyzerBase {
     final closeChar = close[0];
 
     do {
-      if (curPos >= queue.length) break;
+      if (curPos >= queue.length) {
+        break;
+      }
       final c = queue[curPos++];
-      if (c == "'" && !inDoubleQuote) inSingleQuote = !inSingleQuote;
-      else if (c == '"' && !inSingleQuote) inDoubleQuote = !inDoubleQuote;
+      if (c == "'" && !inDoubleQuote) {
+        inSingleQuote = !inSingleQuote;
+      } else if (c == '"' && !inSingleQuote) {
+        inDoubleQuote = !inDoubleQuote;
+      }
       
       if (inSingleQuote || inDoubleQuote) {
         continue;
       } else if (c == r'\') {
-        if (curPos < queue.length) curPos++;
+        if (curPos < queue.length) {
+          curPos++;
+        }
         continue;
       }
       if (c == openChar) {
@@ -65,7 +84,9 @@ mixin RuleAnalyzerMatch on RuleAnalyzerBase {
       }
     } while (depth > 0);
 
-    if (depth > 0) return false;
+    if (depth > 0) {
+      return false;
+    }
     pos = curPos;
     return true;
   }

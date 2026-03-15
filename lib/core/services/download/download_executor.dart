@@ -15,9 +15,13 @@ mixin DownloadExecutor on DownloadBase, DownloadScheduler {
 
     try {
       final book = await bookDao.getByUrl(task.bookUrl);
-      if (book == null) throw Exception("書籍不存在");
+      if (book == null) {
+        throw Exception("書籍不存在");
+      }
       final source = await sourceDao.getByUrl(book.origin);
-      if (source == null) throw Exception("書源不存在");
+      if (source == null) {
+        throw Exception("書源不存在");
+      }
       
       var chapters = await chapterDao.getChapters(task.bookUrl);
       if (chapters.isEmpty) {
@@ -29,18 +33,23 @@ mixin DownloadExecutor on DownloadBase, DownloadScheduler {
           endChapterIndex: chapters.isNotEmpty ? chapters.last.index : 0,
         );
         int idx = tasks.indexOf(task);
-        if (idx != -1) tasks[idx] = newTask;
+        if (idx != -1) {
+          tasks[idx] = newTask;
+        }
         task = newTask;
       }
 
       final toDownload = chapters.where((c) => c.index >= task.startChapterIndex && c.index <= task.endChapterIndex).toList();
       int poolCount = 0;
       for (var chapter in toDownload) {
-        if (!isDownloading || task.status == 2) break;
+        if (!isDownloading || task.status == 2) {
+          break;
+        }
         await checkPause();
         
         if (await chapterDao.hasContent(task.bookUrl, chapter.index)) {
-          task.successCount++; continue;
+          task.successCount++;
+          continue;
         }
 
         while (poolCount >= maxChapterConcurrent) {
@@ -49,7 +58,11 @@ mixin DownloadExecutor on DownloadBase, DownloadScheduler {
 
         poolCount++;
         _downloadChapter(book, source, task, chapter).then((success) {
-          if (success) task.successCount++; else task.errorCount++;
+          if (success) {
+            task.successCount++;
+          } else {
+            task.errorCount++;
+          }
           poolCount--;
           task.currentChapterIndex = chapter.index;
           downloadDao.updateProgress(task.bookUrl, currentChapterIndex: chapter.index, successCount: task.successCount, errorCount: task.errorCount);
@@ -57,7 +70,9 @@ mixin DownloadExecutor on DownloadBase, DownloadScheduler {
         });
       }
 
-      while (poolCount > 0) await Future.delayed(const Duration(seconds: 1));
+      while (poolCount > 0) {
+        await Future.delayed(const Duration(seconds: 1));
+      }
 
       if (task.status != 2) {
         task.status = 3;
@@ -81,6 +96,8 @@ mixin DownloadExecutor on DownloadBase, DownloadScheduler {
         return true;
       }
       return false;
-    } catch (_) { return false; }
+    } catch (_) {
+      return false;
+    }
   }
 }

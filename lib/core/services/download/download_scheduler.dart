@@ -44,7 +44,9 @@ mixin DownloadScheduler on DownloadBase {
   }
 
   Future<void> addDownloadTask(Book book, List<BookChapter> chapters) async {
-    if (chapters.isEmpty) return;
+    if (chapters.isEmpty) {
+      return;
+    }
     final task = DownloadTask(
       bookUrl: book.bookUrl,
       bookName: book.name,
@@ -56,14 +58,21 @@ mixin DownloadScheduler on DownloadBase {
     );
     await downloadDao.insertOrUpdate(task);
     int existingIndex = tasks.indexWhere((t) => t.bookUrl == book.bookUrl);
-    if (existingIndex != -1) tasks[existingIndex] = task;
-    else tasks.add(task);
+    if (existingIndex != -1) {
+      tasks[existingIndex] = task;
+    } else {
+      tasks.add(task);
+    }
     update();
-    if (!isDownloading) (this as dynamic).startDownloads();
+    if (!isDownloading) {
+      (this as dynamic).startDownloads();
+    }
   }
 
   Future<void> startDownloads() async {
-    if (isScheduling || isDownloading) return;
+    if (isScheduling || isDownloading) {
+      return;
+    }
     isScheduling = true;
     try {
       isDownloading = true;
@@ -72,8 +81,11 @@ mixin DownloadScheduler on DownloadBase {
         final activeTasks = tasks.where((t) => t.status == 1).toList();
         if (activeTasks.length < maxConcurrent) {
           final nextTask = tasks.cast<DownloadTask?>().firstWhere((t) => t?.status == 0, orElse: () => null);
-          if (nextTask != null) (this as dynamic).processTask(nextTask);
-          else if (activeTasks.isEmpty) break;
+          if (nextTask != null) {
+            (this as dynamic).processTask(nextTask);
+          } else if (activeTasks.isEmpty) {
+            break;
+          }
         }
         await Future.delayed(const Duration(seconds: 1));
       }

@@ -36,9 +36,9 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
             SourceManagerMenus.buildAddMenu(context, provider, 
               onImportUrl: () => _showImportDialog(context, true), onImportFile: () => _importFromFile(context), 
               onImportClipboard: () => _importFromClipboard(context), onScanQr: () => _scanQrCode(context, provider), 
-              onExplore: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ExploreSourcesPage())), 
-              onManageGroups: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SourceGroupManagePage())), 
-              onNewSource: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SourceEditorPage()))),
+              onExplore: () { if (context.mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => const ExploreSourcesPage())); }, 
+              onManageGroups: () { if (context.mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => const SourceGroupManagePage())); }, 
+              onNewSource: () { if (context.mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => const SourceEditorPage())); }),
             SourceManagerMenus.buildMoreMenu(context, provider, onClearInvalid: (p) => SourceManagerDialogs.confirmClearInvalid(context, p)),
           ],
         ),
@@ -48,8 +48,8 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
           Expanded(child: _buildSourceList(provider)),
         ]),
         bottomNavigationBar: provider.isBatchMode ? SourceBatchToolbar(provider: provider, onGroup: () => SourceManagerDialogs.showBatchGroup(context, provider), 
-          onExport: () async { await provider.exportSelected(); if (mounted) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已複製至剪貼簿'))); } }, 
-          onDelete: () async { await provider.deleteSelected(); if (mounted) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已刪除選定書源'))); } }) : null,
+          onExport: () async { await provider.exportSelected(); if (context.mounted) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已複製至剪貼簿'))); } }, 
+          onDelete: () async { await provider.deleteSelected(); if (context.mounted) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已刪除選定書源'))); } }) : null,
       );
     });
   }
@@ -70,13 +70,13 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
   }
 
   Widget _buildItem(SourceManagerProvider p, BookSource s) => SourceItemTile(key: ValueKey(s.bookSourceUrl), source: s, provider: p, isSelected: p.selectedUrls.contains(s.bookSourceUrl), 
-    onTap: () { if (p.isBatchMode) { p.toggleSelect(s.bookSourceUrl); } else { Navigator.push(context, MaterialPageRoute(builder: (_) => SourceEditorPage(source: s))); } }, 
+    onTap: () { if (p.isBatchMode) { p.toggleSelect(s.bookSourceUrl); } else { if (context.mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => SourceEditorPage(source: s))); } }, 
     onLongPress: () { if (!p.isBatchMode) { _showSourceMenu(context, p, s); } }, onEnabledChanged: (v) => p.toggleEnabled(s));
 
   void _showSourceMenu(BuildContext context, SourceManagerProvider p, BookSource s) {
     showModalBottomSheet(context: context, builder: (ctx) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
       ListTile(leading: const Icon(Icons.bug_report), title: const Text('調試書源'), onTap: () { Navigator.pop(ctx); SourceManagerDialogs.showDebugInput(context, s); }),
-      ListTile(leading: const Icon(Icons.edit), title: const Text('編輯書源'), onTap: () { Navigator.pop(ctx); Navigator.push(context, MaterialPageRoute(builder: (_) => SourceEditorPage(source: s))); }),
+      ListTile(leading: const Icon(Icons.edit), title: const Text('編輯書源'), onTap: () { Navigator.pop(ctx); if (context.mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => SourceEditorPage(source: s))); }),
       ListTile(leading: const Icon(Icons.delete, color: Colors.red), title: const Text('刪除書源', style: TextStyle(color: Colors.red)), onTap: () { Navigator.pop(ctx); p.deleteSource(s); }),
     ])));
   }

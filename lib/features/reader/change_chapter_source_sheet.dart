@@ -125,26 +125,33 @@ class _ChangeChapterSourceSheetState extends State<ChangeChapterSourceSheet> {
         targetIndex = widget.chapterIndex;
       }
 
-      if (!context.mounted) return;
+      if (!context.mounted) {
+        return;
+      }
+      
       if (targetIndex != -1) {
         final content = await provider.service.getContent(source, tempBook, chapters[targetIndex]);
-        if (mounted) {
-          Navigator.pop(context); // Pop loading
-          if (tempBook.type != widget.book.type) {
-            _showMigrationDialog(context, widget.book.migrateTo(tempBook, chapters) as Book);
-          } else {
-            context.read<ReaderProvider>().replaceChapterSource(widget.chapterIndex, source, content);
-            Navigator.pop(context); // Pop sheet
-          }
+        if (!context.mounted) {
+          return;
+        }
+        // Pop loading dialog
+        Navigator.pop(context);
+        
+        if (tempBook.type != widget.book.type) {
+          _showMigrationDialog(context, widget.book.migrateTo(tempBook, chapters) as Book);
+        } else {
+          context.read<ReaderProvider>().replaceChapterSource(widget.chapterIndex, source, content);
+          // Pop sheet
+          Navigator.pop(context);
         }
       } else {
-        if (mounted) {
+        if (context.mounted) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('找不到對應章節')));
         }
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('換源失敗: $e')));
       }
@@ -162,7 +169,9 @@ class _ChangeChapterSourceSheetState extends State<ChangeChapterSourceSheet> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
-              if (!context.mounted) return;
+              if (!context.mounted) {
+                return;
+              }
               Navigator.pop(context);
               Navigator.pushReplacement(
                 context,

@@ -12,17 +12,21 @@ abstract class RuleAnalyzerBase {
 
   static const int esc = 92;
 
-  RuleAnalyzerBase(this.queue, {bool isCode = false}) : isCode = isCode;
+  RuleAnalyzerBase(this.queue, {this.isCode = false});
 
   void trim() {
     if (pos < queue.length && (queue[pos] == '@' || queue.codeUnitAt(pos) < 33)) {
       pos++;
-      while (pos < queue.length && (queue[pos] == '@' || queue.codeUnitAt(pos) < 33)) {
+      while (_isTrimmable()) {
         pos++;
       }
       start = pos;
       startX = pos;
     }
+  }
+
+  bool _isTrimmable() {
+    return pos < queue.length && (queue[pos] == '@' || queue.codeUnitAt(pos) < 33);
   }
 
   void reSetPos() {
@@ -34,7 +38,9 @@ abstract class RuleAnalyzerBase {
 
   bool consumeTo(String seq) {
     start = pos;
-    if (pos >= queue.length) return false;
+    if (pos >= queue.length) {
+      return false;
+    }
     final offset = queue.indexOf(seq, pos);
     if (offset != -1) {
       pos = offset;
@@ -62,7 +68,9 @@ abstract class RuleAnalyzerBase {
     int curPos = pos;
     while (curPos < queue.length) {
       for (final s in seq) {
-        if (queue[curPos] == s) return curPos;
+        if (queue[curPos] == s) {
+          return curPos;
+        }
       }
       curPos++;
     }
