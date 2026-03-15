@@ -25,6 +25,7 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
   @override
   Widget build(BuildContext context) {
     return Consumer<SourceManagerProvider>(builder: (context, provider, child) {
+      final nav = Navigator.of(context);
       return Scaffold(
         appBar: AppBar(
           title: Text(provider.isBatchMode ? '已選擇 ${provider.selectedUrls.length} 項' : '書源管理'),
@@ -36,9 +37,9 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
             SourceManagerMenus.buildAddMenu(context, provider, 
               onImportUrl: () => _showImportDialog(context, true), onImportFile: () => _importFromFile(context), 
               onImportClipboard: () => _importFromClipboard(context), onScanQr: () => _scanQrCode(context, provider), 
-              onExplore: () { if (!mounted) return; Navigator.push(context, MaterialPageRoute(builder: (_) => const ExploreSourcesPage())); }, 
-              onManageGroups: () { if (!mounted) return; Navigator.push(context, MaterialPageRoute(builder: (_) => const SourceGroupManagePage())); }, 
-              onNewSource: () { if (!mounted) return; Navigator.push(context, MaterialPageRoute(builder: (_) => const SourceEditorPage())); }),
+              onExplore: () => nav.push(MaterialPageRoute(builder: (_) => const ExploreSourcesPage())), 
+              onManageGroups: () => nav.push(MaterialPageRoute(builder: (_) => const SourceGroupManagePage())), 
+              onNewSource: () => nav.push(MaterialPageRoute(builder: (_) => const SourceEditorPage()))),
             SourceManagerMenus.buildMoreMenu(context, provider, onClearInvalid: (p) => SourceManagerDialogs.confirmClearInvalid(context, p)),
           ],
         ),
@@ -48,19 +49,25 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
           Expanded(child: _buildSourceList(provider)),
         ]),
         bottomNavigationBar: provider.isBatchMode ? SourceBatchToolbar(provider: provider, onGroup: () => SourceManagerDialogs.showBatchGroup(context, provider), 
-          onExport: () async { await provider.exportSelected(); if (!mounted) return; ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已複製至剪貼簿'))); }, 
-          onDelete: () async { await provider.deleteSelected(); if (!mounted) return; ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已刪除選定書源'))); }) : null,
+          onExport: () async { 
+            final messenger = ScaffoldMessenger.of(context);
+            await provider.exportSelected(); 
+            if (!mounted) return; 
+            messenger.showSnackBar(const SnackBar(content: Text('已複製至剪貼簿'))); 
+          }, 
+          onDelete: () async { 
+            final messenger = ScaffoldMessenger.of(context);
+            await provider.deleteSelected(); 
+            if (!mounted) return; 
+            messenger.showSnackBar(const SnackBar(content: Text('已刪除選定書源'))); 
+          }) : null,
       );
     });
   }
 
   Widget _buildSourceList(SourceManagerProvider p) {
-    if (p.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (p.sources.isEmpty) {
-      return const Center(child: Text('暫無書源'));
-    }
+    if (p.isLoading) return const Center(child: CircularProgressIndicator());
+    if (p.sources.isEmpty) return const Center(child: Text('暫無書源'));
     final bool canReorder = p.sortMode == 0 && !p.groupByDomain;
     if (canReorder) {
       return ReorderableListView.builder(itemCount: p.sources.length, onReorder: p.reorderSource, itemBuilder: (ctx, i) => _buildItem(p, p.sources[i]));
@@ -69,14 +76,34 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
     }
   }
 
-  Widget _buildItem(SourceManagerProvider p, BookSource s) => SourceItemTile(key: ValueKey(s.bookSourceUrl), source: s, provider: p, isSelected: p.selectedUrls.contains(s.bookSourceUrl), 
-    onTap: () { if (p.isBatchMode) { p.toggleSelect(s.bookSourceUrl); } else { if (!mounted) return; Navigator.push(context, MaterialPageRoute(builder: (_) => SourceEditorPage(source: s))); } }, 
-    onLongPress: () { if (!p.isBatchMode) { _showSourceMenu(context, p, s); } }, onEnabledChanged: (v) => p.toggleEnabled(s));
+  Widget _buildItem(SourceManagerProvider p, BookSource s) {
+    final nav = Navigator.of(context);
+    return SourceItemTile(
+      key: ValueKey(s.bookSourceUrl),
+      source: s,
+      provider: p,
+      isSelected: p.selectedUrls.contains(s.bookSourceUrl), 
+      onTap: () {
+        if (p.isBatchMode) {
+          p.toggleSelect(s.bookSourceUrl);
+        } else {
+          nav.push(MaterialPageRoute(builder: (_) => SourceEditorPage(source: s)));
+        }
+      }, 
+      onLongPress: () {
+        if (!p.isBatchMode) {
+          _showSourceMenu(context, p, s);
+        }
+      },
+      onEnabledChanged: (v) => p.toggleEnabled(s),
+    );
+  }
 
   void _showSourceMenu(BuildContext context, SourceManagerProvider p, BookSource s) {
+    final nav = Navigator.of(context);
     showModalBottomSheet(context: context, builder: (ctx) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
       ListTile(leading: const Icon(Icons.bug_report), title: const Text('調試書源'), onTap: () { Navigator.pop(ctx); SourceManagerDialogs.showDebugInput(context, s); }),
-      ListTile(leading: const Icon(Icons.edit), title: const Text('編輯書源'), onTap: () { Navigator.pop(ctx); if (!mounted) return; Navigator.push(context, MaterialPageRoute(builder: (_) => SourceEditorPage(source: s))); }),
+      ListTile(leading: const Icon(Icons.edit), title: const Text('編輯書源'), onTap: () { Navigator.pop(ctx); nav.push(MaterialPageRoute(builder: (_) => SourceEditorPage(source: s))); }),
       ListTile(leading: const Icon(Icons.delete, color: Colors.red), title: const Text('刪除書源', style: TextStyle(color: Colors.red)), onTap: () { Navigator.pop(ctx); p.deleteSource(s); }),
     ])));
   }
@@ -87,50 +114,56 @@ class _SourceManagerPageState extends State<SourceManagerPage> {
       TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
       ElevatedButton(onPressed: () async {
         final p = context.read<SourceManagerProvider>();
+        final nav = Navigator.of(context);
+        final messenger = ScaffoldMessenger.of(context);
         final input = ctrl.text.trim();
         if (input.isNotEmpty) {
           int count = isUrl ? await p.importFromUrl(input) : await p.importFromText(input);
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('成功匯入 $count 個書源')));
-          Navigator.pop(context);
+          messenger.showSnackBar(SnackBar(content: Text('成功匯入 $count 個書源')));
+          nav.pop();
         } else {
-          Navigator.pop(ctx);
+          nav.pop();
         }
       }, child: const Text('匯入')),
     ]));
   }
 
   Future<void> _scanQrCode(BuildContext context, SourceManagerProvider p) async {
-    final String? res = await Navigator.push(context, MaterialPageRoute(builder: (ctx) => const QrScanPage()));
+    final nav = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final String? res = await nav.push(MaterialPageRoute(builder: (ctx) => const QrScanPage()));
     if (res != null && res.isNotEmpty) {
       final count = await p.importFromQr(res);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('成功匯入 $count 個書源')));
+      messenger.showSnackBar(SnackBar(content: Text('成功匯入 $count 個書源')));
     }
   }
 
   Future<void> _importFromFile(BuildContext context) async {
+    final p = context.read<SourceManagerProvider>();
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final res = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['json', 'txt']);
       if (res?.files.single.path != null) {
-        final p = context.read<SourceManagerProvider>();
         final count = await p.importFromText(await File(res!.files.single.path!).readAsString());
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('從檔案匯入 $count 個書源')));
+        messenger.showSnackBar(SnackBar(content: Text('從檔案匯入 $count 個書源')));
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('出錯: $e')));
+      messenger.showSnackBar(SnackBar(content: Text('出錯: $e')));
     }
   }
 
   Future<void> _importFromClipboard(BuildContext context) async {
+    final p = context.read<SourceManagerProvider>();
+    final messenger = ScaffoldMessenger.of(context);
     final data = await Clipboard.getData(Clipboard.kTextPlain);
     if (data?.text != null) {
-      final p = context.read<SourceManagerProvider>();
       final count = await p.importFromText(data!.text!);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('從剪貼簿匯入 $count 個書源')));
+      messenger.showSnackBar(SnackBar(content: Text('從剪貼簿匯入 $count 個書源')));
     }
   }
 }

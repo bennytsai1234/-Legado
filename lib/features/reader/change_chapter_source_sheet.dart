@@ -114,7 +114,10 @@ class _ChangeChapterSourceSheetState extends State<ChangeChapterSourceSheet> {
       return;
     }
 
-    if (!context.mounted) return;
+    final nav = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final readerProvider = context.read<ReaderProvider>();
+
     showDialog(context: context, barrierDismissible: false, builder: (ctx) => const Center(child: CircularProgressIndicator()));
 
     try {
@@ -125,40 +128,38 @@ class _ChangeChapterSourceSheetState extends State<ChangeChapterSourceSheet> {
         targetIndex = widget.chapterIndex;
       }
 
-      if (!context.mounted) {
-        return;
-      }
+      if (!mounted) return;
       
       if (targetIndex != -1) {
         final content = await provider.service.getContent(source, tempBook, chapters[targetIndex]);
-        if (!context.mounted) {
-          return;
-        }
+        if (!mounted) return;
+        
         // Pop loading dialog
-        Navigator.pop(context);
+        nav.pop();
         
         if (tempBook.type != widget.book.type) {
           _showMigrationDialog(context, widget.book.migrateTo(tempBook, chapters) as Book);
         } else {
-          context.read<ReaderProvider>().replaceChapterSource(widget.chapterIndex, source, content);
+          readerProvider.replaceChapterSource(widget.chapterIndex, source, content);
           // Pop sheet
-          Navigator.pop(context);
+          nav.pop();
         }
       } else {
-        if (context.mounted) {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('找不到對應章節')));
+        if (mounted) {
+          nav.pop();
+          messenger.showSnackBar(const SnackBar(content: Text('找不到對應章節')));
         }
       }
     } catch (e) {
-      if (context.mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('換源失敗: $e')));
+      if (mounted) {
+        nav.pop();
+        messenger.showSnackBar(SnackBar(content: Text('換源失敗: $e')));
       }
     }
   }
 
   void _showMigrationDialog(BuildContext context, Book newBook) {
+    final nav = Navigator.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -169,12 +170,9 @@ class _ChangeChapterSourceSheetState extends State<ChangeChapterSourceSheet> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
-              if (!context.mounted) {
-                return;
-              }
-              Navigator.pop(context);
-              Navigator.pushReplacement(
-                context,
+              if (!mounted) return;
+              nav.pop();
+              nav.pushReplacement(
                 MaterialPageRoute(builder: (_) => newBook.type == 2 ? AudioPlayerPage(book: newBook, chapterIndex: newBook.durChapterIndex) : ReaderPage(book: newBook)),
               );
             },
