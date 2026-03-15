@@ -1,14 +1,9 @@
-import 'package:legado_reader/core/models/book_source.dart';
 import 'package:legado_reader/core/models/rule_data_interface.dart';
 
 // 導入拆分後的模組
 import 'analyze_rule/analyze_rule_base.dart';
 import 'analyze_rule/analyze_rule_core.dart';
 import 'analyze_rule/analyze_rule_script.dart';
-import 'analyze_rule/analyze_rule_support.dart';
-import 'analyze_rule/analyze_rule_element.dart';
-import 'analyze_rule/analyze_rule_string.dart';
-import 'analyze_rule/analyze_rule_regex_helper.dart';
 
 export 'analyze_rule/analyze_rule_base.dart';
 export 'analyze_rule/analyze_rule_support.dart';
@@ -62,7 +57,7 @@ class AnalyzeRule extends AnalyzeRuleBase with AnalyzeRuleRegexHelper, AnalyzeRu
 
   @override
   dynamic evalJS(String jsStr, dynamic result) {
-    return (this as AnalyzeRule).evalJS(jsStr, result);
+    return AnalyzeRuleScript(this).evalJS(jsStr, result);
   }
 
   // 靜態輔助方法 (如果需要)
