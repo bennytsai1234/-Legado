@@ -15,10 +15,14 @@ mixin IntentFileHandler on IntentBase {
       debugPrint("收到分享檔案: ${file.path}");
       final ext = p.extension(file.path).toLowerCase();
       if (ext == '.json') {
-        if (!context.mounted) return;
+        if (!context.mounted) {
+          return;
+        }
         _handleSharedFile(context, file.path, showImportDialog, showForceImportDialog);
       } else if (ext == '.txt' || ext == '.epub') {
-        if (!context.mounted) return;
+        if (!context.mounted) {
+          return;
+        }
         handleSharedBook(context, file.path);
       }
     }
@@ -55,17 +59,28 @@ mixin IntentFileHandler on IntentBase {
       
       dynamic first = (data is List && data.isNotEmpty) ? data.first : data;
       if (first is Map) {
-        if (first.containsKey('bookSourceUrl')) type = 'bookSource';
-        else if (first.containsKey('sourceUrl')) type = 'rssSource';
-        else if (first.containsKey('pattern')) type = 'replaceRule';
-        else if (first.containsKey('loginUrl')) type = 'httpTts';
-        else if (first.containsKey('themeName')) type = 'theme';
-        else if (first.containsKey('chapterName')) type = 'txtRule';
+        if (first.containsKey('bookSourceUrl')) {
+          type = 'bookSource';
+        } else if (first.containsKey('sourceUrl')) {
+          type = 'rssSource';
+        } else if (first.containsKey('pattern')) {
+          type = 'replaceRule';
+        } else if (first.containsKey('loginUrl')) {
+          type = 'httpTts';
+        } else if (first.containsKey('themeName')) {
+          type = 'theme';
+        } else if (first.containsKey('chapterName')) {
+          type = 'txtRule';
+        }
       }
 
-      if (context.mounted) showImportDialog(context, type, path, isFile: true, jsonData: content);
+      if (context.mounted) {
+        showImportDialog(context, type, path, isFile: true, jsonData: content);
+      }
     } catch (e) {
-      if (context.mounted) showForceImportDialog(context, path);
+      if (context.mounted) {
+        showForceImportDialog(context, path);
+      }
     }
   }
 }
