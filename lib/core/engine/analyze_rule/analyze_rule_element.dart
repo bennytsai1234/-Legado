@@ -2,12 +2,16 @@ import 'analyze_rule_base.dart';
 import 'analyze_rule_support.dart';
 import 'analyze_rule_regex_helper.dart';
 import '../parsers/analyze_by_regex.dart';
+import '../parsers/analyze_by_css.dart';
+import '../parsers/css/analyze_by_css_core.dart';
 
 /// AnalyzeRule 的元素解析擴展
 mixin AnalyzeRuleElement on AnalyzeRuleBase, AnalyzeRuleRegexHelper {
   /// 獲取單個元素
   dynamic getElement(String ruleStr) {
-    if (ruleStr.isEmpty) return null;
+    if (ruleStr.isEmpty) {
+      return null;
+    }
 
     log("⇒ 執行 getElement: $ruleStr");
     var result = content;
@@ -15,7 +19,9 @@ mixin AnalyzeRuleElement on AnalyzeRuleBase, AnalyzeRuleRegexHelper {
 
     if (result != null && ruleList.isNotEmpty) {
       for (final sourceRule in ruleList) {
-        if (result == null) break;
+        if (result == null) {
+          break;
+        }
 
         sourceRule.makeUpRule(result, this as dynamic);
         final rule = sourceRule.rule;
@@ -65,7 +71,9 @@ mixin AnalyzeRuleElement on AnalyzeRuleBase, AnalyzeRuleRegexHelper {
 
   /// 獲取列表
   List<dynamic> getElements(String ruleStr) {
-    if (ruleStr.isEmpty) return [];
+    if (ruleStr.isEmpty) {
+      return [];
+    }
 
     log("⇒ 執行 getElements: $ruleStr");
     var result = content;
@@ -73,7 +81,9 @@ mixin AnalyzeRuleElement on AnalyzeRuleBase, AnalyzeRuleRegexHelper {
 
     if (result != null && ruleList.isNotEmpty) {
       for (final sourceRule in ruleList) {
-        if (result == null) break;
+        if (result == null) {
+          break;
+        }
 
         sourceRule.makeUpRule(result, this as dynamic);
         final rule = sourceRule.rule;
@@ -121,8 +131,12 @@ mixin AnalyzeRuleElement on AnalyzeRuleBase, AnalyzeRuleRegexHelper {
       }
     }
 
-    if (result is List) return result;
-    if (result == null) return [];
+    if (result is List) {
+      return result;
+    }
+    if (result == null) {
+      return [];
+    }
     return [result];
   }
 }
